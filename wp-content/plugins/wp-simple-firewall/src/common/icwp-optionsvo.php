@@ -42,6 +42,11 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		/**
 		 * @var string
 		 */
+		protected $sOptionsEncoding;
+
+		/**
+		 * @var string
+		 */
 		protected $sOptionsName;
 
 		/**
@@ -55,7 +60,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		 * @return bool
 		 */
 		public function cleanTransientStorage() {
-			return $this->loadWpFunctionsProcessor()->deleteTransient( $this->getSpecTransientStorageKey() );
+			return $this->loadWpFunctions()->deleteTransient( $this->getSpecTransientStorageKey() );
 		}
 
 		/**
@@ -69,16 +74,16 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 			$this->cleanOptions();
 			$this->setNeedSave( false );
 			if ( $bDeleteFirst ) {
-				$this->loadWpFunctionsProcessor()->deleteOption( $this->getOptionsStorageKey() );
+				$this->loadWpFunctions()->deleteOption( $this->getOptionsStorageKey() );
 			}
-			return $this->loadWpFunctionsProcessor()->updateOption( $this->getOptionsStorageKey(), $this->getAllOptionsValues() );
+			return $this->loadWpFunctions()->updateOption( $this->getOptionsStorageKey(), $this->getAllOptionsValues() );
 		}
 
 		/**
 		 * @return bool
 		 */
 		public function doOptionsDelete() {
-			$oWp = $this->loadWpFunctionsProcessor();
+			$oWp = $this->loadWpFunctions();
 			$oWp->deleteTransient( $this->getSpecTransientStorageKey() );
 			return $oWp->deleteOption( $this->getOptionsStorageKey() );
 		}
@@ -87,7 +92,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		 * @return array
 		 */
 		public function getAllOptionsValues() {
-			return $this->loadOptionsValuesFromStorage();
+			return $this->getStoredOptions();
 		}
 
 		/**
@@ -100,7 +105,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 			$aRawOptions = $this->getRawData_AllOptions();
 			$aTransferable = array();
 			foreach( $aRawOptions as $nKey => $aOptionData ) {
-				if ( isset( $aOptionData['transferable'] ) && $aOptionData['transferable'] === true ) {
+				if ( !isset( $aOptionData['transferable'] ) || $aOptionData['transferable'] === true ) {
 					$aTransferable[ $aOptionData['key'] ] = $aOptions[ $aOptionData['key'] ];
 				}
 			}
@@ -207,54 +212,72 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		/**
 		 * @return array
 		 */
-		public function getLegacyOptionsConfigData() {
+		public function getOptionsForPluginUse() {
 
-			$aRawData = $this->getRawData_FullFeatureConfig();
-			$aLegacyData = array();
+			$aOptionsData = array();
 
-			foreach( $aRawData['sections'] as $nPosition => $aRawSection ) {
+			foreach( $this->getRawData_OptionsSections() as $aRawSection ) {
 
 				if ( isset( $aRawSection['hidden'] ) && $aRawSection['hidden'] ) {
 					continue;
 				}
 
-				$aLegacySection = array();
-				$aLegacySection['section_primary'] = isset( $aRawSection['primary'] ) && $aRawSection['primary'];
-				$aLegacySection['section_slug'] = $aRawSection['slug'];
-				$aLegacySection['section_options'] = array();
-				foreach( $this->getRawData_AllOptions() as $aRawOption ) {
+				$aRawSection = array_merge(
+					array(
+						'primary' => false,
+						'options' => $this->getOptionsForSection( $aRawSection[ 'slug' ] ),
+						'help_video_id' => ''
+					),
+					$aRawSection
+				);
 
-					if ( $aRawOption['section'] != $aRawSection['slug'] ) {
-						continue;
-					}
-
-					if ( isset( $aRawOption['hidden'] ) && $aRawOption['hidden'] ) {
-						continue;
-					}
-
-					$aLegacyRawOption = array();
-					$aLegacyRawOption['key'] = $aRawOption['key'];
-					$aLegacyRawOption['value'] = ''; //value
-					$aLegacyRawOption['default'] = $aRawOption['default'];
-					$aLegacyRawOption['type'] = $aRawOption['type'];
-
-					$aLegacyRawOption['value_options'] = array();
-					if ( in_array( $aLegacyRawOption['type'], array( 'select', 'multiple_select' ) ) ) {
-						foreach( $aRawOption['value_options'] as $aValueOptions ) {
-							$aLegacyRawOption['value_options'][ $aValueOptions['value_key'] ] = $aValueOptions['text'];
-						}
-					}
-
-					$aLegacyRawOption['info_link'] = isset( $aRawOption['link_info'] ) ? $aRawOption['link_info'] : '';
-					$aLegacyRawOption['blog_link'] = isset( $aRawOption['link_blog'] ) ? $aRawOption['link_blog'] : '';
-					$aLegacySection['section_options'][] = $aLegacyRawOption;
-				}
-
-				if ( count( $aLegacySection['section_options'] ) > 0 ) {
-					$aLegacyData[ $nPosition ] = $aLegacySection;
+				if ( !empty( $aRawSection[ 'options' ] ) ) {
+					$aOptionsData[] = $aRawSection;
 				}
 			}
-			return $aLegacyData;
+
+			return $aOptionsData;
+		}
+
+		/**
+		 * @param string $sSectionSlug
+		 * @return array[]
+		 */
+		protected function getOptionsForSection( $sSectionSlug ) {
+
+			$aAllOptions = array();
+			foreach( $this->getRawData_AllOptions() as $aOptionDef ) {
+
+				if ( ( $aOptionDef['section'] != $sSectionSlug ) || ( isset( $aOptionDef['hidden'] ) && $aOptionDef['hidden'] ) ) {
+					continue;
+				}
+
+				if ( isset( $aOptionDef['hidden'] ) && $aOptionDef['hidden'] ) {
+					continue;
+				}
+
+				$aOptionDef = array_merge(
+					array(
+						'link_info' => '',
+						'link_blog' => '',
+						'help_video_id' => '',
+						'value_options' => array()
+					),
+					$aOptionDef
+				);
+				$aOptionDef[ 'value' ] = $this->getOpt( $aOptionDef[ 'key' ] );
+
+				if ( in_array( $aOptionDef[ 'type' ], array( 'select', 'multiple_select' ) ) ) {
+					$aNewValueOptions = array();
+					foreach( $aOptionDef[ 'value_options' ] as $aValueOptions ) {
+						$aNewValueOptions[ $aValueOptions[ 'value_key' ] ] = $aValueOptions[ 'text' ];
+					}
+					$aOptionDef[ 'value_options' ] = $aNewValueOptions;
+				}
+
+				$aAllOptions[] = $aOptionDef;
+			}
+			return $aAllOptions;
 		}
 
 		/**
@@ -328,6 +351,13 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		}
 
 		/**
+		 * @return string
+		 */
+		public function getOptionsEncoding() {
+			return empty( $this->sOptionsEncoding ) ? 'json' : $this->sOptionsEncoding;
+		}
+
+		/**
 		 * @return array
 		 */
 		public function getOptionsKeys() {
@@ -336,6 +366,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 				foreach( $this->getRawData_AllOptions() as $aOption ) {
 					$this->aOptionsKeys[] = $aOption['key'];
 				}
+				$this->aOptionsKeys = array_merge( $this->aOptionsKeys, $this->getCommonStandardOptions() );
 			}
 			return $this->aOptionsKeys;
 		}
@@ -372,7 +403,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		 */
 		public function getRawData_FullFeatureConfig() {
 			if ( empty( $this->aRawOptionsConfigData ) ) {
-				$this->aRawOptionsConfigData = $this->readYamlConfiguration();
+				$this->aRawOptionsConfigData = $this->readConfiguration();
 			}
 			return $this->aRawOptionsConfigData;
 		}
@@ -385,6 +416,16 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		protected function getRawData_AllOptions() {
 			$aAllRawOptions = $this->getRawData_FullFeatureConfig();
 			return isset( $aAllRawOptions['options'] ) ? $aAllRawOptions['options'] : array();
+		}
+
+		/**
+		 * Return the section of the Raw config that is the "options" key only.
+		 *
+		 * @return array
+		 */
+		protected function getRawData_OptionsSections() {
+			$aAllRawOptions = $this->getRawData_FullFeatureConfig();
+			return isset( $aAllRawOptions['sections'] ) ? $aAllRawOptions['sections'] : array();
 		}
 
 		/**
@@ -442,9 +483,11 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 
 		/**
 		 * @param string $sKey
+		 * @return $this
 		 */
 		public function setOptionsStorageKey( $sKey ) {
 			$this->sOptionsStorageKey = $sKey;
+			return $this;
 		}
 
 		/**
@@ -456,9 +499,11 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 
 		/**
 		 * @param boolean $bLoadFromSaved
+		 * @return $this
 		 */
 		public function setIfLoadOptionsFromStorage( $bLoadFromSaved ) {
 			$this->bLoadFromSaved = $bLoadFromSaved;
+			return $this;
 		}
 
 		/**
@@ -469,10 +514,21 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		}
 
 		/**
+		 * @param string $sOptionsEncoding
+		 * @return $this
+		 */
+		public function setOptionsEncoding( $sOptionsEncoding ) {
+			$this->sOptionsEncoding = $sOptionsEncoding;
+			return $this;
+		}
+
+		/**
 		 * @param boolean $bRebuild
+		 * @return $this
 		 */
 		public function setRebuildFromFile( $bRebuild ) {
 			$this->bRebuildFromFile = $bRebuild;
+			return $this;
 		}
 
 		/**
@@ -526,16 +582,20 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		/** PRIVATE STUFF */
 
 		/**
+		 * @return array
+		 */
+		protected function getCommonStandardOptions() {
+			return array( 'current_plugin_version', 'help_video_options' );
+		}
+
+		/**
 		 */
 		private function cleanOptions() {
-			if ( empty( $this->aOptionsValues ) || !is_array( $this->aOptionsValues ) ) {
-				return;
-			}
-			foreach( $this->aOptionsValues as $sKey => $mValue ) {
-				if ( !$this->getIsValidOptionKey( $sKey ) ) {
-					$this->setNeedSave( true );
-					unset( $this->aOptionsValues[$sKey] );
-				}
+			if ( !empty( $this->aOptionsValues ) && is_array( $this->aOptionsValues ) ) {
+				$this->aOptionsValues = array_intersect_key(
+					$this->getAllOptionsValues(),
+					array_flip( $this->getOptionsKeys() )
+				);
 			}
 		}
 
@@ -554,7 +614,7 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 					if ( empty( $sStorageKey ) ) {
 						throw new Exception( 'Options Storage Key Is Empty' );
 					}
-					$this->aOptionsValues = $this->loadWpFunctionsProcessor()->getOption( $sStorageKey, array() );
+					$this->aOptionsValues = $this->loadWpFunctions()->getOption( $sStorageKey, array() );
 				}
 			}
 			if ( !is_array( $this->aOptionsValues ) ) {
@@ -568,24 +628,47 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		 * @return array
 		 * @throws Exception
 		 */
-		private function readYamlConfiguration() {
-			$oWp = $this->loadWpFunctionsProcessor();
+		private function readConfiguration() {
+			$oWp = $this->loadWpFunctions();
 
 			$sTransientKey = $this->getSpecTransientStorageKey();
 			$aConfig = $oWp->getTransient( $sTransientKey );
 
 			if ( $this->getRebuildFromFile() || empty( $aConfig ) ) {
-				$sConfigFile = $this->getConfigFilePath();
-				$sContents = include( $sConfigFile );
-				if ( !empty( $sContents ) ) {
-					$aConfig = $this->loadYamlProcessor()->parseYamlString( $sContents );
-					if ( is_null( $aConfig ) ) {
-						throw new Exception( 'YAML parser could not load to process the options configuration.' );
-					}
-					$oWp->setTransient( $sTransientKey, $aConfig, DAY_IN_SECONDS );
+
+				try {
+					$aConfig = $this->readConfigurationJson();
 				}
+				catch ( Exception $oE ) {
+					trigger_error( $oE->getMessage() );
+					$aConfig = array();
+				}
+				$oWp->setTransient( $sTransientKey, $aConfig, DAY_IN_SECONDS );
 			}
 			return $aConfig;
+		}
+
+		/**
+		 * @return array
+		 * @throws Exception
+		 */
+		private function readConfigurationJson() {
+			$aConfig = json_decode( $this->readConfigurationFileContents(), true );
+			if ( empty( $aConfig ) ) {
+				throw new Exception( 'Reading JSON configuration from file failed.' );
+			}
+			return $aConfig;
+		}
+
+		/**
+		 * @return string
+		 * @throws Exception
+		 */
+		private function readConfigurationFileContents() {
+			if ( !$this->getConfigFileExists() ) {
+				throw new Exception( sprintf( 'Configuration file "%s" does not exist.', $this->getConfigFilePath() ) );
+			}
+			return $this->loadDataProcessor()->readFileContentsUsingInclude( $this->getConfigFilePath() );
 		}
 
 		/**
@@ -596,10 +679,20 @@ if ( !class_exists( 'ICWP_WPSF_OptionsVO', false ) ) :
 		}
 
 		/**
+		 * @return bool
+		 */
+		private function getConfigFileExists() {
+			$sPath = $this->getConfigFilePath();
+			return !empty( $sPath ) && $this->loadFS()->isFile( $sPath );
+		}
+
+		/**
 		 * @return string
 		 */
 		private function getConfigFilePath() {
-			return dirname( __FILE__ ) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . sprintf( 'config' . DIRECTORY_SEPARATOR . 'feature-%s.php', $this->getOptionsName() );
+			return realpath( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR
+				.sprintf( 'config'.DIRECTORY_SEPARATOR.'feature-%s.%s', $this->getOptionsName(), 'php' )
+			);
 		}
 	}
 endif;

@@ -3,7 +3,7 @@ Contributors: DavidoffNeal
 Tags: share buttons, facebook, twitter, google+, share, share links, stumble upon, linkedin, pinterest, yummly, vk
 Requires at least: 3.9
 Tested up to: 4.7
-Stable tag: 6.3.4
+Stable tag: 6.3.6
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,12 @@ A step by step guide on how to configure this plugin can be found <a href="http:
 8. This is an example of a set of Share Buttons you can add using Simple Share Buttons Adder
 
 == Changelog ==
+
+= 6.3.6 =
+* minor bug fixes
+
+= 6.3.5 =
+* Enable declining of Terms of Service
 
 = 6.3.4 =
 * Fixes for FB open graph tags (so it doesn't add extra text)

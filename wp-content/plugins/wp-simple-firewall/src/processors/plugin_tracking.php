@@ -6,12 +6,12 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 
 		public function run() {
 			/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-			$oFO = $this->getFeatureOptions();
+			$oFO = $this->getFeature();
 
-			if ( $oFO->getTrackingEnabled() ) {
+			if ( $oFO->isTrackingEnabled() ) {
 				$this->createTrackingCollectionCron();
 			}
-			add_action( $oFO->doPluginPrefix( 'delete_plugin' ), array( $this, 'deleteCron' ) );
+			add_action( $oFO->prefix( 'delete_plugin' ), array( $this, 'deleteCron' ) );
 		}
 
 		/**
@@ -20,16 +20,16 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 		 */
 		protected function addNotice_allow_tracking( $aNoticeAttributes ) {
 			/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-			$oFO = $this->getFeatureOptions();
+			$oFO = $this->getFeature();
 
-			if ( $this->getIfShowAdminNotices() && !$oFO->getTrackingPermissionSet() ) {
+			if ( $this->getIfShowAdminNotices() && !$oFO->isTrackingPermissionSet() ) {
 				$oCon = $this->getController();
 				$aRenderData = array(
 					'notice_attributes' => $aNoticeAttributes,
 					'strings' => array(
 						'help_us' => sprintf( _wpsf__( "Will you help us to make %s even better?" ), $oCon->getHumanName() ),
 						'want_to_track' =>  _wpsf__( "We're working to understand how people, just like you, use this plugin every day." ),
-						'what_we_collect' => _wpsf__( "We'd like to understand better the features used most and how effective we are on a global scale." ),
+						'what_we_collect' => _wpsf__( "We'd like to better understand the features used most and how effective we are on a global scale." ),
 						'data_anon' => _wpsf__( 'The data sent will be always completely anonymous and we will never be able to track you or your website.' ),
 						'can_turn_off' => _wpsf__( 'You can easily turn it off at any time within the plugin options if you change your mind.' ),
 						'click_to_see' => _wpsf__( 'Click to see the RAW data that would be sent' ),
@@ -52,17 +52,17 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 		 */
 		public function sendTrackingData() {
 			/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-			$oFO = $this->getFeatureOptions();
-			if ( !$oFO->getTrackingEnabled() || !$oFO->readyToSendTrackingData() ) {
-				return;
+			$oFO = $this->getFeature();
+			if ( !$oFO->isTrackingEnabled() || !$oFO->readyToSendTrackingData() ) {
+				return false;
 			}
 
 			$aData = $this->collectTrackingData();
 			if ( empty( $aData ) || !is_array( $aData ) ) {
-				return;
+				return false;
 			}
 
-			$this->loadFileSystemProcessor()->requestUrl(
+			$mResult = $this->loadFS()->requestUrl(
 				$oFO->getDefinition( 'tracking_post_url' ),
 				array(
 					'method'      => 'POST',
@@ -76,6 +76,7 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 				true
 			);
 			$oFO->setTrackingLastSentAt();
+			return $mResult;
 		}
 
 		/**
@@ -83,7 +84,7 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 		 */
 		public function collectTrackingData() {
 			$aData = apply_filters(
-				$this->getFeatureOptions()->doPluginPrefix( 'collect_tracking_data' ),
+				$this->getFeature()->prefix( 'collect_tracking_data' ),
 				$this->getBaseTrackingData()
 			);
 			return is_array( $aData ) ? $aData : array();
@@ -94,7 +95,7 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 		 */
 		protected function getBaseTrackingData() {
 			$oDP = $this->loadDataProcessor();
-			$oWP = $this->loadWpFunctionsProcessor();
+			$oWP = $this->loadWpFunctions();
 			return array(
 				'env' =>array(
 					'options' => array(
@@ -117,21 +118,18 @@ if ( !class_exists( 'ICWP_WPSF_Processor_Plugin_Tracking', false ) ):
 		 */
 		protected function createTrackingCollectionCron() {
 			/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-			$oFO = $this->getFeatureOptions();
+			$oFO = $this->getFeature();
 			$sFullHookName = $oFO->getTrackingCronName();
-			$oWpCron = $this->loadWpCronProcessor();
-			if ( ! $oWpCron->getIfCronExists( $sFullHookName ) && ! defined( 'WP_INSTALLING' ) ) {
-				$oWpCron
-					->setNextRun( strtotime( 'tomorrow 3am' ) - get_option( 'gmt_offset' ) * HOUR_IN_SECONDS + rand( 0, 1800 ) )
-					->setRecurrence( 'daily' )
-					->createCronJob( $sFullHookName, array( $this, 'sendTrackingData' ) )
-					->reset();
-			}
+			$this->loadWpCronProcessor()
+				 ->setNextRun( strtotime( 'tomorrow 3am' ) - get_option( 'gmt_offset' ) * HOUR_IN_SECONDS + rand( 0, 1800 ) )
+				 ->setRecurrence( 'daily' )
+				 ->createCronJob( $sFullHookName, array( $this, 'sendTrackingData' ) )
+				 ->reset();
 		}
 
 		public function deleteCron() {
 			/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-			$oFO = $this->getFeatureOptions();
+			$oFO = $this->getFeature();
 			$this->loadWpCronProcessor()->deleteCronJob( $oFO->getTrackingCronName() );
 		}
 	}

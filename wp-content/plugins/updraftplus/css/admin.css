@@ -212,6 +212,27 @@
 		margin-right: 0px;
 	}
 	
+	.stored_local {
+		border-radius: 5px;
+		background-color: #007FE7;
+		padding: 3px 5px 5px 5px;
+		color: #ffffff;
+		font-size: 75%;
+	}
+	
+	.form-table td.updraft_existingbackup_date {
+		padding-bottom: 5px;
+	}
+	
+	.stored_icon {
+		height: 1.3em;
+		position: relative;
+		top: 0.2em;
+	}
+	
+	.backup_date_label .clear-right {
+		clear: right;
+	}
 	/* End Main Buttons */
 
 /* End of common elements */
@@ -324,6 +345,69 @@ h3 .thank-you {
 	#updraft_webdav_host_error {
 		color: red;
 	}
+
+	/* jstree styles */
+
+	/* these styles hide the dots from the parent but keep the arrows */
+	#updraft_zip_files_jstree .jstree-container-ul > .jstree-node,
+	#updraft_more_files_jstree .jstree-container-ul > .jstree-node {
+		background:transparent;
+	}
+
+	#updraft_zip_files_jstree .jstree-container-ul > .jstree-open > .jstree-ocl,
+	#updraft_more_files_jstree .jstree-container-ul > .jstree-open > .jstree-ocl {
+		background-position:-36px -4px;
+	}
+
+	#updraft_zip_files_jstree .jstree-container-ul > .jstree-closed> .jstree-ocl,
+	#updraft_more_files_jstree .jstree-container-ul > .jstree-closed> .jstree-ocl {
+		background-position:-4px -4px;
+	}
+
+	#updraft_zip_files_jstree .jstree-container-ul > .jstree-leaf> .jstree-ocl,
+	#updraft_more_files_jstree .jstree-container-ul > .jstree-leaf> .jstree-ocl {
+		background:transparent;
+	}
+	
+	/* zip browser jstree styles */
+	#updraft_zip_files_container {
+		position: relative;
+		height: 450px;
+		overflow: none;
+	}
+
+	#updraft_zip_info_container {
+		position: relative;
+		height: auto;
+		width: 100%;
+		border: 1px dotted;
+		margin-bottom: 5px;
+	}
+
+	#updraft_zip_info_container p {
+		margin: 1px;
+		padding-left: 10px;
+		font-size: 14px;
+	}
+
+	#updraft_zip_download_item {
+		display: none;
+		color: #0073aa;
+		padding-left: 10px;
+	}
+	
+	#updraft_zip_download_notice {
+		padding-left: 10px;
+	}
+
+	#updraft_zip_files_jstree_container {
+		position: relative;
+		border: 1px dotted;
+		height: 80%;
+		width: 100%;
+		overflow: auto;
+	}
+
 	/* More files jstree styles */
 	#updraft_more_files_container {
 		position: relative;
@@ -646,10 +730,15 @@ h3 .thank-you {
 	font-size: 120%;
 }
 
-input #backupnow_includefiles_moreoptions {
+#backupnow_includefiles_moreoptions, #backupnow_database_moreoptions {
 	margin: 4px 16px 6px; 
 	border: 1px dotted; 
 	padding: 6px 10px;
+}
+
+#backupnow_database_moreoptions {
+	max-height: 250px;
+	overflow: auto;
 }
 
 .form-table #updraft_activejobsrow .minimum-height{

@@ -1,6 +1,10 @@
 <?php
 
-class UpdraftPlus_BackupModule_openstack_base {
+if (!defined('UPDRAFTPLUS_DIR')) die('No direct access allowed.');
+
+if (!class_exists('UpdraftPlus_BackupModule')) require_once(UPDRAFTPLUS_DIR.'/methods/backup-module.php');
+
+class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 	protected $chunk_size;
 
@@ -25,7 +29,7 @@ class UpdraftPlus_BackupModule_openstack_base {
 
 		$this->chunk_size = $updraftplus->jobdata_get('openstack_chunk_size', $default_chunk_size);
 		
-		$opts = $this->get_opts();
+		$opts = $this->get_options();
 
 		$this->container = $opts['path'];
 
@@ -96,7 +100,7 @@ class UpdraftPlus_BackupModule_openstack_base {
 	}
 
 	public function listfiles($match = 'backup_') {
-		$opts = $this->get_opts();
+		$opts = $this->get_options();
 		$container = $opts['path'];
 		$path = $container;
 
@@ -290,7 +294,7 @@ class UpdraftPlus_BackupModule_openstack_base {
 			$container = $data['container'];
 			$path = $data['orig_path'];
 		} else {
-			$opts = $this->get_opts();
+			$opts = $this->get_options();
 			$container = $opts['path'];
 			$path = $container;
 			try {
@@ -356,7 +360,7 @@ class UpdraftPlus_BackupModule_openstack_base {
 
 		global $updraftplus;
 
-		$opts = $this->get_opts();
+		$opts = $this->get_options();
 
 		try {
 			$service = $this->get_service($opts, UpdraftPlus_Options::get_updraft_option('updraft_ssl_useservercerts'), UpdraftPlus_Options::get_updraft_option('updraft_ssl_disableverify'));
@@ -490,10 +494,16 @@ class UpdraftPlus_BackupModule_openstack_base {
 	public function config_print_middlesection() {
 	}
 
+	/**
+	 * This outputs the html to the settings page for the Openstack settings.
+	 * @param  Array $opts - this is an array of Openstack settings
+	 */
 	public function config_print() {
 
+		$classes = $this->get_css_classes();
+
 		?>
-		<tr class="updraftplusmethod <?php echo $this->method;?>">
+		<tr class="<?php echo $classes; ?>">
 			<td></td>
 			<td>
 				<?php
@@ -503,7 +513,7 @@ class UpdraftPlus_BackupModule_openstack_base {
 				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.','updraftplus'),$this->long_desc);?></em></p></td>
 		</tr>
 
-		<tr class="updraftplusmethod <?php echo $this->method;?>">
+		<tr class="<?php echo $classes; ?>">
 			<th></th>
 			<td>
 			<?php
@@ -517,13 +527,10 @@ class UpdraftPlus_BackupModule_openstack_base {
 			</td>
 		</tr>
 
-		<?php $this->config_print_middlesection(); ?>
+		<?php
+		$this->config_print_middlesection();
 
-		<tr class="updraftplusmethod <?php echo $this->method;?>">
-		<th></th>
-		<td><p><button id="updraft-<?php echo $this->method;?>-test" type="button" data-method="<?php echo $this->method;?>" class="button-primary updraft-test-button" data-method_label="<?php esc_attr_e($this->desc);?>"><?php echo sprintf(__('Test %s Settings','updraftplus'), $this->desc);?></button></p></td>
-		</tr>
-	<?php
+		echo $this->get_test_button_html($this->desc);
 	}
 
 }

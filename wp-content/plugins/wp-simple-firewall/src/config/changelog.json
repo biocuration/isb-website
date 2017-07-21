@@ -1,0 +1,208 @@
+{
+  "5.10.1": {
+	"version": {
+	  "series": "5.10.0",
+	  "major": 5,
+	  "minor": 10,
+	  "patch": 1
+	},
+	"attributes": {
+	  "timestamp": "1498828475",
+	  "is_patch": false,
+	  "options_added": true,
+	  "options_removed": false
+	}
+  },
+  "5.10.0": {
+	"version": {
+	  "series": "5.10.0",
+	  "major": 5,
+	  "minor": 10,
+	  "patch": 0
+	},
+	"attributes": {
+	  "timestamp": "1497916800",
+	  "is_patch": false,
+	  "options_added": true,
+	  "options_removed": false
+	}
+  },
+  "5.9.0": {
+	"version": {
+	  "series": "5.9.0",
+	  "major": 5,
+	  "minor": 9,
+	  "patch": 0
+	},
+	"attributes": {
+	  "timestamp": "1496218394",
+	  "is_patch": false,
+	  "options_removed": true
+	}
+  },
+  "5.8.2": {
+    "version": {
+      "series": "5.8.0",
+      "major": 5,
+      "minor": 8,
+      "patch": 2
+    },
+    "attributes": {
+      "timestamp": "1493047356",
+      "is_patch": true
+    }
+  },
+  "5.8.1": {
+    "version": {
+      "series": "5.8.0",
+      "major": 5,
+      "minor": 8,
+      "patch": 1
+    },
+    "attributes": {
+      "timestamp": "1491523200",
+      "is_patch": true
+    }
+  },
+  "5.8.0": {
+    "version": {
+      "series": "5.8.0",
+      "major": 5,
+      "minor": 8,
+      "patch": 0
+    },
+    "attributes": {
+      "timestamp": "1491523200",
+      "name": "",
+      "summary": "Introduction of Login Authentication Portal",
+      "link": "http://icwp.io/86",
+      "is_patch": false,
+      "options_added": true,
+      "options_removed": true
+    },
+    "requirements": {
+      "php": 5.2,
+      "wordpress": 3.5
+    }
+  },
+  "changelog": [
+	{
+	  "type": "improved",
+	  "summary": "Further preparation for the Shield Central release.",
+	  "version": "5.10.1"
+	},
+	{
+	  "type": "added",
+	  "summary": "More in-depth reporting and statistics gathering - options for reports will be made available in a later release.",
+	  "version": "5.10.0"
+	},
+	{
+	  "type": "added",
+	  "summary": "Help Videos for 1 or 2 modules. More to come and just testing format and uptake.",
+	  "version": "5.9.0"
+	},
+    {
+      "type": "added",
+      "summary": "Special handling for WP Fastest Cache.",
+      "version": "5.9.0"
+    },
+    {
+      "type": "changed",
+      "summary": "Automatic Self-Update no longer configurable. If automatic updates module is disabled, will update within 1 week.",
+      "version": "5.9.0"
+    },
+    {
+      "type": "changed",
+      "summary": "No longer remove an existing user session when accessed from another IP address. Just redirect.",
+      "version": "5.9.0"
+    },
+    {
+      "type": "fixed",
+      "summary": "Danish string translation.",
+      "version": "5.9.0"
+    },
+    {
+      "type": "improved",
+      "summary": "The core file scanner now works more reliably for international WordPress installations.",
+      "version": "5.8.2"
+    },
+    {
+      "type": "changed",
+      "summary": "Login Cooldown now uses only the flag file as an indicator of login times.",
+      "version": "5.8.2"
+    },
+    {
+      "type": "added",
+      "summary": "Filter to allow for changing the login two factor timeout period, from 5 (minutes). Filter: icwp-wpsf-login_intent_timeout",
+      "version": "5.8.2"
+    },
+    {
+      "type": "changed",
+      "summary": "Changed timeout for two-factor authentication email to 5 minutes to account for slower email sending providers.",
+      "version": "5.8.2"
+    },
+    {
+      "type": "changed",
+      "summary": "Added further clarification to the Login Notification email indicating that two-factor authentication was pending.",
+      "version": "5.8.2"
+    },
+    {
+      "type": "fixed",
+      "summary": "Fixed a couple of bugs with the Login Authentication Portal, for certain edge cases.",
+      "version": "5.8.1"
+    },
+    {
+      "type": "changed",
+      "summary": "Major overhaul of Two-Factor / Multi-Factor Login Authentication",
+      "link": "http://icwp.io/87",
+      "version": "5.8.0"
+    },
+    {
+      "type": "changed",
+      "summary": "Introduction of Login Authentication Portal for improved Multi-Factor Authentication",
+      "link": "http://icwp.io/86",
+      "version": "5.8.0"
+    },
+    {
+      "type": "added",
+      "summary": "Option to choose between two-factor or multi-factor login authentication",
+      "version": "5.8.0"
+    },
+    {
+      "type": "added",
+      "summary": "Administrators can remove Google Authenticator from another user’s profile",
+      "version": "5.8.0"
+    },
+    {
+      "type": "added",
+      "summary": "When Security Admin is active, only Security Admins may remove Google Authenticator from other admins",
+      "version": "5.8.0"
+    },
+    {
+      "type": "changed",
+      "summary": "Yubikey login authentication is now managed directly from the User Profile screen, as with Google Authenticator",
+      "version": "5.8.0"
+    },
+    {
+      "type": "changed",
+      "summary": "Email-based login authentication no longer uses a separate database table",
+      "version": "5.8.0"
+    },
+    {
+      "type": "fixed",
+      "summary": "Core file scanning now adequately handles Windows/Unix new lines during scan",
+      "version": "5.8.0"
+    },
+    {
+      "type": "fixed",
+      "summary": "Certain crons weren’t setup correctly",
+      "version": "5.8.0"
+    },
+    {
+      "type": "improvements",
+      "summary": "Further preparation for Shield Central release",
+      "link": "http://icwp.io/83",
+      "version": "5.8.0"
+    }
+  ]
+}

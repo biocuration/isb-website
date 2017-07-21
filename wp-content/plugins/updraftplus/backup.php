@@ -52,6 +52,9 @@ class UpdraftPlus_Backup {
 	// Used when deciding to use the 'store' or 'deflate' zip storage method
 	private $extensions_to_not_compress = array();
 
+	// Append to this any skipped tables
+	private $skipped_tables;
+
 	public function __construct($backup_files, $altered_since = -1) {
 
 		global $updraftplus;
@@ -237,13 +240,25 @@ class UpdraftPlus_Backup {
 					$updraftplus->log("Did not create $whichone zip (".$this->index.") - not needed");
 					@unlink($full_path.'.tmp');
 				} else {
-					$sha = sha1_file($full_path.'.tmp');
-					$updraftplus->jobdata_set('sha1-'.$whichone.$this->index, $sha);
+				
+					$checksum_description = '';
+		
+					$checksums = $updraftplus->which_checksums();
+		
+					foreach ($checksums as $checksum) {
+					
+						$cksum = hash_file($checksum, $full_path.'.tmp');
+						$updraftplus->jobdata_set($checksum.'-'.$whichone.$this->index, $cksum);
+						if ($checksum_description) $checksum_description .= ', ';
+						$checksum_description .= "$checksum: $cksum";
+					
+					}
+				
 					@rename($full_path.'.tmp', $full_path);
 					$timetaken = max(microtime(true)-$this->zip_microtime_start, 0.000001);
 					$kbsize = filesize($full_path)/1024;
 					$rate = round($kbsize/$timetaken, 1);
-					$updraftplus->log("Created $whichone zip (".$this->index.") - ".round($kbsize,1)." KB in ".round($timetaken,1)." s ($rate KB/s) (SHA1 checksum: $sha)");
+					$updraftplus->log("Created $whichone zip (".$this->index.") - ".round($kbsize,1)." KB in ".round($timetaken,1)." s ($rate KB/s) ($checksum_description)");
 					// We can now remove any left-over temporary files from this job
 				}
 			} elseif ($this->index > $original_index) {
@@ -1455,6 +1470,20 @@ class UpdraftPlus_Backup {
 
 					if (!apply_filters('updraftplus_backup_table', true, $table, $this->table_prefix, $whichdb, $dbinfo)) {
 						$updraftplus->log("Skipping table (filtered): $table");
+						if (empty($this->skipped_tables)) $this->skipped_tables = array();
+
+						// whichdb could be an int in which case to get the name of the database and the array key use the name from dbinfo
+						if ('wp' !== $whichdb) {
+							$key = $dbinfo['name'];
+						} else {
+							$key = $whichdb;
+						}
+
+						if (empty($this->skipped_tables[$key])) $this->skipped_tables[$key] = '';
+						if ('' != $this->skipped_tables[$key]) $this->skipped_tables[$key] .= ',';
+						$this->skipped_tables[$key] .= $table;
+
+						$total_tables--;
 					} else {
 
 						$db_temp_file = $this->updraft_dir.'/'.$table_file_prefix.'.tmp.gz';
@@ -1605,9 +1634,22 @@ class UpdraftPlus_Backup {
 		} else {
 			# We no longer encrypt here - because the operation can take long, we made it resumable and moved it to the upload loop
 			$updraftplus->jobdata_set('jobstatus', 'dbcreated'.$this->whichdb_suffix);
-			$sha = sha1_file($backup_final_file_name);
-			$updraftplus->jobdata_set('sha1-db'.(('wp' == $whichdb) ? '0' : $whichdb.'0'), $sha);
-			$updraftplus->log("Total database tables backed up: $total_tables (".basename($backup_final_file_name).", size: ".filesize($backup_final_file_name).", checksum (SHA1): $sha)");
+			
+			$checksums = $updraftplus->which_checksums();
+			
+			$checksum_description = '';
+			
+			foreach ($checksums as $checksum) {
+			
+				$cksum = hash_file($checksum, $backup_final_file_name);
+				$updraftplus->jobdata_set($checksum.'-db'.(('wp' == $whichdb) ? '0' : $whichdb.'0'), $cksum);
+				if ($checksum_description) $checksum_description .= ', ';
+				$checksum_description .= "$checksum: $cksum";
+			
+			}
+			
+			$updraftplus->log("Total database tables backed up: $total_tables (".basename($backup_final_file_name).", size: ".filesize($backup_final_file_name).", $checksum)");
+			
 			return basename($backup_final_file_name);
 		}
 
@@ -1738,7 +1780,7 @@ class UpdraftPlus_Backup {
 			}
 		
 			// Comment in SQL-file
-			$this->stow("\n\n# " . sprintf("Data contents of $description %s",$updraftplus->backquote($table)) . "\n\n");
+			$this->stow("\n\n# " . sprintf("Data contents of $description %s", $updraftplus->backquote($table)) . "\n\n");
 
 		}
 
@@ -1789,7 +1831,7 @@ class UpdraftPlus_Backup {
 			do {
 				@set_time_limit(UPDRAFTPLUS_SET_TIME_LIMIT);
 
-				$table_data = $this->wpdb_obj->get_results("SELECT * FROM $table $where LIMIT {$row_start}, {$row_inc}", ARRAY_A);
+				$table_data = $this->wpdb_obj->get_results("SELECT * FROM ".$updraftplus->backquote($table)." $where LIMIT {$row_start}, {$row_inc}", ARRAY_A);
 				$entries = 'INSERT INTO ' . $updraftplus->backquote($dump_as_table) . ' VALUES ';
 				//    \x08\\x09, not required
 				if($table_data) {
@@ -1925,6 +1967,15 @@ class UpdraftPlus_Backup {
 		$this->stow("# Generated: ".date("l j. F Y H:i T")."\n");
 		$this->stow("# Hostname: ".$this->dbinfo['host']."\n");
 		$this->stow("# Database: ".$updraftplus->backquote($this->dbinfo['name'])."\n");
+
+		if (!empty($this->skipped_tables)) {
+			if ('wp' == $this->whichdb) {
+				$this->stow("# Skipped tables: " . $this->skipped_tables[$this->whichdb]."\n");
+			} elseif (isset($this->skipped_tables[$this->dbinfo['name']])) {
+				$this->stow("# Skipped tables: " . $this->skipped_tables[$this->dbinfo['name']]."\n");
+			}
+		}
+		
 		$this->stow("# --------------------------------------------------------\n");
 
 		if (@constant("DB_CHARSET")) {
@@ -1989,6 +2040,8 @@ class UpdraftPlus_Backup {
 				$updraftplus->log("Entity excluded by configuration option (extension): ".basename($fullpath));
 			} elseif (!empty($this->excluded_prefixes) && $this->is_entity_excluded_by_prefix($fullpath)) {
 				$updraftplus->log("Entity excluded by configuration option (prefix): ".basename($fullpath));
+			} elseif (apply_filters('updraftplus_exclude_file', false, $fullpath)) {
+				$updraftplus->log("Entity excluded by filter: ".basename($fullpath));
 			} elseif (is_readable($fullpath)) {
 				$mtime = filemtime($fullpath);
 				$key = ($fullpath == $original_fullpath) ? ((2 == $startlevels) ? $use_path_when_storing : $this->basename($fullpath)) : $use_path_when_storing.'/'.$this->basename($fullpath);
@@ -2008,6 +2061,12 @@ class UpdraftPlus_Backup {
 				$updraftplus->log("Skip directory (UpdraftPlus backup directory): $use_path_when_storing");
 				return true;
 			}
+			
+			if (apply_filters('updraftplus_exclude_directory', false, $fullpath)) {
+				$updraftplus->log("Skip filtered directory: $use_path_when_storing");
+				return true;
+			}
+			
 			if (file_exists($fullpath.'/.donotbackup')) {
 				$updraftplus->log("Skip directory (.donotbackup file found): $use_path_when_storing");
 				return true;
@@ -2036,6 +2095,8 @@ class UpdraftPlus_Backup {
 								$updraftplus->log("Entity excluded by configuration option (extension): $use_stripped");
 							} elseif (!empty($this->excluded_prefixes) && $this->is_entity_excluded_by_prefix($e)) {
 								$updraftplus->log("Entity excluded by configuration option (prefix): $use_stripped");
+							} elseif (apply_filters('updraftplus_exclude_file', false, $deref)) {
+								$updraftplus->log("Entity excluded by filter: $use_stripped");
 							} else {
 								$mtime = filemtime($deref);
 								if ($mtime > 0 && $mtime > $if_altered_since) {
@@ -2067,6 +2128,8 @@ class UpdraftPlus_Backup {
 							$updraftplus->log("Entity excluded by configuration option (extension): $use_stripped");
 						} elseif (!empty($this->excluded_prefixes) && $this->is_entity_excluded_by_prefix($e)) {
 							$updraftplus->log("Entity excluded by configuration option (prefix): $use_stripped");
+						} elseif (apply_filters('updraftplus_exclude_file', false, $fullpath.'/'.$e)) {
+							$updraftplus->log("Entity excluded by filter: $use_stripped");
 						} else {
 							$mtime = filemtime($fullpath.'/'.$e);
 							if ($mtime > 0 && $mtime > $if_altered_since) {
@@ -2227,7 +2290,7 @@ class UpdraftPlus_Backup {
 			if (file_exists($examine_zip) && is_readable($examine_zip) && filesize($examine_zip)>0) {
 				$this->existing_zipfiles_size += filesize($examine_zip);
 				$zip = new $this->use_zip_object;
-				if (!$zip->open($examine_zip)) {
+				if (true !== $zip->open($examine_zip)) {
 					$updraftplus->log("Could not open zip file to examine (".$zip->last_error."); will remove: ".basename($examine_zip));
 					@unlink($examine_zip);
 				} else {
@@ -2979,8 +3042,19 @@ class UpdraftPlus_Backup {
 
 		$itext = ($this->index == 0) ? '' : ($this->index+1);
 		$full_path = $this->zip_basename.$itext.'.zip';
-		$sha = sha1_file($full_path.'.tmp');
-		$updraftplus->jobdata_set('sha1-'.$youwhat.$this->index, $sha);
+		
+		$checksums = $updraftplus->which_checksums();
+		
+		$checksum_description = '';
+		
+		foreach ($checksums as $checksum) {
+		
+			$cksum = hash_file($checksum, $full_path.'.tmp');
+			$updraftplus->jobdata_set($checksum.'-'.$youwhat.$this->index, $cksum);
+			if ($checksum_description) $checksum_description .= ', ';
+			$checksum_description .= "$checksum: $cksum";
+		
+		}
 
 		$next_full_path = $this->zip_basename.($this->index+2).'.zip';
 		# We touch the next zip before renaming the temporary file; this indicates that the backup for the entity is not *necessarily* finished
@@ -2993,9 +3067,10 @@ class UpdraftPlus_Backup {
 				$updraftplus->something_useful_happened();
 			}
 		}
+		
 		$kbsize = filesize($full_path)/1024;
 		$rate = round($kbsize/$timetaken, 1);
-		$updraftplus->log("Created ".$this->whichone." zip (".$this->index.") - ".round($kbsize,1)." KB in ".round($timetaken,1)." s ($rate KB/s) (SHA1 checksum: ".$sha.")");
+		$updraftplus->log("Created ".$this->whichone." zip (".$this->index.") - ".round($kbsize,1)." KB in ".round($timetaken,1)." s ($rate KB/s) (checksums: $checksum_description)");
 		$this->zip_microtime_start = microtime(true);
 
 		# No need to add $itext here - we can just delete any temporary files for this zip

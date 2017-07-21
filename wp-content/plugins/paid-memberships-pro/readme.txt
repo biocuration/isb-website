@@ -2,8 +2,8 @@
 Contributors: strangerstudios
 Tags: memberships, membership, authorize.net, ecommerce, paypal, stripe, braintree, restrict access, restrict content, directory site, payflow
 Requires at least: 4
-Tested up to: 4.7.2
-Stable tag: 1.8.13.5
+Tested up to: 4.8
+Stable tag: 1.9.2.2
 
 A revenue-generating machine for membership sites. Unlimited levels with recurring payment, protected content and member management.
 
@@ -115,6 +115,59 @@ Not sure? You can find out by doing a bit a research.
 [View All Screenshots](http://www.paidmembershipspro.com/features/screenshots/)
 
 == Changelog ==
+
+= 1.9.2.2 =
+* BUG FIX: Fixed warnings on the Network Dashboard's sites page.
+* BUG FIX: Skipping update scripts that require the Stripe library if the system doesn't support the minimum requirements for the Stripe API. This avoids warnings and errors during upgrade.
+
+= 1.9.2.1 =
+* BUG FIX: Fixed issues with activation on single sites.
+* BUG FIX: Starting PHP sessions earlier to fix issues with PayPal/PayPal Express checkouts.
+
+= 1.9.2 =
+* BUG FIX: Fixed issue where Braintree checkouts were failing with a CVV error when existing users checked out.
+* BUG FIX: Fixed issue loading the Stripe library in PHP 5.6.
+* BUG FIX: Member List CSV export was ignoring search parameter.
+* BUG FIX: Discount codes weren't being remembered during the "review" step of a PayPal Express checkout. (Thanks, Rafe Colton)
+* ENHANCEMENT/FIX: Search Filter would trigger incorrectly for REST API request by slug.
+* ENHANCEMENT/FIX: Didn't always identify MasterCard cards correctly to set the CardType with some gateways.
+* ENHANCEMENT/FIX: Some custom code or add ons (e.g. the Prorating and Auto-renewal Checkbox add ons) would sometimes break PayPal Website Payments Pro and PayPal Express subscriptions by trying to set the "Profile Start Date" longer than 1 year out. We now limit the Profile Start Date to 1 year out and try to squeeze up to 1 additional year into a trial if it's not already being used. This bug affects PayPal Standard as well, but the fix is different and not included in this release.
+* ENHANCEMENT: Tested up to WordPress 4.8.
+* ENHANCEMENT: Made countries translatable.
+* ENHANCEMENT: Improved performance via PHP $_SESSION management improvements. We now only open the session before we set session vars and close the session when we are finished with it.
+* ENHANCEMENT: Added to code to stop network activation of Paid Memberships Pro. (Thanks, Paul Barthmaier)
+
+= 1.9.1 =
+* BUG FIX: Fixed the code checking if the Stripe library is already loaded to compatability issues with other plugins bundling the Stripe API library.
+* BUG FIX: Cancel code now properly uses preg_replace when sanitizing the list of level ids to cancel.
+* FIX/ENHANCEMENT: Removed test/doc code from Stripe and Braintree libraries.
+* ENHANCEMENT: Now pausing the license nag for the first week of use and removed the "invalid" error if no key is being used.
+
+= 1.9 =
+* BUG: Fixed issue with cancelling 2Checkout recurring subscriptions. Now using the payment_transaction_id to find/cancel the sale's recurring subscription since no subscription_transaction_id is being saved.
+* BUG: Fixed issue where old membership levels were not listed correctly in the cancellation email. (Thanks, Mike from Migrating Eye)
+* BUG: Fixed issue where "custom trial" values were not saving for discount codes.
+* BUG: Fixed issue where checkouts were still processing even if there were errors with the discount code used.
+* BUG: Fixed bug where settings added via the pmpro_custom_advanced_settings were not being saved to DB unless they were prefixed with custom_.
+* BUG: Fixed other formatting issues with settings added via pmpro_custom_advanced_settings.
+* BUG: Fixed issue where the sendInvoiceEmail method of the email class was expecting $order->discount_code to be a string, but it was sometimes a discount code object. (Thanks, Bill Stoltz)
+* FEATURE: Added the pmpro_member shortcode. See the Paid Memberships Pro website for documentation.
+* ENHANCEMENT: Added pmpro_account_membership_expiration_text filter to filter the expiration text that shows ona  user's membership account page.
+* ENHANCEMENT: Updated our Stripe and Braintree libraries to use their latest versions. This update allows our gateway integrations to support PHP7 and also removes support for PHP 5.2 and 5.3.
+* ENHANCEMENT: The Braintree level compatibility check now also looks for a properly named plan.
+* ENHANCEMENT: Better error handling when trying to update plugins that update against the PMPro license server.
+* ENHANCEMENT: Improved Italian translation. (Thanks, Francesco Pezzotti)
+* ENHANCEMENT: Improved German tranlsation. (Thanks, Simon)
+* ENHANCEMENT: Added a Sweedish tranlsation. (Thanks, Mathias Persson)
+* ENHANCEMENT: Added a "Chinese/Cantonese (Hong Kong SAR China)" tranlsation. (Thanks, Kai Chan)
+
+= 1.8.13.6 =
+* BUG: Fixed bug where credit card expiration emails would be sent to users with PayPal Express orders.
+* BUG: Fixed bug when updating billing with Stripe.
+* BUG: Fixed bug where the archive/search filter was not running for logged out users.
+* ENHANCEMENT: Updated Finnish translations. (Thanks, JP Jakonen)
+* ENHANCEMENT: Added filter for modifying the order description in Stripe. (Thanks, Rafe Colton)
+
 = 1.8.13.5 =
 * BUG: Fixed notifications.php to make sure it really only checks once per day. Also updated the URL checked to notifications.paidmembershipspro.com, which runs on its own server.
 

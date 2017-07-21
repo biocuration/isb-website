@@ -68,7 +68,12 @@ function updraft_send_command(action, data, callback, options) {
 			}
 		},
 		error: function(response, status, error_code) {
-			if ('function' == typeof options.error_callback) options.error_callback(response, status, error_code);
+			if ('function' == typeof options.error_callback) {
+				options.error_callback(response, status, error_code);
+			} else {
+				console.log("updraft_send_command: error: "+status+" ("+error_code+")");
+				console.log(response);
+			}
 		},
 		dataType: 'text',
 		async: options.async
@@ -118,8 +123,8 @@ function updraft_remote_storage_tab_activation(the_method){
  * Check how many cron jobs are overdue, and display a message if it is several (as determined by the back-end)
  */
 function updraft_check_overduecrons() {
-	updraft_send_command('check_overdue_crons', function(data, response) {
-		if (response.hasOwnProperty('m')) {
+	updraft_send_command('check_overdue_crons', null, function(response) {
+		if (response && response.hasOwnProperty('m')) {
 			jQuery('#updraft-insert-admin-warning').html(response.m);
 		}
 	}, { alert_on_error: false });
@@ -142,6 +147,7 @@ function updraft_remote_storage_tabs_setup() {
 			updraft_remote_storage_tab_activation(ser);
 		}
 	});
+
 	if (anychecked > 0) {
 		jQuery('.updraftplusmethod.none').hide();
 	}
@@ -177,7 +183,7 @@ function updraft_remote_storage_tabs_setup() {
 				}
 			}
 		}
-		
+
 		if (anychecked <= 0) {
 			jQuery('.updraftplusmethod.none').fadeIn();
 		} else {
@@ -188,7 +194,6 @@ function updraft_remote_storage_tabs_setup() {
 	//Add stuff for free version
 	jQuery('.updraft_servicecheckbox:not(.multi)').change(function(){
 		var svalue = jQuery(this).attr('value');
-		
 		if (jQuery(this).is(':not(:checked)')) {
 			jQuery('.updraftplusmethod.'+svalue).hide();
 			jQuery('.updraftplusmethod.none').fadeIn();
@@ -202,18 +207,37 @@ function updraft_remote_storage_tabs_setup() {
 	
 }
 
-function updraft_remote_storage_test(method, result_callback) {
+/**
+ * Carries out a remote storage test
+ * 
+ * @param {string} method - The identifier for the remote storage
+ * @param {callback} result_callback - A callback function to be called with the result
+ * @param {string} [instance_id] - The particular instance (if any) of the remote storage to be tested (for methods supporting multiple instances)
+ */
+function updraft_remote_storage_test(method, result_callback, instance_id) {
 	
-	var method_label = jQuery('#updraft-'+method+'-test').data('method_label');
+	var $the_button;
+	var settings_selector;
+		
+	if (instance_id) {
+		$the_button = jQuery('#updraft-'+method+'-test-'+instance_id);
+		settings_selector = '.updraftplusmethod.'+method+'-'+instance_id;
+	} else {
+		$the_button = jQuery('#updraft-'+method+'-test');
+		settings_selector = '.updraftplusmethod.'+method;
+	}
 	
-	jQuery('#updraft-'+method+'-test').html(updraftlion.testing_settings.replace('%s', method_label));
+	var method_label = $the_button.data('method_label');
+	
+	$the_button.html(updraftlion.testing_settings.replace('%s', method_label));
 	
 	var data = {
 		method: method
 	};
 	
+	
 	// Add the other items to the data object. The expert mode settings are for the generic SSL options.
-	jQuery('#updraft-navtab-settings-content .updraftplusmethod.'+method+' input[data-updraft_settings_test], #updraft-navtab-settings-content .expertmode input[data-updraft_settings_test]').each(function(index, item) {
+	jQuery('#updraft-navtab-settings-content '+settings_selector+' input[data-updraft_settings_test], #updraft-navtab-settings-content .expertmode input[data-updraft_settings_test]').each(function(index, item) {
 		var item_key = jQuery(item).data('updraft_settings_test');
 		var input_type = jQuery(item).attr('type');
 		if (!item_key) { return; }
@@ -235,13 +259,13 @@ function updraft_remote_storage_test(method, result_callback) {
 		data[item_key] = value;
 	});
 	// Data from any text areas or select drop-downs
-	jQuery('#updraft-navtab-settings-content .updraftplusmethod.'+method+' textarea[data-updraft_settings_test], #updraft-navtab-settings-content .updraftplusmethod.'+method+' select[data-updraft_settings_test]').each(function(index, item) {
+	jQuery('#updraft-navtab-settings-content '+settings_selector+' textarea[data-updraft_settings_test], #updraft-navtab-settings-content '+settings_selector+' select[data-updraft_settings_test]').each(function(index, item) {
 		var item_key = jQuery(item).data('updraft_settings_test');
 		data[item_key] = jQuery(item).val();
 	});
 
 	updraft_send_command('test_storage_settings', data, function(response, status) {
-		jQuery('#updraft-'+method+'-test').html(updraftlion.test_settings.replace('%s', method_label));
+		$the_button.html(updraftlion.test_settings.replace('%s', method_label));
 		if ('undefined' !== typeof result_callback && false != result_callback) {
 			result_callback = result_callback.call(this, response, status, data);
 		}
@@ -262,6 +286,26 @@ function backupnow_whichfiles_checked(onlythesefileentities){
 	});
 // 	console.log(onlythesefileentities);
 	return onlythesefileentities;
+}
+
+/**
+ * a method to get all the selected table values from the backup now modal
+ * @param  {[String]} onlythesetableentities an empty string to append values to
+ * @return {[String]} a string that contains the values of all selected table entities and the database the belong to
+ */
+function backupnow_whichtables_checked(onlythesetableentities){
+	var send_list = false;
+	jQuery('#backupnow_database_moreoptions input[type="checkbox"]').each(function(index) {
+		if (!jQuery(this).is(':checked')) { send_list = true; return; }
+	});
+
+	onlythesetableentities = jQuery("input[name^='updraft_include_tables_']").serializeArray();
+
+	if (send_list) {
+		return onlythesetableentities;
+	} else {
+		return true;
+	}
 }
 
 function updraft_deleteallselected() {
@@ -417,7 +461,12 @@ var updraft_backupnow_nonce = '';
 var updraft_activejobslist_backupnownonce_only = 0;
 var updraft_inpage_hasbegun = 0;
 
-function updraft_backupnow_inpage_go(success_callback, onlythisfileentity, extradata) {
+function updraft_backupnow_inpage_go(success_callback, onlythisfileentity, extradata, backupnow_nodb, backupnow_nofiles, backupnow_nocloud) {
+	
+	backupnow_nodb = ('undefined' === typeof backupnow_nodb) ? 0 : backupnow_nodb;
+	backupnow_nofiles = ('undefined' === typeof backupnow_nofiles) ? 0 : backupnow_nofiles;
+	backupnow_nocloud = ('undefined' === typeof backupnow_nocloud) ? 0 : backupnow_nocloud;
+	
 	// N.B. This function should never be called on the UpdraftPlus settings page - it is assumed we are elsewhere. So, it is safe to fake the console-focussing parameter.
 	updraft_console_focussed_tab = 1;
 	updraft_inpage_success_callback = success_callback;
@@ -433,7 +482,7 @@ function updraft_backupnow_inpage_go(success_callback, onlythisfileentity, extra
 	jQuery('#updraft_inpage_backup').show();
 	updraft_activejobslist_backupnownonce_only = 1;
 	updraft_inpage_hasbegun = 0;
-	updraft_backupnow_go(0, 0, 0, onlythisfileentity, extradata, updraftlion.automaticbackupbeforeupdate);
+	updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_nocloud, onlythisfileentity, extradata, updraftlion.automaticbackupbeforeupdate, '');
 }
 
 function updraft_activejobs_update(force) {
@@ -588,9 +637,9 @@ function updraft_activejobs_update(force) {
 				var log_append_array = resp.u;
 				if (log_append_array.nonce == updraft_poplog_log_nonce) {
 					updraft_poplog_log_pointer = log_append_array.pointer;
-					if (log_append_array.html != null && log_append_array.html != '') {
+					if (log_append_array.log != null && log_append_array.log != '') {
 						var oldscroll = jQuery('#updraft-poplog').scrollTop();
-						jQuery('#updraft-poplog-content').append(log_append_array.html);
+						jQuery('#updraft-poplog-content').append(log_append_array.log);
 						if (updraft_poplog_lastscroll == oldscroll || updraft_poplog_lastscroll == -1) {
 							jQuery('#updraft-poplog').scrollTop(jQuery('#updraft-poplog-content').prop("scrollHeight"));
 							updraft_poplog_lastscroll = jQuery('#updraft-poplog').scrollTop();
@@ -605,10 +654,19 @@ function updraft_activejobs_update(force) {
 	}, { json_parse: false, type: 'GET' });
 }
 
+/**
+ * Opens a dialog window showing the requested (or latest) log file, plus an option to download it
+ * 
+ * @param String [backup_nonce] - the nonce of the log to display, or empty for the latest one
+ */
 function updraft_popuplog(backup_nonce) { 
 		
-		jQuery('#updraft-poplog').dialog("option", "title", 'log.'+backup_nonce+'.txt');
-		jQuery('#updraft-poplog-content').html('<em>log.'+backup_nonce+'.txt ...</em>');
+		var loading_message = updraftlion.loading_log_file;
+		
+		if (backup_nonce) { loading_message += ' (log.'+backup_nonce+'.txt)'; }
+	
+		jQuery('#updraft-poplog').dialog("option", "title", loading_message);
+		jQuery('#updraft-poplog-content').html('<em>'+loading_message+' ...</em> ');
 		jQuery('#updraft-poplog').dialog("open");
 		
 		updraft_send_command('get_log', backup_nonce, function(resp) {
@@ -630,7 +688,12 @@ function updraft_popuplog(backup_nonce) {
 			
 			updraft_poplog_lastscroll = -1;
 			
-		}, { type: 'GET' });
+		}, { type: 'GET', timeout: 60000, error_callback: function(response, status, error_code) {
+			var msg = (status == error_code) ? error_code : error_code+" ("+status+")";
+			jQuery('#updraft-poplog-content').append(msg);
+			console.log(response);
+		}}
+	);
 }
 
 function updraft_showlastbackup() {
@@ -812,8 +875,10 @@ function updraft_check_same_times() {
 }
 
 // Visit the site in the background every 3.5 minutes - ensures that backups can progress if you've got the UD settings page open
-setInterval(function() {jQuery.get(updraft_siteurl+'/wp-cron.php');}, 210000);
-
+if ('undefined' !== typeof updraft_siteurl) {
+	setInterval(function() {jQuery.get(updraft_siteurl+'/wp-cron.php');}, 210000);
+}
+	
 function updraft_activejobs_delete(jobid) {
 	updraft_send_command('activejobs_delete', jobid, function(resp) {
 		if (resp.ok == 'Y') {
@@ -867,8 +932,94 @@ function updraftplus_deletefromserver(timestamp, type, findex) {
 	};
 	updraft_send_command('updraft_download_backup', pdata, null, { action: 'updraft_download_backup', nonce: updraft_download_nonce, nonce_key: '_wpnonce' });
 }
+
 function updraftplus_downloadstage2(timestamp, type, findex) {
 	location.href=ajaxurl+'?_wpnonce='+updraft_download_nonce+'&timestamp='+timestamp+'&type='+type+'&stage=2&findex='+findex+'&action=updraft_download_backup';
+}
+
+function updraftplus_show_contents(timestamp, type, findex) {
+	var modal_content = '<div id="updraft_zip_files_container" class="hidden-in-updraftcentral" style="clear:left;"><div id="updraft_zip_info_container"><p><span id="updraft_zip_path_text">' + updraftlion.zip_file_contents_info + '</span> - <span id="updraft_zip_size_text"></span></p>'+updraftlion.browse_download_link+'</div><div id="updraft_zip_files_jstree_container"><input type="search" id="zip_files_jstree_search" name="zip_files_jstree_search" placeholder="' + updraftlion.search + '"><div id="updraft_zip_files_jstree"></div></div></div>';
+
+	updraft_html_modal(modal_content, updraftlion.zip_file_contents, 780, 500);
+
+	zip_files_jstree('zipbrowser', timestamp, type, findex);
+}
+
+/**
+ * Creates the jstree and makes a call to the backend to dynamically get the tree nodes
+ * 
+ * @param {string} path - Optional path parameter if not passed in then Root of zip will be used
+ * @param {bool} drop_directory - Optional parameter that if passed will remove the last directory level from the path, used for if you want to move up the directory tree from the root node
+ */
+function zip_files_jstree(entity, timestamp, type, findex) {
+
+	jQuery('#updraft_zip_files_jstree').jstree({
+		"core": {
+			"multiple": false,
+			"data": function (nodeid, callback) {
+				updraft_send_command('get_jstree_directory_nodes', {entity:entity, node:nodeid, timestamp:timestamp, type:type, findex:findex}, function(response) {
+					if (response.hasOwnProperty('error')) {
+						alert(response.error);
+					} else {
+						callback.call(this, response.nodes);
+					}
+				});
+			},
+			"error": function(error) {
+				alert(error);
+				console.log(error);
+			},
+		},
+		"search" : {
+			"show_only_matches": true
+		},
+		"plugins" : ["search", "sort"],
+	});
+
+	// Update modal title once tree loads
+	jQuery('#updraft_zip_files_jstree').on('ready.jstree', function(e, data) {
+		jQuery('#updraft-iframe-modal').dialog('option', 'title', updraftlion.zip_file_contents + ': ' + data.instance.get_node('#').children[0])
+	});
+
+	// Search function for jstree, this will hide nodes that don't match the search
+	var timeout = false;
+	jQuery('#zip_files_jstree_search').keyup(function () {
+		if (timeout) { clearTimeout(timeout); }
+		timeout = setTimeout(function () {
+			var value = jQuery('#zip_files_jstree_search').val();
+			jQuery('#updraft_zip_files_jstree').jstree(true).search(value);
+		}, 250);
+	});
+
+	// Detect change on the tree and update the input that has been marked as editing
+	jQuery('#updraft_zip_files_jstree').on("changed.jstree", function (e, data) {
+		jQuery('#updraft_zip_path_text').text(data.node.li_attr.path);
+		
+		if (data.node.li_attr.size) {
+			jQuery('#updraft_zip_size_text').text(data.node.li_attr.size);
+			jQuery('#updraft_zip_download_item').show();
+		} else {
+			jQuery('#updraft_zip_size_text').text('');
+			jQuery('#updraft_zip_download_item').hide();	
+		}
+	});
+
+	jQuery('#updraft_zip_download_item').click(function(event) {
+		
+		event.preventDefault();
+		
+		var path = jQuery('#updraft_zip_path_text').text();
+
+		updraft_send_command('get_zipfile_download', {path:path, timestamp:timestamp, type:type, findex:findex}, function(response) {
+			if (response.hasOwnProperty('error')) {
+				alert(response.error);
+			} else if (response.hasOwnProperty('path')) {
+				location.href=ajaxurl+'?_wpnonce='+updraft_download_nonce+'&timestamp='+timestamp+'&type='+type+'&stage=2&findex='+findex+'&filepath='+response.path+'&action=updraft_download_backup';
+			} else {
+				alert(updraftlion.download_timeout);
+			}
+		});
+	});
 }
 
 function updraft_downloader(base, backup_timestamp, what, whicharea, set_contents, prettydate, async) {
@@ -1073,8 +1224,9 @@ function updraft_downloader_status_update(base, backup_timestamp, what, findex, 
 				var file_ready_actions = updraftlion.fileready+' '+ updraftlion.actions+': \
 				<button type="button" onclick="updraftplus_downloadstage2(\''+backup_timestamp+'\', \''+what+'\', \''+findex+'\')\">'+updraftlion.downloadtocomputer+'</button> \
 				<button id="uddownloaddelete_'+backup_timestamp+'_'+what+'" type="button" onclick="updraftplus_deletefromserver(\''+backup_timestamp+'\', \''+what+'\', \''+findex+'\')\">'+updraftlion.deletefromserver+'</button>';
+
 				if (resp.hasOwnProperty('can_show_contents') && resp.can_show_contents) {
-					file_ready_actions += ' <button type="button" onclick="updraftplus_show_contents(\''+backup_timestamp+'\', \''+what+'\', \''+findex+'\')\">'+updraftlion.show_contents+'</button>';
+					file_ready_actions += ' <button type="button" onclick="updraftplus_show_contents(\''+backup_timestamp+'\', \''+what+'\', \''+findex+'\')\">'+updraftlion.browse_contents+'</button>';
 				}
 				jQuery(stid_selector+' .raw').html(file_ready_actions);
 			}
@@ -1089,7 +1241,17 @@ function updraft_downloader_status_update(base, backup_timestamp, what, findex, 
 	return cancel_repeat;
 }
 
-function updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_nocloud, onlythesefileentities, extradata, label) {
+/**
+ * function that sets up a ajax call to start a backup
+ * @param  {[Bool]} backupnow_nodb         a boolean value to check if the database should be backed up
+ * @param  {[Bool]} backupnow_nofiles      a boolean value to check if any files should be backed up
+ * @param  {[Bool]} backupnow_nocloud      a boolean value to check if the backup should be uploaded to cloud storage
+ * @param  {[String]} onlythesefileentities  a csv list of file entities to be backed up
+ * @param  {[String]} onlythesetableentities a csv list of table entities to be backed up
+ * @param  {[Array]} extradata              any extra data to be added
+ * @param  {[String]} label                  a optional label to be added to a backup
+ */
+function updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_nocloud, onlythesefileentities, extradata, label, onlythesetableentities) {
 
 	jQuery('#updraft_backup_started').html('<em>'+updraftlion.requeststart+'</em>').slideDown('');
 	setTimeout(function() {jQuery('#updraft_backup_started').fadeOut('slow');}, 75000);
@@ -1104,6 +1266,10 @@ function updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_noclo
 	
 	if ('' != onlythesefileentities) {
 		params.onlythisfileentity = onlythesefileentities;
+	}
+
+	if ('' != onlythesetableentities) {
+		params.onlythesetableentities = onlythesetableentities;
 	}
 	
 	updraft_send_command('backupnow', params, function(resp) {
@@ -1152,12 +1318,16 @@ jQuery(document).ready(function($){
 	$(".updraft_webdav_settings").on("change keyup paste", function(){
 		
 		var updraft_webdav_settings = [];
+		var instance_id = "";
 		$('.updraft_webdav_settings').each(function(index, item) {
 			
 			var id = $(item).attr('id');
 			
-			if (id && 'updraft_webdav_settings_' == id.substring(0, 24)) {
-				var which_one = id.substring(24);
+			if (id && 'updraft_webdav_' == id.substring(0, 15)) {
+				var which_one = id.substring(15);
+				id_split = which_one.split('_');
+				which_one = id_split[0];
+				instance_id = id_split[1];
 				updraft_webdav_settings[which_one] = this.value;
 			}
 		});
@@ -1191,7 +1361,7 @@ jQuery(document).ready(function($){
 		
 		updraft_webdav_url = updraft_webdav_settings['webdav'] + updraft_webdav_settings['user'] + colon + updraft_webdav_settings['pass'] + host +encodeURIComponent(updraft_webdav_settings['host']) + colon_port + updraft_webdav_settings['port'] + slash + updraft_webdav_settings['path'];
 		
-		$('#updraft_webdav_settings_url').val(updraft_webdav_url);
+		$('#updraft_webdav_url_' + instance_id).val(updraft_webdav_url);
 	});
 	
 	$('#updraft-navtab-backups-content').on('click', '.updraft_existing_backups .updraft_existing_backups_row', function(e) {
@@ -1205,10 +1375,10 @@ jQuery(document).ready(function($){
 	});
 	
 	jQuery('#updraft-navtab-settings-content .updraftplusmethod').on('click', 'button.updraft-test-button', function() {
+
 		var method = jQuery(this).data('method');
+		var instance_id = jQuery(this).data('instance_id');
 		updraft_remote_storage_test(method, function(response, status, data) {
-console.log('THARG');
-console.log(response);
 			if ('sftp' != method) { return false; }
 			
 			if (data.hasOwnProperty('scp') && data.scp) {
@@ -1219,7 +1389,7 @@ console.log(response);
 			
 			return true;
 			
-		});
+		}, instance_id);
 	});
 	
 	$('#updraft-navtab-settings-content select.updraft_interval, #updraft-navtab-settings-content select.updraft_interval_database').change(function() {
@@ -1229,6 +1399,11 @@ console.log(response);
 	$('#backupnow_includefiles_showmoreoptions').click(function(e) {
 		e.preventDefault();
 		$('#backupnow_includefiles_moreoptions').toggle();
+	});
+
+	$('#backupnow_database_showmoreoptions').click(function(e) {
+		e.preventDefault();
+		$('#backupnow_database_moreoptions').toggle();
 	});
 	
 	$('#updraft-navtab-backups-content a.updraft_diskspaceused_update').click(function(e) {
@@ -1371,7 +1546,7 @@ console.log(response);
 		e.preventDefault();
 		updraft_send_command('reset_site_id', null, function(response) {
 			jQuery('#updraft_show_sid').html(response);
-		});
+		}, { json_parse: false });
 	});
 	
 	jQuery("#updraft-navtab-settings-content form input:not('.udignorechange'), #updraft-navtab-settings-content form select").change(function(e){
@@ -1620,6 +1795,18 @@ console.log(response);
 		var backupnow_nofiles = jQuery('#backupnow_includefiles').is(':checked') ? 0 : 1;
 		var backupnow_nocloud = jQuery('#backupnow_includecloud').is(':checked') ? 0 : 1;
 		
+		var onlythesetableentities = backupnow_whichtables_checked('');
+
+		if ('' == onlythesetableentities && 0 == backupnow_nodb) {
+			alert(updraftlion.notableschosen);
+			jQuery('#backupnow_includefiles_moreoptions').show();
+			return;
+		}
+
+		if (typeof onlythesetableentities === 'boolean') {
+			onlythesetableentities = null;
+		}
+
 		var onlythesefileentities = backupnow_whichfiles_checked('');
 
 		if ('' == onlythesefileentities && 0 == backupnow_nofiles) {
@@ -1641,7 +1828,7 @@ console.log(response);
 			});
 		}, 1700);
 		
-		updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_nocloud, onlythesefileentities, '', jQuery('#backupnow_label').val());
+		updraft_backupnow_go(backupnow_nodb, backupnow_nofiles, backupnow_nocloud, onlythesefileentities, '', jQuery('#backupnow_label').val(), onlythesetableentities);
 	};
 	backupnow_modal_buttons[updraftlion.cancel] = function() { jQuery(this).dialog("close"); };
 	
@@ -1875,7 +2062,30 @@ console.log(response);
 		});
 
 		uploader.bind('Error', function(up, error) {
-			alert(updraftlion.uploaderr+' (code '+error.code+') : '+error.message+' '+updraftlion.makesure);
+
+			console.log(error);
+			
+			var err_makesure;
+			if(error.code == "-200"){
+				err_makesure = '\n'+updraftlion.makesure2;
+			} else {
+				err_makesure = updraftlion.makesure;
+			}
+			
+			var msg = updraftlion.uploaderr+' (code '+error.code+') : '+error.message;
+			
+			if (error.hasOwnProperty('status') && error.status) {
+				msg += ' ('+updraftlion.http_code+' '+error.status+')';
+			}
+			
+			if (error.hasOwnProperty('response')) {
+				console.log('UpdraftPlus: plupload error: '+error.response);
+				if (error.response.length < 100) msg += ' '+updraftlion.error+' '+error.response+'\n';
+			}
+			
+			msg += ' '+err_makesure;
+			
+			alert(msg);
 		});
 
 		// a file was uploaded 
@@ -2213,7 +2423,12 @@ jQuery(document).ready(function($){
 		});
 		
 		uploader.bind('Error', function(up, error) {
-			alert(updraftlion.uploaderr+' (code '+error.code+") : "+error.message+" "+updraftlion.makesure);
+			if(error.code == "-200"){
+				err_makesure = '\n'+updraftlion.makesure2;
+			} else {
+				err_makesure = updraftlion.makesure;
+			}
+			alert(updraftlion.uploaderr+' (code '+error.code+") : "+error.message+" "+err_makesure);
 		});
 		
 		// a file was uploaded 
@@ -2261,10 +2476,11 @@ jQuery(document).ready(function($){
 		e.preventDefault();
 		$.blockUI({ message: '<div style="margin: 8px; font-size:150%;"><img src="'+updraftlion.ud_url+'/images/udlogo-rotating.gif" height="80" width="80" style="padding-bottom:10px;"><br>'+updraftlion.saving+'</div>'});
 		
-		var form_data = gather_updraft_settings();
+		var form_data = gather_updraft_settings('string');
 		// POST the settings back to the AJAX handler
 		updraft_send_command('savesettings', {
 			settings: form_data,
+			updraftplus_version: updraftlion.updraftplus_version
 		}, function(response) {
 			// Add page updates etc based on response
 			updraft_handle_page_updates(response);
@@ -2305,46 +2521,20 @@ jQuery(document).ready(function($){
 	});
 	
 	function export_settings() {
-		var form_data = gather_updraft_settings().split('&');
-		var input = {};
-		
-		//Function to convert serialized settings to the correct format ready for json encoding
-		$.each(form_data, function(key, value) {
-		var data = value.split('=');
-
-			var name = decodeURIComponent(data[0]);
-			if (name.indexOf("option_page") >= 0 || name.indexOf("_wpnonce") >= 0 || name.indexOf("_wp_http_referer") >= 0){
-				return true;
-			}
-			
-			if (name.indexOf("[") >= 0){
-				var extract = name.match(/\[(.*)\]/).pop();
-				name = name.substring(0, name.indexOf('['));
-				//some options either have a blank or 0 as their nested array key and need to be delt with differently 
-				if (!extract || extract === '0'){
-					if(typeof input[name] === "undefined") input[name] = [];
-					input[name].push(decodeURIComponent(data[1]));
-				}else{
-					if(typeof input[name] === "undefined") input[name] = {};
-					input[name][extract] = decodeURIComponent(data[1]);
-				}
-			} else {
-				input[name] = decodeURIComponent(data[1]);   
-			}
-		});
+		var form_data = gather_updraft_settings('object');
 		
 		var date_now = new Date();
 		
 		form_data = JSON.stringify({
 			// Indicate the last time the format changed - i.e. do not update this unless there is a format change
-			version: '1.12.19',
+			version: '1.12.40',
 			epoch_date: date_now.getTime(),
 			local_date: date_now.toLocaleString(),
 			network_site_url: updraftlion.network_site_url,
-			data: input
+			data: form_data
 		});
 		
-		//Attach this data to an anchor on page
+		// Attach this data to an anchor on page
 		var link = document.body.appendChild(document.createElement('a'));
 		link.setAttribute('download', 'updraftplus-settings.json');
 		link.setAttribute('style', "display:none;");
@@ -2357,46 +2547,71 @@ jQuery(document).ready(function($){
 		var data = decodeURIComponent(updraft_file_result);
 
 		data = JSON.parse(data);
-
+		
 		if (window.confirm(updraftlion.importing_data_from + ' ' + data['network_site_url'] + "\n" + updraftlion.exported_on + ' ' + data['local_date'] + "\n" + updraftlion.continue_import)) {
 			// GET the settings back to the AJAX handler
 			data = JSON.stringify(data['data']);
 			updraft_send_command('importsettings', {
 				settings: data,
+				updraftplus_version: updraftlion.updraftplus_version,
 			}, function(response) {
-				updraft_handle_page_updates(response);
-				// Prevent the user being told they have unsaved settings
-				updraft_settings_form_changed = false;
-				// Add page updates etc based on response
-				location.replace(updraftlion.updraft_settings_url);
+				var resp = updraft_handle_page_updates(response);
+				if (!resp.hasOwnProperty('saved') || resp.saved) {
+					// Prevent the user being told they have unsaved settings
+					updraft_settings_form_changed = false;
+					// Add page updates etc based on response
+					location.replace(updraftlion.updraft_settings_url);
+				} else {
+					$.unblockUI();
+					if (resp.hasOwnProperty('error_message') && resp.error_message) {
+						alert(resp.error_message);
+					}
+				}
 			}, { action: 'updraft_importsettings', nonce: updraftplus_settings_nonce, json_parse: false } );
 		} else {
 			$.unblockUI();
 		}
 	}
+	
+	/**
+	 * Retrieve the current settings from the DOM
+	 *
+	 * @param {string} [output_format='string'] - the output format; valid values are 'string' or 'object'
+	 *
+	 * @returns String|Object
+	 */
+	function gather_updraft_settings(output_format) {
+
+		var form_data = '';
+		var output_format = ('undefined' === typeof output_format) ? 'string' : output_format;
+		
+		if ('object' == output_format) {
+			// Excluding the unnecessary 'action' input avoids triggering a very mis-conceived mod_security rule seen on one user's site
+			form_data = $("#updraft-navtab-settings-content form input[name!='action'][name!='option_page'][name!='_wpnonce'][name!='_wp_http_referer'], #updraft-navtab-settings-content form textarea, #updraft-navtab-settings-content form select, #updraft-navtab-settings-content form input[type=checkbox]").serializeJSON({checkboxUncheckedValue: '0', useIntKeysAsArrayIndex: true});
+		} else {
+			// Excluding the unnecessary 'action' input avoids triggering a very mis-conceived mod_security rule seen on one user's site
+			form_data = $("#updraft-navtab-settings-content form input[name!='action'], #updraft-navtab-settings-content form textarea, #updraft-navtab-settings-content form select").serialize();
 			
-	function gather_updraft_settings() {
-		// Excluding the unnecessary 'action' input avoids triggering a very mis-conceived mod_security rule seen on one user's site
-		var form_data = $("#updraft-navtab-settings-content form input[name!='action'], #updraft-navtab-settings-content form textarea, #updraft-navtab-settings-content form select").serialize();
-		
-		//include unchecked checkboxes. user filter to only include unchecked boxes.
-		$.each($('#updraft-navtab-settings-content form input[type=checkbox]')
-		.filter(function(idx){
-			return $(this).prop('checked') == false
-		}),
-			function(idx, el){
-				//attach matched element names to the form_data with chosen value.
-				var empty_val = '0';
-				form_data += '&' + $(el).attr('name') + '=' + empty_val;
-			}
-		);
-		
+			//include unchecked checkboxes. user filter to only include unchecked boxes.
+			$.each($('#updraft-navtab-settings-content form input[type=checkbox]')
+			.filter(function(idx){
+				return $(this).prop('checked') == false
+			}),
+				function(idx, el){
+					//attach matched element names to the form_data with chosen value.
+					var empty_val = '0';
+					form_data += '&' + $(el).attr('name') + '=' + empty_val;
+				}
+			);
+		}
+
 		return form_data;
 	}
 	
 	/**
 	 * Method to parse the response from the backend and update the page with the returned content or display error messages if failed
-	 * @param  {[JSON]} response a JSON encoded response containing information to update the settings page with
+	 * @param String - the JSON-encoded response containing information to update the settings page with
+	 * @return Object - the decoded response (empty if decoding was not successful)
 	 */
 	function updraft_handle_page_updates(response) {
 					
@@ -2415,7 +2630,7 @@ jQuery(document).ready(function($){
 			console.log(response);
 			alert(updraftlion.jsonnotunderstood);
 			$.unblockUI();
-			return;
+			return {};
 		}
 		
 		if (resp.hasOwnProperty('changed')) {
@@ -2460,6 +2675,8 @@ jQuery(document).ready(function($){
 		$('#updraft_backup_started').before(resp.messages);
 	
 		$('#next-backup-table-inner').html(resp.scheduled);
+		
+		return resp;
 		
 	}
 

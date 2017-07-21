@@ -25,8 +25,8 @@ function printAllPluginOptionsFormTabs( $aAllOptions, $var_prefix = '', $iOption
 
 	<ul class="nav nav-tabs">
 	<?php foreach ( $aAllOptions as $sOptionSection ) : ?>
-		<li class="<?php echo $sOptionSection['section_primary'] ? 'active' : '' ?>">
-			<a href="#<?php echo $sOptionSection['section_slug'] ?>" data-toggle="tab" ><?php echo $sOptionSection['section_title_short']; ?></a>
+		<li class="<?php echo $sOptionSection['primary'] ? 'active' : '' ?>">
+			<a href="#<?php echo $sOptionSection['slug'] ?>" data-toggle="tab" ><?php echo $sOptionSection['title_short']; ?></a>
 		</li>
 	<?php endforeach; ?>
 	</ul>
@@ -34,18 +34,19 @@ function printAllPluginOptionsFormTabs( $aAllOptions, $var_prefix = '', $iOption
 	<div class="tab-content">
 	<?php foreach ( $aAllOptions as $sOptionSection ) : ?>
 
-		<div class="tab-pane fade <?php echo $sOptionSection['section_primary'] ? 'active in primary_section' : 'non_primary_section'; ?>"
-			 id="<?php echo $sOptionSection['section_slug'] ?>">
-			<div class="row option_section_row <?php echo $sOptionSection['section_primary'] ? 'primary_section' : 'non_primary_section'; ?>"
-				 id="row-<?php echo $sOptionSection['section_slug']; ?>">
+		<div class="tab-pane fade <?php echo $sOptionSection['primary'] ? 'active in primary_section' : 'non_primary_section'; ?>"
+			 id="<?php echo $sOptionSection['slug'] ?>">
+			<div class="row option_section_row <?php echo $sOptionSection['primary'] ? 'primary_section' : 'non_primary_section'; ?>"
+				 id="row-<?php echo $sOptionSection['slug']; ?>">
 				<div class="span9">
 					<fieldset>
-						<legend><?php echo $sOptionSection['section_title']; ?></legend>
+						<legend><?php echo $sOptionSection['title']; ?>
+                        </legend>
 
-						<?php if ( !empty( $sOptionSection['section_summary'] ) ) : ?>
+						<?php if ( !empty( $sOptionSection['summary'] ) ) : ?>
 							<div class="row row_section_summary">
 								<div class="span9">
-									<?php foreach( $sOptionSection['section_summary'] as $sItem ) : ?>
+									<?php foreach( $sOptionSection['summary'] as $sItem ) : ?>
 										<p class="noselect"><?php echo $sItem; ?></p>
 									<?php endforeach; ?>
 								</div>
@@ -53,7 +54,7 @@ function printAllPluginOptionsFormTabs( $aAllOptions, $var_prefix = '', $iOption
 						<?php endif; ?>
 
 
-						<?php foreach( $sOptionSection['section_options'] as $nKeyRow => $aOption ) : ?>
+						<?php foreach( $sOptionSection['options'] as $nKeyRow => $aOption ) : ?>
 							<div class="row row_number_<?php echo $nKeyRow; ?>">
 								<?php getPluginOptionSpan( $aOption, $iOptionWidth, $var_prefix ); ?>
 							</div>
@@ -138,13 +139,6 @@ function getPluginOptionSpan( $aOption, $nSpanSize, $var_prefix = '' ) {
 								</select>
 
 							<?php elseif ( $sOptionType == 'array' ) : ?>
-
-								<p><?php echo $aOption['summary']; ?></p>
-								<textarea name="<?php echo $var_prefix.$sOptionKey; ?>" id="<?php echo $var_prefix.$sOptionKey; ?>"
-										  placeholder="<?php echo $aOption['value']; ?>" rows="<?php echo $aOption['rows']; ?>"
-										  class="span5" ><?php echo $aOption['value']; ?></textarea>
-
-							<?php elseif ( $sOptionType == 'yubikey_unique_keys' ) : ?>
 
 								<p><?php echo $aOption['summary']; ?></p>
 								<textarea name="<?php echo $var_prefix.$sOptionKey; ?>" id="<?php echo $var_prefix.$sOptionKey; ?>"

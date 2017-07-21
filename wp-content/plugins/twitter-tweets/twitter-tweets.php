@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: Twitter Tweets
- * Version: 1.5.9
+ * Version: 1.6.0
  * Description: Display your latest tweets on WordPress blog from your Twitter account.
  * Author: WebLizar
  * Author URI: http://www.weblizar.com/

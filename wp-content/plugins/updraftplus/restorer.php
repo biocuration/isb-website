@@ -1624,6 +1624,10 @@ ENDHERE;
 					$this->old_table_prefix = $matches[1];
 					$updraftplus->log(__('Old table prefix:', 'updraftplus').' '.$this->old_table_prefix, 'notice-restore', 'old-table-prefix');
 					$updraftplus->log("Old table prefix: ".$this->old_table_prefix);
+				} elseif (preg_match('/^\# Skipped tables: (.*)$/', $buffer, $matches)) { 
+					$skipped_tables = explode(',', $matches[1]); 
+					$updraftplus->log(__('Skipped tables:', 'updraftplus').' '.$matches[1], 'notice-restore', 'skipped-tables');
+					$updraftplus->log("Skipped tables: ".$matches[1]);
 				} elseif ($gathering_siteinfo && preg_match('/^\# Site info: (\S+)$/', $buffer, $matches)) {
 					if ('end' == $matches[1]) {
 						$gathering_siteinfo = false;

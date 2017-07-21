@@ -115,7 +115,7 @@ class UpdraftPlus_Commands {
 	}
 	
 	public function get_log($job_id = '') {
-	
+
 		if (false === ($updraftplus_admin = $this->_load_ud_admin())) return new WP_Error('no_updraftplus');
 	
 		if (!UpdraftPlus_Options::user_can_manage()) return new WP_Error('updraftplus_permission_denied');
@@ -188,6 +188,7 @@ class UpdraftPlus_Commands {
 		return array(
 			'settings' => $output,
 			'meta' => apply_filters('updraftplus_get_settings_meta', array()),
+			'updraftplus_version' => $updraftplus->version,
 		);
 		
 	}

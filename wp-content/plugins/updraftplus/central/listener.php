@@ -145,6 +145,8 @@ class UpdraftPlus_UpdraftCentral_Listener {
 		
 		$this->current_udrpc = $ud_rpc;
 		
+		do_action('updraftcentral_listener_pre_udrpc_action', $command, $command_class, $data, $extra_info);
+		
 		// Despatch
 		$msg = apply_filters('updraftcentral_listener_udrpc_action', call_user_func(array($command_class, $command), $data, $extra_info), $command_class, $class_prefix, $command, $data, $extra_info);
 	

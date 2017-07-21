@@ -1,10 +1,10 @@
 === Twitter ===
 Contributors: weblizar
 Donate link: http://www.weblizar.com/
-Tags: twitter, twitter follow, show latest tweets, twitter share, twitter share button, tweets, twitter widget, twitter shortcode, twitter sidebar, twitter feed, twitter plugin
+Tags: twitter, twitter widget, twitter wordpress plugin,twitter feed
 Requires at least: 3.8
-Tested up to: 4.6.1
-Stable tag: 1.5.9
+Tested up to: 4.7.4
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,7 @@ Please use WordPress support forum to ask any query regarding any issue.
 
 For more information, see Weblizar(http://wwww.weblizar.com/).
 
+= 1.6.0 - version update
 = 1.5.9 - update
 = 1.5.8 10/10/16 =
 * plugin version u

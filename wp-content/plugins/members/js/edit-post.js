@@ -48,7 +48,7 @@
 		attributes : function() {
 			return {
 				'id'          : 'members-cp-section-' + this.model.get( 'name' ),
-				'class'       : 'members-cp-section,
+				'class'       : 'members-cp-section',
 				'aria-hidden' : ! this.model.get( 'selected' )
 			};
 		},

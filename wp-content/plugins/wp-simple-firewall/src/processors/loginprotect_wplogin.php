@@ -10,7 +10,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	 */
 	public function run() {
 		/** @var ICWP_WPSF_FeatureHandler_LoginProtect $oFO */
-		$oFO = $this->getFeatureOptions();
+		$oFO = $this->getFeature();
 
 		if ( !$oFO->getIsCustomLoginPathEnabled() || $this->checkForPluginConflict() || $this->checkForUnsupportedConfiguration() ) {
 			return;
@@ -44,7 +44,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 
 		$sCustomLoginPath = $this->getLoginPath();
 
-		$oWp = $this->loadWpFunctionsProcessor();
+		$oWp = $this->loadWpFunctions();
 		if ( $oWp->isMultisite() ) {
 			$sMessage = _wpsf__( 'Your login URL is unchanged because the Rename WP Login feature is not currently supported on WPMS.' );
 			$bConflicted = true;
@@ -105,11 +105,11 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 
 		// Next block option is where it's a direct attempt to access the old login URL
 		if ( !$bDoBlock ) {
-			$aRequestParts = $this->loadDataProcessor()->getRequestUriParts();
-			$sPath = isset( $aRequestParts[ 'path' ] ) ? trim( $aRequestParts[ 'path' ], '/' ) : '';
-			$sPath = preg_replace( '/(\/){2,}/', '/', $sPath );
+			$sPath = trim( $this->loadDataProcessor()->getRequestPath(), '/' );
 			$aPossiblePaths = array(
 				trim( home_url( 'wp-login.php', 'relative' ), '/' ),
+				trim( home_url( 'wp-signup.php', 'relative' ), '/' ),
+				trim( site_url( 'wp-signup.php', 'relative' ), '/' ),
 				// trim( site_url( 'wp-login.php', 'relative' ), '/' ), our own filters in run() scuttle us here so we have to build it manually
 				trim( rtrim( site_url( '', 'relative' ), '/' ).'/wp-login.php', '/' ),
 				trim( home_url( 'login', 'relative' ), '/' ),
@@ -121,7 +121,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 
 		if ( $bDoBlock ) {
 			// We now black mark this IP
-//			add_filter( $this->getFeatureOptions()->doPluginPrefix( 'ip_black_mark' ), '__return_true' );
+//			add_filter( $this->getFeature()->prefix( 'ip_black_mark' ), '__return_true' );
 			$this->doWpLoginFailedRedirect404();
 		}
 	}
@@ -131,7 +131,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	 */
 	protected function getLoginPath() {
 		/** @var ICWP_WPSF_FeatureHandler_LoginProtect $oFO */
-		$oFO = $this->getFeatureOptions();
+		$oFO = $this->getFeature();
 		return $oFO->getCustomLoginPath();
 	}
 
@@ -171,16 +171,16 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	 * @return string|void
 	 */
 	public function aLoadWpLogin() {
-		if ( $this->loadWpFunctionsProcessor()->getIsLoginUrl() ) {
+		if ( $this->loadWpFunctions()->getIsLoginUrl() ) {
 			@require_once( ABSPATH . 'wp-login.php' );
 			die();
 		}
 	}
 
 	public function aLoginFormAction() {
-		if ( !$this->loadWpFunctionsProcessor()->getIsLoginUrl() ) {
+		if ( !$this->loadWpFunctions()->getIsLoginUrl() ) {
 			// We now black mark this IP
-//			add_filter( $this->getFeatureOptions()->doPluginPrefix( 'ip_black_mark' ), '__return_true' );
+//			add_filter( $this->getFeature()->prefix( 'ip_black_mark' ), '__return_true' );
 			$this->doWpLoginFailedRedirect404();
 			die();
 		}
@@ -208,7 +208,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 		if ( !empty( $sRedirectUrl ) ) {
 			$sRedirectUrl = esc_url( $sRedirectUrl );
 			if ( @parse_url( $sRedirectUrl ) !== false ) {
-				$this->loadWpFunctionsProcessor()->doRedirect( $sRedirectUrl, array(), false );
+				$this->loadWpFunctions()->doRedirect( $sRedirectUrl, array(), false );
 			}
 		}
 
@@ -216,7 +216,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 		$sRequestUrl = $oDp->FetchServer( 'REQUEST_URI' );
 		$oDp->doSendApache404(
 			$sRequestUrl,
-			$this->loadWpFunctionsProcessor()->getHomeUrl()
+			$this->loadWpFunctions()->getHomeUrl()
 		);
 	}
 

@@ -8,17 +8,17 @@
 	margin-left: 0;
 }
 #pluginlogo_32 {
-	background: url("../images/pluginlogo_32x32.png") no-repeat 0 3px transparent;
+	background: url("../images/pluginlogo_32x32.png?ver=1.0.0") no-repeat 0 3px transparent;
 }
 .pluginlogo_16 {
-	background: url("../images/pluginlogo_16x16.png") no-repeat 0 3px transparent;
+	background: url("../images/pluginlogo_16x16.png?ver=1.0.0") no-repeat 0 3px transparent;
 }
 .page-header .header-icon32 {
 	display: inline-block;
 	float: left;
 	height: 40px;
 	vertical-align: middle;
-	width: 48px;
+	width: 42px;
 }
 .plugin_update_message {
 	color: #dd3333;
@@ -322,6 +322,9 @@ label input[type=checkbox] {
 	background-color: rgba(255, 255, 255, 0.8);
 	box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
+.feature-summary-blocks .summary-state:hover {
+	box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
 .feature-summary-blocks .summary-state p {
 	font-size: 12px;
 	margin: 0;
@@ -335,7 +338,7 @@ label input[type=checkbox] {
 	}
 }
 .feature-summary-blocks .state-on a {
-	color: rgba( 82, 196, 45, 0.85 );
+	color: #8dc63f;
 }
 .feature-summary-blocks .state-off a {
 	color: rgba( 239, 141, 49, 0.85 );

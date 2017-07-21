@@ -31,21 +31,35 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 				break;
 		}
 	}
+
+	/**
+	 * This method overrides the parent method and lists the supported features of this remote storage option.
+	 * @return Array - an array of supported features (any features not mentioned are asuumed to not be supported)
+	 */
+	public function get_supported_features() {
+		// This options format is handled via only accessing options via $this->get_options()
+		return array('multi_options');
+	}
 	
-	public function get_opts() {
-		global $updraftplus;
-		$opts = $updraftplus->get_job_option('updraft_updraftvault');
-		if (!is_array($opts)) $opts = array('token' => '', 'email' => '', 'quota' => -1);
-		return $opts;
+	/**
+	 * Retrieve default options for this remote storage module.
+	 * @return Array - an array of options
+	 */
+	public function get_default_options() {
+		return array(
+			'token' => '',
+			'email' => '',
+			'quota' => -1
+		);
 	}
 
-	public function get_credentials() {
-		return array('updraft_updraftvault');
-	}
-
+	/**
+	 * Retrieve specific options for this remote storage module
+	 * @return Array - an array of options
+	 */
 	protected function vault_set_config($config) {
-		$config['whoweare'] = 'Updraft Vault';
-		$config['whoweare_long'] = __('Updraft Vault', 'updraftplus');
+		$config['whoweare'] = 'UpdraftVault';
+		$config['whoweare_long'] = __('UpdraftVault', 'updraftplus');
 		$config['key'] = 'updraftvault';
 		$this->vault_config = $config;
 	}
@@ -59,7 +73,6 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 	public function get_config() {
 
 		global $updraftplus;
-
 		// Have we already done this?
 		if (!empty($this->vault_config)) return $this->vault_config;
 
@@ -78,7 +91,7 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		$config['key'] = 'updraftvault';
 
 		// Get the stored options
-		$opts = $this->get_opts();
+		$opts = $this->get_options();
 
 		if (!is_array($opts) || empty($opts['token']) || empty($opts['email'])) {
 			// Not connected
@@ -108,7 +121,7 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		}
 
 		// Use SSL to prevent snooping
-		if (empty($getconfig) || !is_array($getconfig)) {
+		if (empty($getconfig) || !is_array($getconfig) || empty($getconfig['accesskey'])) {
 			$getconfig = wp_remote_post($this->vault_mothership.'/?udm_action=vault_getconfig', array(
 				'timeout' => 25,
 				'body' => $post_body,
@@ -116,7 +129,6 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		}
 		
 		$details_retrieved = false;
-
 		if (!is_wp_error($getconfig) && false != $getconfig && isset($getconfig['body'])) {
 
 			$response_code = wp_remote_retrieve_response_code($getconfig);
@@ -149,7 +161,7 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 						$opts['quota'] = $response['quota'];
 						$config['quota'] = $response['quota'];
 					}
-					UpdraftPlus_Options::update_updraft_option('updraft_updraftvault', $opts);
+					$this->set_options($opts,true);
 					$config['accesskey'] = $response['accesskey'];
 					$config['secretkey'] = $response['secretkey'];
 					$config['path'] = $response['path'];
@@ -212,7 +224,6 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		}
 
 		$config['server_side_encryption'] = 'AES256';
-
 		$this->vault_config = $config;
 		$updraftplus->jobdata_set('updraftvault_config', $config);
 		set_transient('udvault_last_config', $config, 86400*7);
@@ -238,19 +249,27 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		return $message;
 	}
 
-	public function config_print() {
+	/**
+	 * This over-rides the method in UpdraftPlus_BackupModule and stops the hidden version field being output. This is so that blank settings are not returned and saved to the database as this storage option outputs no other fields.
+	 * @return [boolean] - return false so that the hidden version field is not output
+	 */
+	public function print_shared_settings_fields() {
+		return false;
+	}
 
+	public function config_print() {
 		// Used to decide whether we can afford HTTP calls or not, or would prefer to rely on cached data
 		$this->vault_in_config_print = true;
 
 		$shop_url_base = $this->get_url();
 		$get_more_quota = $this->get_url('get_more_quota');
 
-		$vault_settings = UpdraftPlus_Options::get_updraft_option('updraft_updraftvault');
+		$vault_settings = $this->get_options();
 		$connected = (is_array($vault_settings) && !empty($vault_settings['token']) && !empty($vault_settings['email'])) ? true : false;
+		$classes = $this->get_css_classes();
 		?>
 
-		<tr class="updraftplusmethod updraftvault">
+		<tr class="<?php echo $classes; ?>">
 			<th><img id="vaultlogo" src="<?php echo esc_attr(UPDRAFTPLUS_URL.'/images/updraftvault-150.png');?>" alt="UpdraftPlus Vault" width="150" height="116"></th>
 			<td valign="top" id="updraftvault_settings_cell">
 			<?php
@@ -343,7 +362,7 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 
 	private function connected_html($vault_settings = false) {
 		if (!is_array($vault_settings)) {
-			$vault_settings = UpdraftPlus_Options::get_updraft_option('updraft_updraftvault');
+			$vault_settings = $this->get_options();
 		}
 		if (!is_array($vault_settings) || empty($vault_settings['token']) || empty($vault_settings['email'])) return '<p>'.__('You are <strong>not connected</strong> to UpdraftPlus Vault.', 'updraftplus').'</p>';
 
@@ -465,7 +484,7 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 			$results = array('html' => htmlspecialchars($config['error_message']), 'connected' => 0);
 		} else {
 			// Now read the opts
-			$opts = $this->get_opts();
+			$opts = $this->get_options();
 			$results = array('html' => $this->connected_html($opts), 'connected' => 1);
 		}
 		if ($echo_results) {
@@ -473,12 +492,13 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 		} else {
 			return $results;
 		}
+		
 	}
 
 	// This method also gets called directly, so don't add code that assumes that it's definitely an AJAX situation
 	public function ajax_vault_disconnect($echo_results = true) {
-		$vault_settings = UpdraftPlus_Options::get_updraft_option('updraft_updraftvault');
-		UpdraftPlus_Options::update_updraft_option('updraft_updraftvault', array());
+		$vault_settings = $this->get_options();
+		$this->set_options(array(),true);
 		global $updraftplus;
 
 		delete_transient('udvault_last_config');
@@ -576,14 +596,14 @@ class UpdraftPlus_BackupModule_updraftvault extends UpdraftPlus_BackupModule_s3 
 			case 'connected':
 				if (!empty($response['token'])) {
 					// Store it
-					$vault_settings = UpdraftPlus_Options::get_updraft_option('updraft_updraftvault');
+					$vault_settings = $this->get_options();
 					if (!is_array($vault_settings)) $vault_settings = array();
 					$vault_settings['email'] = $email;
 					$vault_settings['token'] = (string)$response['token'];
 					$vault_settings['quota'] = -1;
 					unset($vault_settings['last_config']);
 					if (isset($response['quota'])) $vault_settings['quota'] = $response['quota'];
-					UpdraftPlus_Options::update_updraft_option('updraft_updraftvault', $vault_settings);
+					$this->set_options($vault_settings,true);
 					if (!empty($response['config']) && is_array($response['config'])) {
 						if (!empty($response['config']['accesskey'])) {
 							$this->vault_set_config($response['config']);

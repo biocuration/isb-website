@@ -1,29 +1,39 @@
-=== Shield WordPress Security ===
+=== Shield Security ===
 Contributors: paultgoodchild
 Donate link: http://icwp.io/q
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
-Tags: security, shield, firewall, rename wp login, two-factor authentication, audit trail, dos, brute force, whitelist, blacklist, GASP, spam, automatic updates, ithemes, wordfence, better wp security, all-in-one, lockdown, login, hack
+Tags: security, shield, firewall, two-factor authentication, 2FA, audit trail, brute force, whitelist, blacklist, spam, ithemes, wordfence, better wp security, all-in-one, lockdown, login, hack
 Requires at least: 3.5.0
-Tested up to: 4.7
-Stable tag: 5.6.0
+Tested up to: 4.8
+Stable tag: 5.10.1
 
-The Most Comprehensive and Highest-Rated Security System for WordPress (formerly the WordPress Simple Firewall).
+Protect your website, your reputation, and your customers for free with Shield Security, the most powerful security system for WordPress
 
 == Description ==
 
-> <strong>All-Over WordPress Security Protection</strong><br />
-> Shield is the **most powerful [WordPress protection system](http://icwp.io/wpsf09) available**.
-Designed for maximum compatibility with your WordPress sites, it provides a super-simple platform for both beginner
-and advanced users.
+> <strong>Don't Leave Your Site At Risk</strong><br />
+> If your site is vulnerable to attack, you're putting your business and your reputation at serious risk. Getting hacked can mean you're locked out of your site, client data stolen, your website defaced or offline, and Google *will* penalise you.
 >
-> NO more nasty site lockouts! Experience the difference that a great security plugin makes,
-alongside common-sense security design.
+> Why take the risk?
 >
-> <strong>Premium Support For Businesses</strong><br />
-> Shield, combined [with iControlWP](http://icwp.io/shld8), offers professionals and businesses a powerful management platform
-> for website security, automated backups, and business continuity and disaster recovery. Can you afford not to protect your
-> business's most important online assets?
+> Download and install Shield now for FREE so that you have the most powerful WordPress security system working for you and protecting your site.
+>
+> <strong>Shield + iControlWP</strong><br />
+> If you have multiple sites, then Shield [combined with iControlWP](http://icwp.io/shld8), takes the pain out of managing your websites, and covers your security, daily backup (and restore), and updating plugins/themes
+
+All the wonderful features of how we protect you and your site are set out below in detail, but there are a few things about us, that you should know first:
+
+* We're on a mission to liberate people who manage websites from unnecessarily repetitive work, and by 2022 we want to
+be saving our clients over 62.5 million hours per year (and we'd love you to join us in our quest)
+* We have three rules that apply to everything we do, and you'll see these when you use our products or contact us for help:
+
+1.  We make everything as simple and easy-to-use as possible (and no simpler!).
+1.  We're reliable – we make sure our products do what they promise.
+1.  We take ownership for resolving problems - we will solve the problem, or point you towards the solution.
+
+So, read on for the detail, or start protecting yourself, *your clients and your clients' customers* immediately by
+downloading and installing Shield now
 
 = What makes the Shield different? =
 
@@ -298,17 +308,69 @@ Possible options are: network_admin, administrator, editor, author, contributor,
 
 == Changelog ==
 
-= 5.6.0 Latest Point Release =
-*Released: 13th December, 2016*
+= 5.10.1 Latest Point Release =
+*Released: 30th June, 2017*
 
-* **(v.0)**  ADDED:			Option to disable anonymous Rest API access. WordPress v4.7+ only. Note that if another plugin
-							or service authenticates the request it will be honoured, whether anonymous or not.
+* **(v.1)**  IMPROVEMENTS:	Further preparation for [Shield Central](http://icwp.io/83) release.
+
+= 5.10 Series =
+*Released: 19th June, 2017*
+
+* **(v.0)**  ADDED:			More in-depth reporting and statistics gathering - options for reports will be made available
+ 							in a later release.
+
+= 5.9 Series =
+*Released: 31st May, 2017*
+
+* **(v.0)**  ADDED:			Help Videos for 1 or 2 modules. More to come and just testing format and uptake.
+* **(v.0)**  ADDED:			Special handling for WP Fastest Cache.
+* **(v.0)**  CHANGE:		Configuration for automatic self-update for the Shield plugin has been removed.
+* **(v.0)**  CHANGE:		No longer remove an existing user session when accessed from another IP address. Just redirect.
+							Protects existing, legitimate sessions from being forcefully expired.
+* **(v.0)**  FIXED:			Danish string translation.
+
+= 5.8 Series =
+*Released: 7th April, 2017*
+
+* **(v.2)**  IMPROVEMENTS:	The core file scanner now works more reliably for international WordPress installations.
+* **(v.2)**  CHANGE:		Login Cooldown now uses only the flag file as an indicator of login times.
+* **(v.2)**  CHANGE:		Filter to allow for changing the two factor timeout period, from 5 (minutes). Filter: `icwp-wpsf-login_intent_timeout`
+* **(v.2)**  CHANGE:		Changed timeout for two-factor authentication email to 5 minutes to account for slower email-sending providers.
+* **(v.2)**  CHANGE:		Added further clarification to the Login Notification email indicating that two-factor authentication was pending.
+* **(v.1)**  FIXED:			Fixed a couple of bugs with the Login Authentication Portal, for certain edge cases.
+* **(v.0)**  CHANGE:		Major overhaul of [Two-Factor / Multi-Factor Login Authentication](http://icwp.io/87).
+* **(v.0)**  CHANGE:		[Introduction of Login Authentication Portal](http://icwp.io/86) for improved Multi-Factor Authentication.
+* **(v.0)**  ADDED:			Option to choose between two-factor or multi-factor login authentication.
+* **(v.0)**  ADDED:			Administrators can remove Google Authenticator from another user's profile.
+* **(v.0)**  ADDED:			When Security Admin is active, only Security Admins may remove Google Authenticator from other admins.
+* **(v.0)**  CHANGE:		Yubikey login authentication is now managed directly from the User Profile screen, as with Google Authenticator.
+* **(v.0)**  CHANGE:		Email-based login authentication no longer uses a separate database table.
+* **(v.0)**  FIXED:			Core file scanning now adequately handles Windows/Unix new lines during scan.
+* **(v.0)**  FIXED:			Certain crons weren't setup correctly.
+* **(v.0)**  IMPROVEMENTS:	Further preparation for [Shield Central](http://icwp.io/83) release.
+
+= 5.7 Series =
+
+* **(v.3)**  FIXED:			Attempt to improve the Google Authenticator flow for more reliable activation.
+* **(v.2)**  IMPROVEMENTS:	More admin notices when saving Google Authenticator settings.
+* **(v.2)**  IMPROVEMENTS:	Further preparation for [Shield Central](http://icwp.io/83) release.
+* **(v.1)**  Skipped
+* **(v.0)**  ADDED:			Shortcode for displaying plugin badge in pages/posts.
+* **(v.0)**  CHANGE:		Enabled JS eval() for the Content Security Policy by default.
+* **(v.0)**  IMPROVEMENTS:	Replace YAML configuration files with JSON.
+* **(v.0)**  IMPROVEMENTS:	Preparation for [Shield Central](http://icwp.io/83) release.
+* **(v.0)**  IMPROVEMENTS:	Security Admin notices are more refined and optimized.
+* **(v.0)**  IMPROVEMENTS:	Removed unnecessary files/code.
 
 = 5.6 Series =
 
+* **(v.2)**  CHANGE:		Fix an instance where the hidden Login URL would be leaded.
+* **(v.1)**  CHANGE:		Replaying of Yubikey one-time-passwords is no longer permitted.
+* **(v.1)**  ADDED:			Filter for login form GASP fields.
+* **(v.1)**  ADDED:			Filter for comment form GASP fields.
+* **(v.1)**  CHANGE:		Improved compatibility of HTTP Headers with WP Super Cache.
 * **(v.0)**  ADDED:			Option to disable anonymous Rest API access. WordPress v4.7+ only. Note that if another plugin
 							or service authenticates the request it will be honoured, whether anonymous or not.
-
 = 5.5 Series =
 
 * **(v.6)**  IMPROVED:		Fixed possible leak of the Login URL from the 'Hide WP Login URL' feature.

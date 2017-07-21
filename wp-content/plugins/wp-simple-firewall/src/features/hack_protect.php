@@ -13,8 +13,8 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_HackProtect', false ) ):
 		 */
 		protected function loadStrings_SectionTitles( $aOptionsParams ) {
 
-			$sSectionSlug = $aOptionsParams['section_slug'];
-			switch( $aOptionsParams['section_slug'] ) {
+			$sSectionSlug = $aOptionsParams['slug'];
+			switch( $sSectionSlug ) {
 
 				case 'section_enable_plugin_feature_hack_protection_tools' :
 					$sTitle = sprintf( _wpsf__( 'Enable Plugin Feature: %s' ), $this->getMainFeatureName() );
@@ -46,9 +46,9 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_HackProtect', false ) ):
 				default:
 					throw new Exception( sprintf( 'A section slug was defined but with no associated strings. Slug: "%s".', $sSectionSlug ) );
 			}
-			$aOptionsParams['section_title'] = $sTitle;
-			$aOptionsParams['section_summary'] = ( isset( $aSummary ) && is_array( $aSummary ) ) ? $aSummary : array();
-			$aOptionsParams['section_title_short'] = $sTitleShort;
+			$aOptionsParams['title'] = $sTitle;
+			$aOptionsParams['summary'] = ( isset( $aSummary ) && is_array( $aSummary ) ) ? $aSummary : array();
+			$aOptionsParams['title_short'] = $sTitleShort;
 			return $aOptionsParams;
 		}
 

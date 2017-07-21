@@ -153,7 +153,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 					'locale'	=> $this->getLocale( true )
 				);
 				$sQueryUrl = add_query_arg( $aQueryArgs, 'https://api.wordpress.org/core/checksums/1.0/' );
-				$sResponse = $this->loadFileSystemProcessor()->getUrlContent( $sQueryUrl );
+				$sResponse = $this->loadFS()->getUrlContent( $sQueryUrl );
 				if ( !empty( $sResponse ) ) {
 					$aDecodedResponse = json_decode( trim( $sResponse ), true );
 					if ( is_array( $aDecodedResponse ) && isset( $aDecodedResponse['checksums'] ) && is_array( $aDecodedResponse['checksums'] ) ) {
@@ -165,10 +165,11 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		}
 
 		/**
+		 * @param string $sPath
 		 * @return string
 		 */
-		public function getUrl_WpAdmin() {
-			return get_admin_url();
+		public function getUrl_WpAdmin( $sPath = '' ) {
+			return get_admin_url( null, $sPath );
 		}
 
 		/**
@@ -349,6 +350,21 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		}
 
 		/**
+		 * @param stdClass|string $mItem
+		 * @param string          $sContext from plugin|theme
+		 * @return string
+		 */
+		public function getFileFromAutomaticUpdateItem( $mItem, $sContext = 'plugin' ) {
+			if ( is_object( $mItem ) && isset( $mItem->{$sContext} ) )  { // WP 3.8.2+
+				$mItem = $mItem->{$sContext};
+			}
+			else if ( !is_string( $mItem ) ) { // WP pre-3.8.2
+				$mItem = '';
+			}
+			return $mItem;
+		}
+
+		/**
 		 * @return array
 		 */
 		public function getThemes() {
@@ -502,6 +518,10 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 			return $oUpdater->should_update( 'plugin', $mPluginItem, WP_PLUGIN_DIR );
 		}
 
+		public function redirectHere() {
+			$this->doRedirect( $this->loadDataProcessor()->getRequestUri() );
+		}
+
 		/**
 		 * @param array $aQueryParams
 		 */
@@ -537,7 +557,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 					return;
 				}
 				else {
-					$oDp->setCookie( 'icwp-isredirect', 'yes', 7 );
+					$oDp->setCookie( 'icwp-isredirect', 'yes', 2 );
 				}
 			}
 
@@ -948,6 +968,13 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 			if ( !defined( 'DONOTCACHEPAGE' ) ) {
 				define( 'DONOTCACHEPAGE', true );
 			}
+			// WP Fastest Cache
+			if ( isset( $GLOBALS[ 'wp_fastest_cache' ] ) and is_object( $GLOBALS[ 'wp_fastest_cache' ] )
+				&& method_exists( $GLOBALS[ 'wp_fastest_cache' ], 'deleteCache' )
+				&& is_callable( array( $GLOBALS[ 'wp_fastest_cache' ], 'deleteCache' ) )
+			) {
+				$GLOBALS[ 'wp_fastest_cache' ]->deleteCache(); //WpFastestCache
+			}
 			return DONOTCACHEPAGE;
 		}
 
@@ -970,7 +997,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @param array $aLoginUrlParams
 		 */
 		public function forceUserRelogin( $aLoginUrlParams = array() ) {
-			$this->loadWpUsersProcessor()->forceUserRelogin( $aLoginUrlParams );
+			$this->loadWpUsers()->forceUserRelogin( $aLoginUrlParams );
 		}
 
 		/**
@@ -978,7 +1005,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return null|WP_User
 		 */
 		public function getCurrentWpUser() {
-			return $this->loadWpUsersProcessor()->getCurrentWpUser();
+			return $this->loadWpUsers()->getCurrentWpUser();
 		}
 
 		/**
@@ -986,7 +1013,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return integer
 		 */
 		public function getCurrentUserLevel() {
-			return $this->loadWpUsersProcessor()->getCurrentUserLevel();
+			return $this->loadWpUsers()->getCurrentUserLevel();
 		}
 
 		/**
@@ -995,7 +1022,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return WP_User|null
 		 */
 		public function getUserById( $nId ) {
-			return $this->loadWpUsersProcessor()->getUserById( $nId );
+			return $this->loadWpUsers()->getUserById( $nId );
 		}
 
 		/**
@@ -1004,7 +1031,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return bool|WP_User
 		 */
 		public function getUserByUsername( $sUsername ) {
-			return $this->loadWpUsersProcessor()->getUserByUsername( $sUsername );
+			return $this->loadWpUsers()->getUserByUsername( $sUsername );
 		}
 
 		/**
@@ -1014,15 +1041,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return bool|string
 		 */
 		public function getUserMeta( $sKey, $nId = null ) {
-			return $this->loadWpUsersProcessor()->getUserMeta( $sKey, $nId );
-		}
-
-		/**
-		 * @deprecated
-		 * @param string $sRedirectUrl
-		 */
-		public function logoutUser( $sRedirectUrl = '' ) {
-			$this->loadWpUsersProcessor()->logoutUser( $sRedirectUrl );
+			return $this->loadWpUsers()->getUserMeta( $sKey, $nId );
 		}
 
 		/**
@@ -1035,7 +1054,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return boolean
 		 */
 		public function updateUserMeta( $sKey, $mValue, $nId = null ) {
-			return $this->loadWpUsersProcessor()->updateUserMeta( $sKey, $mValue, $nId );
+			return $this->loadWpUsers()->updateUserMeta( $sKey, $mValue, $nId );
 		}
 
 		/**
@@ -1044,7 +1063,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		 * @return bool
 		 */
 		public function setUserLoggedIn( $sUsername ) {
-			return $this->loadWpUsersProcessor()->setUserLoggedIn( $sUsername );
+			return $this->loadWpUsers()->setUserLoggedIn( $sUsername );
 		}
 
 		/**

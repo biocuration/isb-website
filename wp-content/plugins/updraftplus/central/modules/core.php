@@ -12,6 +12,154 @@ if (!defined('UPDRAFTPLUS_DIR')) die('No access.');
 
 class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 
+	/**
+	 * Validates the credentials entered by the user
+	 *
+	 * @param $creds - an array of filesystem credentials
+	 *
+	 * @return array $result - 	An array containing the result of 
+	 *							the validation process.
+	 */
+	public function validate_credentials($creds) {
+		
+		try {
+			
+			$entity = $creds['entity'];
+			if (isset($creds['filesystem_credentials'])) {
+				parse_str($creds['filesystem_credentials'], $filesystem_credentials);
+				if (is_array($filesystem_credentials)) {
+					foreach ($filesystem_credentials as $key => $value) {
+						// Put them into $_POST, which is where request_filesystem_credentials() checks for them.
+						$_POST[$key] = $value;
+					}
+				}
+			}
+			
+			// Include the needed WP Core file(s)
+			// template.php needed for submit_button() which is called by request_filesystem_credentials()
+			$this->_admin_include('file.php', 'template.php');
+			
+			//Directory entities that we currently need permissions
+			//to update.
+			$entity_directories = array(
+				'plugins' => WP_PLUGIN_DIR,
+				'themes' => WP_CONTENT_DIR.'/themes',
+				'core' => untrailingslashit(ABSPATH)
+			);
+			
+			$url = wp_nonce_url(site_url());
+			$directory = $entity_directories[$entity];
+
+			//Check if credentials are valid and have sufficient
+			//privileges to create and delete (e.g. write)
+			$credentials = request_filesystem_credentials($url, '', false, $directory);
+			if (WP_Filesystem($credentials, $directory)) {
+				
+				global $wp_filesystem;
+				$path = $entity_directories[$entity].'/.updraftcentral';
+				
+				if (!$wp_filesystem->put_contents($path, '', 0644)) {
+					$result = array('error' => true, 'message' => 'failed_credentials', 'values' => array());
+				} else {
+					$wp_filesystem->delete($path);
+					$result = array('error' => false, 'message' => 'credentials_ok', 'values' => array());
+				}
+				
+			} else {
+				$result = array('error' => true, 'message' => 'failed_credentials', 'values' => array());
+			}
+			
+		} catch(Exception $e) {
+			$result = array('error' => true, 'message' => $e->getMessage(), 'values' => array());
+		}
+		
+		return $this->_response($result);
+	}
+
+	/**
+	 * Gets the FileSystem Credentials
+	 *
+	 * Extract the needed filesystem credentials (permissions) to be used 
+	 * to update/upgrade the plugins, themes and the WP core.
+	 *
+	 * @return array $result - An array containing the creds form and some flags
+	 *                         to determine whether we need to extract the creds 
+	 *						  manually from the user.
+	 */
+	public function get_credentials() {
+		
+		try {
+			
+			//Check whether user has enough permission to update entities
+			if (!current_user_can('update_plugins') && !current_user_can('update_themes') && !current_user_can('update_core')) return $this->_generic_error_response('updates_permission_denied');
+			
+			//Include the needed WP Core file(s)
+			$this->_admin_include('file.php', 'template.php');
+			
+			//A container that will hold the state (in this case, either true or false) of 
+			//each directory entities (plugins, themes, core) that will be used to determine
+			//whether or not there's a need to show a form that will ask the user for their credentials
+			//manually.
+			$request_filesystem_credentials = array();
+			
+			//A container for the filesystem credentials form if applicable.
+			$filesystem_form = '';
+			
+			//Directory entities that we currently need permissions
+			//to update.
+			$check_fs = array(
+				'plugins' => WP_PLUGIN_DIR,
+				'themes' => WP_CONTENT_DIR.'/themes',
+				'core' => untrailingslashit(ABSPATH)
+			);
+			
+			//Here, we're looping through each entities and find output whether
+			//we have sufficient permissions to update objects belonging to them.
+			foreach ($check_fs as $entity => $dir) {
+				
+				//We're determining which method to use when updating
+				//the files in the filesystem.
+				$filesystem_method = get_filesystem_method(array(), $dir);
+				
+				//Buffering the output to pull the actual credentials form 
+				//currently being used by this WP instance if no sufficient permissions
+				//is found.
+				$url = wp_nonce_url(site_url());
+				
+				ob_start();
+				$filesystem_credentials_are_stored = request_filesystem_credentials($url, $filesystem_method);
+				$form = strip_tags(ob_get_contents(), '<div><h2><p><input><label><fieldset><legend><span><em>');
+				
+				if (!empty($form)) {
+					$filesystem_form = $form;
+				}
+				ob_end_clean();
+
+				//Save the state whether or not there's a need to show the
+				//credentials form to the user.
+				$request_filesystem_credentials[$entity] = ($filesystem_method !== 'direct' && !$filesystem_credentials_are_stored);
+			}
+			
+			//Wrapping the credentials info before passing it back
+			//to the client issuing the request.
+			$result = array(
+				'request_filesystem_credentials' => $request_filesystem_credentials,
+				'filesystem_form' => $filesystem_form
+			);
+			
+		} catch(Exception $e) {
+			$result = array('error' => true, 'message' => $e->getMessage(), 'values' => array());
+		}
+		
+		return $this->_response($result);
+	}
+
+	/**
+	 * Fetches a browser-usable URL which will automatically log the user in to the site
+	 *
+	 * @param String $redirect_to - the URL to got to after logging in
+	 * @param Array $extra_info - valid keys are user_id, which should be a numeric user ID to log in as.
+	*/
 	public function get_login_url($redirect_to, $extra_info) {
 		if (is_array($extra_info) && !empty($extra_info['user_id']) && is_numeric($extra_info['user_id'])) {
 		

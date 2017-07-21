@@ -29,6 +29,10 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 			if ( empty( $nUserId ) ) {
 				$nUserId = $this->getCurrentWpUserId();
 			}
+			else if ( $nUserId instanceof WP_User ){
+				$nUserId = $nUserId->ID;
+			}
+
 			$bSuccess = false;
 			if ( $nUserId > 0 ) {
 				$bSuccess = delete_user_meta( $nUserId, $sKey );
@@ -41,7 +45,7 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 		 */
 		public function forceUserRelogin( $aLoginUrlParams = array() ) {
 			$this->logoutUser();
-			$this->loadWpFunctionsProcessor()->redirectToLogin( $aLoginUrlParams );
+			$this->loadWpFunctions()->redirectToLogin( $aLoginUrlParams );
 		}
 
 		/**
@@ -104,7 +108,7 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 				return false;
 			}
 
-			if ( version_compare( $this->loadWpFunctionsProcessor()->getWordpressVersion(), '2.8.0', '<' ) ) {
+			if ( version_compare( $this->loadWpFunctions()->getWordpressVersion(), '2.8.0', '<' ) ) {
 				$oUser = get_userdatabylogin( $sUsername );
 			}
 			else {
@@ -119,7 +123,7 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 		 * @return WP_User|null
 		 */
 		public function getUserById( $nId ) {
-			if ( version_compare( $this->loadWpFunctionsProcessor()->getWordpressVersion(), '2.8.0', '<' ) || !function_exists( 'get_user_by' ) ) {
+			if ( version_compare( $this->loadWpFunctions()->getWordpressVersion(), '2.8.0', '<' ) || !function_exists( 'get_user_by' ) ) {
 				return null;
 			}
 			return get_user_by( 'id', $nId );
@@ -133,6 +137,9 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 		public function getUserMeta( $sKey, $nUserId = null ) {
 			if ( empty( $nUserId ) ) {
 				$nUserId = $this->getCurrentWpUserId();
+			}
+			else if ( $nUserId instanceof WP_User ){
+				$nUserId = $nUserId->ID;
 			}
 
 			$mResult = false;
@@ -168,10 +175,20 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 		}
 
 		/**
-		 * @param string $sRedirectUrl
+		 * Fires the WordPress logout functions.  If $bQuiet is true, it'll manually
+		 * call the WordPress logout code, so as not to fire any other logout actions
+		 *
+		 * We might want to be "quiet" so as not to fire out own action hooks.
+		 * @param bool $bQuiet
 		 */
-		public function logoutUser( $sRedirectUrl = '' ) {
-			empty( $sRedirectUrl ) ? wp_logout() : wp_logout_url( $sRedirectUrl );
+		public function logoutUser( $bQuiet = false ) {
+			if ( $bQuiet ) {
+				wp_destroy_current_session();
+				wp_clear_auth_cookie();
+			}
+			else {
+				wp_logout();
+			}
 		}
 
 		/**
@@ -179,12 +196,15 @@ if ( !class_exists( 'ICWP_WPSF_WpUsers', false ) ):
 		 *
 		 * @param string $sKey
 		 * @param mixed $mValue
-		 * @param integer $nUserId		-user ID
+		 * @param WP_User|int $nUserId		-user ID
 		 * @return boolean
 		 */
 		public function updateUserMeta( $sKey, $mValue, $nUserId = null ) {
 			if ( empty( $nUserId ) ) {
 				$nUserId = $this->getCurrentWpUserId();
+			}
+			else if ( $nUserId instanceof WP_User ){
+				$nUserId = $nUserId->ID;
 			}
 
 			$bSuccess = false;

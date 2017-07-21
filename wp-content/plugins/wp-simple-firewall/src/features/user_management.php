@@ -7,7 +7,7 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 	class ICWP_WPSF_FeatureHandler_UserManagement extends ICWP_WPSF_FeatureHandler_BaseWpsf {
 
 		protected function doExecuteProcessor() {
-			if ( ! apply_filters( $this->doPluginPrefix( 'visitor_is_whitelisted' ), false ) ) {
+			if ( ! apply_filters( $this->prefix( 'visitor_is_whitelisted' ), false ) ) {
 				parent::doExecuteProcessor();
 			}
 		}
@@ -45,7 +45,7 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 			$oProcessor = $this->getProcessor();
 			$aActiveSessions = $this->getIsMainFeatureEnabled() ? $oProcessor->getActiveUserSessionRecords() : array();
 
-			$oWp = $this->loadWpFunctionsProcessor();
+			$oWp = $this->loadWpFunctions();
 			$sTimeFormat = $oWp->getTimeFormat();
 			$sDateFormat = $oWp->getDateFormat();
 			foreach( $aActiveSessions as &$aSession ) {
@@ -77,14 +77,21 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 		}
 
 		/**
+		 * @return string
+		 */
+		public function getUserSessionsTableName() {
+			return $this->prefix( $this->getDefinition( 'user_sessions_table_name' ), '_' );
+		}
+
+		/**
 		 * @param array $aOptionsParams
 		 * @return array
 		 * @throws Exception
 		 */
 		protected function loadStrings_SectionTitles( $aOptionsParams ) {
 
-			$sSectionSlug = $aOptionsParams['section_slug'];
-			switch( $aOptionsParams['section_slug'] ) {
+			$sSectionSlug = $aOptionsParams['slug'];
+			switch( $sSectionSlug ) {
 
 				case 'section_enable_plugin_feature_user_accounts_management' :
 					$sTitle = sprintf( _wpsf__( 'Enable Plugin Feature: %s' ), $this->getMainFeatureName() );
@@ -134,9 +141,9 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 				default:
 					throw new Exception( sprintf( 'A section slug was defined but with no associated strings. Slug: "%s".', $sSectionSlug ) );
 			}
-			$aOptionsParams['section_title'] = $sTitle;
-			$aOptionsParams['section_summary'] = ( isset( $aSummary ) && is_array( $aSummary ) ) ? $aSummary : array();
-			$aOptionsParams['section_title_short'] = $sTitleShort;
+			$aOptionsParams['title'] = $sTitle;
+			$aOptionsParams['summary'] = ( isset( $aSummary ) && is_array( $aSummary ) ) ? $aSummary : array();
+			$aOptionsParams['title_short'] = $sTitleShort;
 			return $aOptionsParams;
 		}
 
@@ -166,36 +173,36 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 					$sName = _wpsf__( 'Admin Login Notification Email' );
 					$sSummary = _wpsf__( 'Send An Notification Email When Administrator Logs In' );
 					$sDescription = _wpsf__( 'If you would like to be notified every time an administrator user logs into this WordPress site, enter a notification email address.' )
-									.'<br />'._wpsf__( 'No email address - No Notification.' );
+						.'<br />'._wpsf__( 'No email address - No Notification.' );
 					break;
 
 				case 'session_timeout_interval' :
 					$sName = _wpsf__( 'Session Timeout' );
 					$sSummary = _wpsf__( 'Specify How Many Days After Login To Automatically Force Re-Login' );
 					$sDescription = _wpsf__( 'WordPress default is 2 days, or 14 days if you check the "Remember Me" box.' )
-									.'<br />'. sprintf( _wpsf__( 'This cannot be less than %s.' ), '"<strong>1</strong>"' )
-									.'<br />'. sprintf( _wpsf__( 'Default: %s.' ), '"<strong>'.$this->getOptionsVo()->getOptDefault('session_timeout_interval').'</strong>"' );
+						.'<br />'. sprintf( _wpsf__( 'This cannot be less than %s.' ), '"<strong>1</strong>"' )
+						.'<br />'. sprintf( _wpsf__( 'Default: %s.' ), '"<strong>'.$this->getOptionsVo()->getOptDefault('session_timeout_interval').'</strong>"' );
 					break;
 
 				case 'session_idle_timeout_interval' :
 					$sName = _wpsf__( 'Idle Timeout' );
 					$sSummary = _wpsf__( 'Specify How Many Hours After Inactivity To Automatically Logout User' );
 					$sDescription = _wpsf__( 'If the user is inactive for the number of hours specified, they will be forcefully logged out next time they return.' )
-									.'<br />'. sprintf( _wpsf__( 'Set to %s to turn off this option.' ), '"<strong>0</strong>"' );
+						.'<br />'. sprintf( _wpsf__( 'Set to %s to turn off this option.' ), '"<strong>0</strong>"' );
 					break;
 
 				case 'session_lock_location' :
 					$sName = _wpsf__( 'Lock To Location' );
 					$sSummary = _wpsf__( 'Locks A User Session To IP address' );
 					$sDescription = _wpsf__( 'When selected, a session is restricted to the same IP address as when the user logged in.' )
-									.' '._wpsf__( "If a logged-in user's IP address changes, the session will be invalidated and they'll be forced to re-login to WordPress." );
+						.' '._wpsf__( "If a logged-in user's IP address changes, the session will be invalidated and they'll be forced to re-login to WordPress." );
 					break;
 
 				case 'session_username_concurrent_limit' :
 					$sName = _wpsf__( 'Max Simultaneous Sessions' );
 					$sSummary = _wpsf__( 'Limit Simultaneous Sessions For The Same Username' );
 					$sDescription = _wpsf__( 'The number provided here is the maximum number of simultaneous, distinct, sessions allowed for any given username.' )
-									.'<br />'._wpsf__( "Zero (0) will allow unlimited simultaneous sessions." );
+						.'<br />'._wpsf__( "Zero (0) will allow unlimited simultaneous sessions." );
 					break;
 
 				default:
@@ -206,13 +213,6 @@ if ( !class_exists( 'ICWP_WPSF_FeatureHandler_UserManagement', false ) ):
 			$aOptionsParams['summary'] = $sSummary;
 			$aOptionsParams['description'] = $sDescription;
 			return $aOptionsParams;
-		}
-
-		/**
-		 * @return string
-		 */
-		public function getUserSessionsTableName() {
-			return $this->doPluginPrefix( $this->getDefinition( 'user_sessions_table_name' ), '_' );
 		}
 	}
 
