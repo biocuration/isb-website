@@ -1,0 +1,40 @@
+/*
+ Theme Name:     Twenty Fourteen ISB
+ Theme URI:      //
+ Description:    Twenty Fourteen for ISB
+ Author:        Marie Jean Meurs and Antoine Charton	
+ Author URI:    http://mjmrsc.net
+		http://www.antoinecharton.com
+ Template:       twentyfourteen
+ Tags:         light, dark, two-columns, right-sidebar, responsive-layout, accessibility-ready
+ Text Domain:  twenty-fourteen-child
+ Version:        0.1.0
+*/
+
+@import url("../twentyfourteen/style.css");
+
+
+/* =Theme customization starts here
+-------------------------------------------------------------- */
+/* colors: 
+ISB logoletter	#106466
+ISB lightgreen	#a9d029 [old, logo #a1b05d]
+strong orange	#FF691B
+strong grey	#303440
+light green	#41A62A
+
+*/
+
+#page {
+margin-left: auto;
+margin-right: auto;
+}
+
+.site-title a {
+	color: #41A62A !important;
+}
+
+.site-title a:hover {
+	color: #fff !important;
+}
+

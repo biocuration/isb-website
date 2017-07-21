@@ -1,0 +1,291 @@
+/*
+* styles for settings page
+*/
+#cntctfrm_contact_attachment {
+	margin-bottom:0;
+}
+.cntctfrm_change_label_block input,
+.cntctfrm_action_after_send_block input {
+	margin: 1px 0;
+}
+.cntctfrm_change_label_block input[type="text"],
+.cntctfrm_action_after_send_block input[type="text"] {
+	width: 300px;
+}
+.cntctfrm_label_language_tab {
+	position: relative;
+	float: left;
+	padding: 2px 5px;
+	border-radius: 4px 4px 0px 0px;
+	border: 1px solid #DFDFDF;
+	background: url("../images/gray-grad.png") repeat-x scroll left top #DFDFDF;
+	cursor: pointer;
+	margin-right: 3px;
+}
+.rtl .cntctfrm_label_language_tab {
+	float: right;
+}
+.cntctfrm_language_tab {
+	border: 1px solid #DFDFDF;
+}
+.cntctfrm_active {
+	color: #21759B;
+}
+.cntctfrm_delete {
+	color: red;
+	display: inline-block;
+	margin-left: 7px;
+	position: relative;
+}
+.cntctfrm_change_tab {
+	cursor: pointer;
+	position: absolute;
+	left: 0;
+	width: calc(100% - 20px);
+	width: -webkit-calc(100% - 20px);
+	width: -moz--calc(100% - 20px);
+	height: 18px;
+	opacity: 0;
+}
+.cntctfrm_del_button_wrap {
+	position: absolute;
+}
+.cntctfrm_delete_button {
+	cursor: pointer;
+	height: 18px;
+	position: relative;
+	right: 10px;
+	opacity: 0;
+}
+.cntctfrm_language_tab_block_mini {
+	background: url("../images/toggle-arrow.png") no-repeat scroll left -5px transparent;
+	border-bottom: 1px solid #DFDFDF;
+	line-height: 18px;
+	padding-left: 22px;
+	color: #888888;
+	font-size: 10px;
+	margin-top: 7px;
+	cursor: pointer;
+}
+.cntctfrm_language_tab_block_mini.cntctfrm_language_tab_block_mini_open {
+	background-position: left -28px;
+}
+.rtl .cntctfrm_language_tab_block_mini {
+	padding-left: 0;
+	padding-right: 22px;
+	background-position: right -51px;
+}
+.rtl .cntctfrm_language_tab_block_mini.cntctfrm_language_tab_block_mini_open {
+	background-position: right -27px;
+}
+.cntctfrm_language_tab_block_mini:hover {
+	opacity: 0.7;
+}
+.cntctfrm_language_tab_block {
+	padding: 5px 10px 5px 5px;
+}
+#cntctfrm_left_table {
+	margin-right: 30px;
+}
+.cntctfrm_appearance_ltr #cntctfrm_left_table,
+.cntctfrm_appearance_rtl #cntctfrm_right_table {
+	max-width: 670px;
+	width: 100%;
+}
+.cntctfrm_appearance_ltr #cntctfrm_right_table,
+.cntctfrm_appearance_rtl #cntctfrm_left_table {
+	max-width: 684px;
+	width: 100%;
+}
+.cntctfrm_appearance_ltr #cntctfrm_left_table,
+.cntctfrm_appearance_ltr #cntctfrm_right_table {
+	float: left;
+}
+.cntctfrm_appearance_rtl #cntctfrm_left_table,
+.cntctfrm_appearance_rtl #cntctfrm_right_table {
+	float: right;
+}
+.cntctfrm_contact_form div {
+	clear: both;
+}
+#cntctfrm_shortcode {
+	margin: 20px 0;
+}
+#cntctfrm_shortcode_code {
+	height: 20px;
+	margin: 10px 0 0;
+	background: #EAEAEA;
+	border: 1px solid #DCDCDC;
+	padding: 10px;
+}
+/* cntctfrm_settings_table */
+.cntctfrm_settings_table th,
+.cntctfrm_settings_table td {
+	border-bottom: 1px solid #DFDFDF;
+	border-right: 1px solid #DFDFDF;
+	min-height: 25px;
+	padding: 2px 10px;
+}
+.cntctfrm_settings_table td.bws_pro_version_tooltip {
+	text-align: center;
+}
+.cntctfrm_settings_table input[type="text"],
+.cntctfrm_settings_table input[type="file"] {
+	width: 100%;
+}
+.cntctfrm_mobile_title {
+	display: none;
+}
+@media screen and (max-width: 600px) {
+	.cntctfrm_settings_table {
+		width: 100%;
+	}
+	.cntctfrm_settings_table th,
+	.cntctfrm_settings_table td {
+		display: block;
+	}
+	.cntctfrm_settings_table thead,
+	.cntctfrm_settings_table td:empty {
+		display: none;
+	}
+	.cntctfrm_settings_table tr td:first-child {
+		font-weight: bold;
+		font-size: 14px;
+	}
+	.cntctfrm_mobile_title {
+		display: inline;
+	}
+}
+td.cntctfrm_td_top_align {
+	vertical-align: top;
+}
+/* appearance settings */
+.cntctfrm_label_block {
+	display: inline-block;
+	max-width: 350px;
+	padding-top: 5px;
+}
+.cntctfrm_style_block input {
+	vertical-align: top;
+}
+/* appearance settings preview contact form */
+#cntctfrm_contact_form {
+	margin: 15px 0 0;
+	padding: 5px;
+}
+.cntctfrm_one_column {
+	max-width: 330px !important;
+}
+.cntctfrm_two_columns {
+	max-width: 674px !important;
+}
+.cntctfrm_column {
+	max-width: 330px !important;
+}
+#cntctfrm_first_column,
+#cntctfrm_second_column {
+	min-height: 50px !important;
+	border: 1px dashed transparent;
+}
+#cntctfrm_first_column li,
+#cntctfrm_second_column li {
+	display: block;
+	padding: 5px;
+	margin: 0;
+	float: none;
+}
+.cntctfrm_field_wrap:hover {
+	cursor: move;
+	background: #e9e9e9;
+}
+.cntctfrm_field_wrap label {
+	cursor: move;
+}
+.cntctfrm_column_placeholder {
+	border: 1px dashed #999 !important;
+}
+.cntctfrm_input.cntctfrm_input_captcha {
+	margin: 0;
+}
+.cntctfrm_checkbox {
+	padding: 0 !important;
+}
+.cntctfrm_input_submit {
+	max-width: 100% !important;
+	padding: 0 5px;
+}
+.ui-sortable-helper {
+	background: #f1f1f1;
+	border: 1px dotted #888;
+}
+.ui-sortable-placeholder {
+	margin: 5px !important;
+	padding: 0 !important;
+	background: #e4e4e4;
+	visibility: visible !important;
+}
+.cntctfrm_drag_wrap {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	background: transparent;
+}
+.cntctfrm_how_to_use {
+	float: right;
+}
+.rtl .cntctfrm_how_to_use {
+	float: left;
+}
+.cntctfrm_auto_response_message {
+	position: relative;
+	margin-left: 20px;
+	z-index: -1;
+}
+@media screen and (max-width: 785px) {
+	.cntctfrm_auto_response_message {
+		margin-left: 0px;
+	}
+}
+@media screen and (max-width: 420px) {
+	.subsubsub.cntctfrm_how_to_use li {
+		white-space: normal;
+	}
+}
+@media only screen and ( max-width: 782px ) {
+	.cntctfrm_td_name,
+	.cntctfrm_td_email,
+	.cntctfrm_td_name label:first-of-type,
+	.cntctfrm_td_email label:first-of-type {
+		width: 100% !important;
+	}
+
+	.cntctfrm_info {
+		display: inline-block;
+	}
+
+	#cntctfrm_select_from_custom_field,
+	#cntctfrm_from_custom_email,
+	#cntctfrm_select_email_user,
+	#cntctfrm_select_email_custom {
+		margin-top: 9px;
+	}
+	input[name="cntctfrm_from_field"],
+	input[name="cntctfrm_custom_from_email"],
+	select[name="cntctfrm_user_email"],
+	input[name="cntctfrm_custom_email"] {
+		float: right;
+		width: calc(100% - 31px) !important;
+		width: -moz-calc(100% - 31px) !important;
+		width: -webkit-calc(100% - 31px) !important;
+	}
+}
+@media screen and (max-width: 1220px) {
+	.cntctfrm_how_to_use {
+		float: none;
+	}
+	.cntctfrm_how_to_use > h2 {
+		clear: both;
+	}
+}

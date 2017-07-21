@@ -1,0 +1,1337 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Contact Form\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-09-29 16:04+0300\n"
+"PO-Revision-Date: 2016-09-29 16:04+0300\n"
+"Last-Translator: plugin@bestwebsoft.com <plugin@bestwebsoft.com>\n"
+"Language-Team: Javitopo <jaawme@hotmail.com>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Poedit 1.5.4\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: contact_form.php:42 contact_form.php:1022
+msgid "Contact Form Settings"
+msgstr "Opciones de formulario de contacto"
+
+#: contact_form.php:42
+msgid "Contact Form"
+msgstr "Contact Form"
+
+#: contact_form.php:295 contact_form.php:1199 contact_form.php:1258
+#: contact_form.php:1649 contact_form.php:1687 contact_form.php:1936
+#: contact_form.php:3069 contact_form.php:3115
+msgid "Name"
+msgstr "Nombre"
+
+#: contact_form.php:296 contact_form.php:1305 contact_form.php:1650
+#: contact_form.php:1688 contact_form.php:1941 contact_form.php:3076
+#: contact_form.php:3121
+msgid "Address"
+msgstr "Dirección"
+
+#: contact_form.php:297 contact_form.php:1321 contact_form.php:1651
+#: contact_form.php:1689
+msgid "Email Address"
+msgstr "Dirección de correo electrónico"
+
+#: contact_form.php:298 contact_form.php:1344 contact_form.php:1652
+#: contact_form.php:1690
+msgid "Phone number"
+msgstr "Número de teléfono"
+
+#: contact_form.php:299 contact_form.php:1360 contact_form.php:1653
+#: contact_form.php:1691 contact_form.php:1956 contact_form.php:3087
+#: contact_form.php:3130
+msgid "Subject"
+msgstr "Asunto"
+
+#: contact_form.php:300 contact_form.php:1384 contact_form.php:1654
+#: contact_form.php:1692 contact_form.php:1960 contact_form.php:3092
+#: contact_form.php:3134
+msgid "Message"
+msgstr "Mensaje"
+
+#: contact_form.php:301 contact_form.php:1655 contact_form.php:1693
+#: contact_form.php:1965
+msgid "Attachment"
+msgstr "Adjuntos"
+
+#: contact_form.php:302
+msgid ""
+"Supported file types: HTML, TXT, CSS, GIF, PNG, JPEG, JPG, TIFF, BMP, AI, "
+"EPS, PS, CSV, RTF, PDF, DOC, DOCX, XLS, XLSX, ZIP, RAR, WAV, MP3, PPT."
+msgstr ""
+"Tipos de archivo admitidos: HTML, TXT, CSS, GIF, PNG, JPEG, JPG, TIFF, BMP, "
+"AI, EPS, PS, CSV, RTF, PDF, DOC, DOCX, XLS, XLSX, ZIP, RAR, WAV, MP3, PPT."
+
+#: contact_form.php:303 contact_form.php:1657 contact_form.php:1695
+msgid "Send me a copy"
+msgstr "Deseo recibir una copia"
+
+#: contact_form.php:304 contact_form.php:1658 contact_form.php:1696
+msgid "Submit"
+msgstr "Enviar"
+
+#: contact_form.php:305
+msgid "Your name is required."
+msgstr "Es necesario un nombre."
+
+#: contact_form.php:306
+msgid "Address is required."
+msgstr "Se requiere dirección."
+
+#: contact_form.php:307
+msgid "A valid email address is required."
+msgstr "Se requiere una dirección de email válida."
+
+#: contact_form.php:308
+msgid "Phone number is required."
+msgstr "Es necesario un número de teléfono."
+
+#: contact_form.php:309
+msgid "Subject is required."
+msgstr "Es necesario un asunto."
+
+#: contact_form.php:310
+msgid "Message text is required."
+msgstr "Es necesario el texto del mensaje."
+
+#: contact_form.php:311
+msgid "File format is not valid."
+msgstr "Formato de archivo no válido."
+
+#: contact_form.php:312
+msgid "File upload error."
+msgstr "Error de carga de archivos."
+
+#: contact_form.php:313
+msgid "The file could not be uploaded."
+msgstr "El archivo no se pudo cargar."
+
+#: contact_form.php:314
+msgid "This file is too large."
+msgstr "Este archivo es demasiado grande."
+
+#: contact_form.php:315
+msgid "Please fill out the CAPTCHA."
+msgstr "Por favor complete el CAPTCHA."
+
+#: contact_form.php:316
+msgid "Please make corrections below and try again."
+msgstr "Por favor, haga las correcciones y a continuación vuelva a intentarlo."
+
+#: contact_form.php:318
+msgid "Thank you for contacting us."
+msgstr "Gracias por contactar con nosotros."
+
+#: contact_form.php:719 contact_form.php:979
+msgid "Settings saved."
+msgstr "Configuración guardada."
+
+#: contact_form.php:924
+msgid ""
+"Email 'FROM' field option was changed, which may cause email messages being "
+"moved to the spam folder or email delivery failures."
+msgstr ""
+"El campo 'DESDE' del correo electrónico ha sido cambiado, por lo que los "
+"mensajes de correo electrónico pueden haber sido enviados a la carpeta de "
+"correo no deseado o provocar errores en la entrega del correo electrónico."
+
+#: contact_form.php:934
+msgid ""
+"If the 'Redirect to page' option is selected then the URL field should be in "
+"the following format"
+msgstr ""
+"Si se selecciona la opción 'Redirigir a la página', entonces el campo URL "
+"debe estar en el siguiente formato"
+
+#: contact_form.php:941
+msgid "Such user does not exist."
+msgstr "Dicho usuario no existe."
+
+#: contact_form.php:951
+msgid ""
+"Please enter a valid email address in the 'Use this email address' field."
+msgstr ""
+"Por favor, introduce una dirección de correo electrónico válida en el campo "
+"\"Correo electrónico\"."
+
+#: contact_form.php:959
+msgid "Please enter a valid email address in the 'FROM' field."
+msgstr ""
+"Por favor, introduce una dirección de correo electrónico válida en el campo "
+"\"Desde\"."
+
+#: contact_form.php:981
+msgid "Settings are not saved."
+msgstr "Configuración no guardada."
+
+#: contact_form.php:1019
+msgid "All plugin settings were restored."
+msgstr "Todos los parámetros del plugin serán restaurados."
+
+#: contact_form.php:1024
+msgid "How to Use Step-by-step Instruction"
+msgstr "Instrucciones paso a paso"
+
+#: contact_form.php:1027 contact_form.php:3307 contact_form.php:3321
+msgid "Settings"
+msgstr "Configuración"
+
+#: contact_form.php:1028
+msgid "Additional settings"
+msgstr "Opciones adicionales"
+
+#: contact_form.php:1029
+msgid "Appearance"
+msgstr "Apariencia"
+
+#: contact_form.php:1030
+msgid "Custom code"
+msgstr ""
+
+#: contact_form.php:1031
+msgid "Go PRO"
+msgstr "Ir al PRO"
+
+#: contact_form.php:1040
+#, fuzzy
+msgid "Notice"
+msgstr "Aviso:"
+
+#: contact_form.php:1044
+msgid "NEW_FORM"
+msgstr "NUEVO FORMULARIO"
+
+#: contact_form.php:1045
+msgid ""
+"If you want to create multiple contact forms, please install the Contact "
+"Form Multi plugin."
+msgstr ""
+"Si desea crear varios formularios de contacto, por favor, instale el plugin "
+"Formulario de contacto múltiple."
+
+#: contact_form.php:1054
+#, php-format
+msgid ""
+"If you would like to add a Contact Form to your page or post, please use %s "
+"button"
+msgstr ""
+"Si usted desea agregar el formulario de contacto a su sitio web o entrada , "
+"por favor use el botón %s"
+
+#: contact_form.php:1060
+#, php-format
+msgid ""
+"You can add the Contact Form to your page or post by clicking on %s button "
+"in the content edit block using the Visual mode. If the button isn't "
+"displayed, please use the shortcode %s or %s where * stands for Contact Form "
+"language."
+msgstr ""
+"Puedes añadir el Formulario de Contacto a tu página o post clicando en el "
+"botón %s en el bloque editar el contenido usando el Modo visual. Si el botón "
+"no aparece, por favor usa el shortcode  %s o %s donde * representa el idioma "
+"del Formulario de Contacto."
+
+#: contact_form.php:1069
+msgid ""
+"If you leave the fields empty, the messages will be sent to the email "
+"address specified during registration."
+msgstr ""
+"Si deja los campos vacíos, se enviarán los mensajes a la dirección de correo "
+"electrónico especificada durante el registro."
+
+#: contact_form.php:1072
+#, fuzzy
+msgid "The user's email address"
+msgstr "Dirección de correo electrónico del usuario:"
+
+#: contact_form.php:1076
+msgid "Select a username"
+msgstr "Seleccione un nombre de usuario"
+
+#: contact_form.php:1089
+#, fuzzy
+msgid ""
+"Select a username of the person who should get the messages from the contact "
+"form."
+msgstr ""
+"Introduzca un nombre de usuario de la persona que debe recibir los mensajes "
+"desde el formulario de contacto."
+
+#: contact_form.php:1093
+#, fuzzy
+msgid "Use this email address"
+msgstr "Utilice esta dirección de correo electrónico:"
+
+#: contact_form.php:1097
+#, fuzzy
+msgid "Enter the email address for receiving messages"
+msgstr ""
+"Introduzca la dirección de correo electrónico que desea que reciba los "
+"mensajes."
+
+#: contact_form.php:1104 contact_form.php:1566 contact_form.php:1776
+#: contact_form.php:1864 contact_form.php:3402
+msgid "Close"
+msgstr "Cerrar"
+
+#: contact_form.php:1108
+#, fuzzy
+msgid "Add department selectbox to the contact form"
+msgstr "Añadir casilla seleccionable al formulario de contacto:"
+
+#: contact_form.php:1116 contact_form.php:1575 contact_form.php:1795
+#: contact_form.php:2070
+msgid "If you upgrade to Pro version all your settings will be saved."
+msgstr "Si actualiza a la versión Pro se guardarán todos los ajustes."
+
+#: contact_form.php:1123 contact_form.php:1414 contact_form.php:1580
+#: contact_form.php:1802 contact_form.php:2077
+msgid "Unlock premium options by upgrading to Pro version"
+msgstr ""
+"Desbloquear opciones premium mediante la actualización a una versión PRO"
+
+#: contact_form.php:1126 contact_form.php:1417 contact_form.php:1583
+#: contact_form.php:1805 contact_form.php:2080 contact_form.php:3633
+msgid "Learn More"
+msgstr "Más información"
+
+#: contact_form.php:1134
+msgid "Save emails to the database"
+msgstr "Guardar mensajes de correo electrónico a la base de datos"
+
+#: contact_form.php:1146 contact_form.php:1160 contact_form.php:1167
+msgid "Using"
+msgstr "Uso"
+
+#: contact_form.php:1152 contact_form.php:1477 contact_form.php:1510
+#: contact_form.php:1544
+msgid "Please activate the appropriate option on"
+msgstr ""
+
+#: contact_form.php:1155 contact_form.php:1480 contact_form.php:1513
+#: contact_form.php:1547
+#, fuzzy
+msgid "settings page"
+msgstr "la página de configuración"
+
+#: contact_form.php:1161 contact_form.php:1486 contact_form.php:1520
+#: contact_form.php:1554
+msgid "Activate"
+msgstr "Activar"
+
+#: contact_form.php:1168 contact_form.php:1492 contact_form.php:1526
+#: contact_form.php:1559
+msgid "Download"
+msgstr "Download"
+
+#: contact_form.php:1180
+msgid "Sending method"
+msgstr ""
+
+#: contact_form.php:1185
+msgid "Wp-mail"
+msgstr "Wp-mail"
+
+#: contact_form.php:1187
+msgid "You can use the Wordpress wp_mail function for mailing"
+msgstr "Tú puedes utilizar la función wp_mail para enviar por correo"
+
+#: contact_form.php:1190
+msgid "Mail"
+msgstr "Correo"
+
+#: contact_form.php:1192
+msgid "You can use the PHP mail function for mailing"
+msgstr "Tú puedes utilizar la función de correo PHP para enviar por correo"
+
+#: contact_form.php:1197
+msgid "'FROM' field"
+msgstr "Campo 'DESDE'"
+
+#: contact_form.php:1202
+msgid "User name"
+msgstr "Nombre de usuario"
+
+#: contact_form.php:1204
+msgid ""
+"The name of the user who fills the form will be used in the field 'From'."
+msgstr ""
+"El nombre del usuario que rellena en el formulario se utiliza en el campo "
+"\"De:\"."
+
+#: contact_form.php:1209 contact_form.php:3082 contact_form.php:3126
+msgid "Email"
+msgstr "Correo electrónico"
+
+#: contact_form.php:1212
+msgid "User email"
+msgstr "Correo electrónico del usuario"
+
+#: contact_form.php:1214
+msgid ""
+"The email address of the user who fills the form will be used in the field "
+"'From'."
+msgstr ""
+"La dirección de correo electrónico del usuario que rellena el formulario se "
+"utiliza en el campo \"De\"."
+
+#: contact_form.php:1217
+msgid ""
+"If this option is changed, email messages may be moved to the spam folder or "
+"email delivery failures may occur."
+msgstr ""
+"Si se cambia esta opción, los mensajes de correo electrónico podrían entrar "
+"a la carpeta de correo no deseado o ocurrir otros errores en la entrega del "
+"correo."
+
+#: contact_form.php:1223
+msgid "Required symbol"
+msgstr "Símbolo de Obligatorio"
+
+#: contact_form.php:1233
+msgid "Fields"
+msgstr "Campos"
+
+#: contact_form.php:1234 contact_form.php:1261 contact_form.php:1288
+#: contact_form.php:1308 contact_form.php:1347 contact_form.php:1432
+msgid "Used"
+msgstr "Usado"
+
+#: contact_form.php:1235 contact_form.php:1250 contact_form.php:1265
+#: contact_form.php:1292 contact_form.php:1312 contact_form.php:1325
+#: contact_form.php:1351 contact_form.php:1364 contact_form.php:1388
+msgid "Required"
+msgstr "Obligatorio"
+
+#: contact_form.php:1237 contact_form.php:1270 contact_form.php:1330
+#: contact_form.php:1369 contact_form.php:1393
+msgid "Visible"
+msgstr "Visible"
+
+#: contact_form.php:1238 contact_form.php:1274 contact_form.php:1334
+#: contact_form.php:1373 contact_form.php:1397
+msgid "Disabled for editing"
+msgstr "Inhabilitado para la edición"
+
+#: contact_form.php:1239 contact_form.php:1298 contact_form.php:1377
+#: contact_form.php:1401
+msgid "Field's default value"
+msgstr "Valor predeterminado del campo"
+
+#: contact_form.php:1246
+msgid "Department selectbox"
+msgstr "Apartado de casilla seleccionable"
+
+#: contact_form.php:1278
+msgid "Use User's name as a default value if the user is logged in."
+msgstr ""
+"Usar el nombre de usuario como valor por defecto si el usuario está "
+"conectado."
+
+#: contact_form.php:1279 contact_form.php:1339
+msgid ""
+"'Visible' and 'Disabled for editing' options will be applied only to logged-"
+"in users."
+msgstr ""
+"Las opciones 'Visible' y 'Desactivado para la edición' solo serán aplicadas "
+"a los usuarios con sesión iniciada."
+
+#: contact_form.php:1285
+msgid "Location selectbox"
+msgstr "Localización de la casilla seleccionable"
+
+#: contact_form.php:1338
+msgid "Use User's email as a default value if the user is logged in."
+msgstr ""
+"Utiliza por defecto el correo electrónico del usuario si el usuario está "
+"conectado."
+
+#: contact_form.php:1425
+msgid "Attachment block"
+msgstr "bloque de adjuntos"
+
+#: contact_form.php:1427
+msgid "Users can attach the following file formats"
+msgstr "Los usuarios pueden adjuntar los siguientes formatos de archivo"
+
+#: contact_form.php:1445
+msgid "Add to the form"
+msgstr "Añadir a la forma"
+
+#: contact_form.php:1450
+msgid "Tips below the Attachment"
+msgstr "Consejos debajo del archivo adjunto"
+
+#: contact_form.php:1459
+msgid "'Send me a copy' block"
+msgstr "'Deseo recibir una copia' bloque"
+
+#: contact_form.php:1570
+msgid "Agreement checkbox"
+msgstr "casilla de verificación de acuerdo"
+
+#: contact_form.php:1570
+msgid "Required checkbox for submitting the form"
+msgstr "Casilla de verificación obligatoria para enviar el formulario"
+
+#: contact_form.php:1571
+msgid "Optional checkbox"
+msgstr "Casilla opcional"
+
+#: contact_form.php:1571
+msgid "Optional checkbox, the results of which will be displayed in email"
+msgstr ""
+"Casilla opcional, cuyos resultados se mostrarán en el correo electrónico"
+
+#: contact_form.php:1592
+msgid "Delete an attachment file from the server after the email is sent"
+msgstr ""
+"Eliminar un archivo adjunto del servidor después de que se envíe el correo "
+"electrónico"
+
+#: contact_form.php:1598
+msgid "Email in HTML format sending"
+msgstr "Enviar correo electrónico en formato HTML"
+
+#: contact_form.php:1602
+msgid "Display additional info in the email"
+msgstr "Mostrar información adicional en el correo electrónico"
+
+#: contact_form.php:1608
+msgid "Sent from (IP address)"
+msgstr "Enviado desde (dirección IP)"
+
+#: contact_form.php:1608
+msgid "Example: Sent from (IP address):\t127.0.0.1"
+msgstr "Ejemplo: Enviado desde (dirección IP:\t127.0.0.1"
+
+#: contact_form.php:1609 contact_form.php:3031 contact_form.php:3033
+msgid "Date/Time"
+msgstr "Fecha/Hora"
+
+#: contact_form.php:1609
+msgid "Example: Date/Time:\tAugust 19, 2013 8:50 pm"
+msgstr "Ejemplo: Fecha/hora:\tAugust 19, 2013 8:50 pm"
+
+#: contact_form.php:1610 contact_form.php:3037 contact_form.php:3039
+msgid "Sent from (referer)"
+msgstr "Enviado desde (referencia)"
+
+#: contact_form.php:1610
+msgid ""
+"Example: Sent from (referer):\thttp://bestwebsoft.com/contacts/contact-us/"
+msgstr ""
+"Example: Sent from (referer):\thttp://bestwebsoft.com/contacts/contact-us/"
+
+#: contact_form.php:1611 contact_form.php:3043 contact_form.php:3045
+msgid "Using (user agent)"
+msgstr "Usando (agente de usuario)"
+
+#: contact_form.php:1611
+msgid ""
+"Example: Using (user agent):\tMozilla/5.0 (Windows NT 6.2; WOW64) "
+"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95 Safari/537.36"
+msgstr ""
+"Ejemplo: Usando (agente de usuario):\tMozilla/5.0 (Windows NT 6.2; WOW64) "
+"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95 Safari/537.36"
+
+#: contact_form.php:1616
+msgid "Language settings for the field names in the form"
+msgstr ""
+"Configuración de idioma para los nombres de los campos en el formulario"
+
+#: contact_form.php:1625
+msgid "Add a language"
+msgstr "Añadir un idioma"
+
+#: contact_form.php:1629
+msgid "Change the names of the contact form fields and error messages"
+msgstr ""
+"Cambie los nombres de los campos del formulario de contacto y mensajes de "
+"error"
+
+#: contact_form.php:1634 contact_form.php:1730 contact_form.php:1984
+#: contact_form.php:1989 contact_form.php:1999 contact_form.php:2004
+#: contact_form.php:2009 contact_form.php:2014 contact_form.php:2024
+#: contact_form.php:2029 contact_form.php:2038 contact_form.php:2052
+#: contact_form.php:2057 contact_form.php:2062
+msgid "Default"
+msgstr "Defecto"
+
+#: contact_form.php:1647 contact_form.php:1685
+msgid "click to expand/hide the list"
+msgstr "haga clic para expandir / ocultar la lista"
+
+#: contact_form.php:1656 contact_form.php:1694
+msgid "Tips below the Attachment block"
+msgstr "Consejos debajo del bloque del archivo adjunto"
+
+#: contact_form.php:1659 contact_form.php:1697
+msgid "Error message for the Name field"
+msgstr "Mensaje de error para el campo Nombre"
+
+#: contact_form.php:1660 contact_form.php:1698
+msgid "Error message for the Address field"
+msgstr "Mensaje de error para el campo dirección"
+
+#: contact_form.php:1661 contact_form.php:1699
+msgid "Error message for the Email field"
+msgstr "Mensaje de error en el campo Correo electrónico"
+
+#: contact_form.php:1662 contact_form.php:1700
+msgid "Error message for the Phone field"
+msgstr "Mensaje de error para el campo Teléfono"
+
+#: contact_form.php:1663 contact_form.php:1701
+msgid "Error message for the Subject field"
+msgstr "Mensaje de error para el campo Asunto"
+
+#: contact_form.php:1664 contact_form.php:1702
+msgid "Error message for the Message field"
+msgstr "Mensaje de error en el campo Mensaje"
+
+#: contact_form.php:1665 contact_form.php:1703
+msgid "Error message about the file type for the Attachment field"
+msgstr ""
+"Mensaje de error sobre el tipo de archivo para el campo de archivos adjuntos"
+
+#: contact_form.php:1666 contact_form.php:1704
+msgid ""
+"Error message while uploading a file for the Attachment field to the server"
+msgstr ""
+"Mensaje de error al cargar un archivo en el campo de archivos adjuntos al "
+"servidor"
+
+#: contact_form.php:1667 contact_form.php:1705
+msgid "Error message while moving the file for the Attachment field"
+msgstr ""
+"Mensaje de error mientras se mueve el archivo en el campo de archivos "
+"adjuntos"
+
+#: contact_form.php:1668 contact_form.php:1706
+msgid "Error message when file size limit for the Attachment field is exceeded"
+msgstr ""
+"Mensaje de error cuando se supera el límite de tamaño de archivo para el "
+"campo de archivos adjuntos"
+
+#: contact_form.php:1669 contact_form.php:1707
+msgid "Error message for the Captcha field"
+msgstr "Mensaje de error para el campo Captcha"
+
+#: contact_form.php:1670 contact_form.php:1708
+msgid "Error message for the whole form"
+msgstr "Mensaje de error para todo el formulario"
+
+#: contact_form.php:1673 contact_form.php:1675 contact_form.php:1711
+#: contact_form.php:1713 contact_form.php:1745 contact_form.php:1747
+#: contact_form.php:1759 contact_form.php:1761 contact_form.php:3469
+#: contact_form.php:3471
+msgid "Use shortcode"
+msgstr "Utilice shortcode"
+
+#: contact_form.php:1673 contact_form.php:1675 contact_form.php:1711
+#: contact_form.php:1713 contact_form.php:1745 contact_form.php:1747
+#: contact_form.php:1759 contact_form.php:1761 contact_form.php:3469
+#: contact_form.php:3471
+msgid "for this language"
+msgstr "para este idioma"
+
+#: contact_form.php:1721
+msgid "Use the changed names of the contact form fields in the email"
+msgstr ""
+"Utilice los nombres cambiados de los campos del formulario de contacto en el "
+"correo electrónico"
+
+#: contact_form.php:1727
+msgid "Action after email is sent"
+msgstr "Acción después de que se envíe el correo electrónico"
+
+#: contact_form.php:1729
+msgid "Display text"
+msgstr "Mostrar texto"
+
+#: contact_form.php:1743 contact_form.php:1757
+msgid "Text"
+msgstr "Texto"
+
+#: contact_form.php:1768
+msgid "Redirect to the page"
+msgstr "Redirigir a la página"
+
+#: contact_form.php:1769
+msgid "Url"
+msgstr "Url"
+
+#: contact_form.php:1780
+msgid "Add field 'Reply-To' to the email header"
+msgstr "Añadir campo 'Responder a' en la cabecera del correo electrónico"
+
+#: contact_form.php:1782
+msgid "Field 'Reply-To' will be initialized by user email"
+msgstr ""
+"El campo 'Responder a' se iniciará por el correo electrónico del usuario"
+
+#: contact_form.php:1786
+msgid "Auto Response"
+msgstr "Respuesta automática"
+
+#: contact_form.php:1790
+#, php-format
+msgid ""
+"You can use %%NAME%% to display data from the email field and %%MESSAGE%% to "
+"display data from the Message field, as well as %%SITENAME%% to display blog "
+"name."
+msgstr ""
+"Puedes usar  %%NAME%% para mostrar los datos del campo correo electrónico y "
+"%%MESSAGE%% para mostrar los datos del campo Mensaje, así como %%SITENAME%% "
+"para mostrar el nombre del blog."
+
+#: contact_form.php:1815 contact_form.php:2321
+msgid "Save Changes"
+msgstr "Guardar cambios"
+
+#: contact_form.php:1828
+#, php-format
+msgid ""
+"Please enable JavaScript to change '%s', '%s' options and for fields sorting."
+msgstr ""
+"Por favor, utilice JavaScript para cambiar las opciones '%s', '%s' y para "
+"los campos de clasificación."
+
+#: contact_form.php:1828 contact_form.php:1837
+msgid "Form layout"
+msgstr "Diseño del formulario"
+
+#: contact_form.php:1828 contact_form.php:1849
+msgid "Submit position"
+msgstr "Enviar posición"
+
+#: contact_form.php:1841
+msgid "One column"
+msgstr "Una columna"
+
+#: contact_form.php:1844
+msgid "Two columns"
+msgstr "Dos columnas"
+
+#: contact_form.php:1853 contact_form.php:1872 contact_form.php:1890
+#: contact_form.php:1905
+msgid "Left"
+msgstr "Izquierda"
+
+#: contact_form.php:1856 contact_form.php:1878 contact_form.php:1893
+#: contact_form.php:1911
+msgid "Right"
+msgstr "Derecha"
+
+#: contact_form.php:1868
+msgid "Form align"
+msgstr "Alinear formulario"
+
+#: contact_form.php:1875 contact_form.php:1908
+msgid "Center"
+msgstr "Centro"
+
+#: contact_form.php:1883
+msgid "Labels position"
+msgstr "Posición de las etiquetas"
+
+#: contact_form.php:1887
+msgid "Top"
+msgstr "Arriba"
+
+#: contact_form.php:1896
+msgid "Bottom"
+msgstr "Abajo"
+
+#: contact_form.php:1901
+msgid "Labels align"
+msgstr "Alinear etiquetas"
+
+#: contact_form.php:1916
+msgid "Errors output"
+msgstr "Salida de errores"
+
+#: contact_form.php:1919
+msgid "Display error messages"
+msgstr "Mostrar mensajes de error"
+
+#: contact_form.php:1920
+msgid "Color of the input field errors."
+msgstr "El color de los errores del campo de entrada."
+
+#: contact_form.php:1921
+msgid "Display error messages & color of the input field errors"
+msgstr ""
+"Mostrar mensajes de error y el color de los errores de campo de entrada"
+
+#: contact_form.php:1926
+msgid "Add placeholder to the input blocks"
+msgstr "Añadir marcador de posición de los bloques de entrada"
+
+#: contact_form.php:1932
+msgid "Add tooltips"
+msgstr "Añadir información sobre herramientas"
+
+#: contact_form.php:1946
+msgid "Email address"
+msgstr "Correo electrónico"
+
+#: contact_form.php:1951 contact_form.php:3098 contact_form.php:3139
+msgid "Phone Number"
+msgstr "Número de teléfono"
+
+#: contact_form.php:1977
+msgid "Style options"
+msgstr "Opciones de estilo"
+
+#: contact_form.php:1981
+msgid "Text color"
+msgstr "Color del texto"
+
+#: contact_form.php:1986
+msgid "Label text color"
+msgstr "Color del texto de la Etiqueta"
+
+#: contact_form.php:1991
+msgid "Placeholder color"
+msgstr "El color de marcador de posición"
+
+#: contact_form.php:1996
+msgid "Errors color"
+msgstr "Color del error"
+
+#: contact_form.php:2001
+msgid "Error text color"
+msgstr "Color del texto de error"
+
+#: contact_form.php:2006
+msgid "Background color of the input field errors"
+msgstr "Color de fondo de los errores de campo de entrada"
+
+#: contact_form.php:2011
+msgid "Border color of the input field errors"
+msgstr "Color del borde de los errores de campo de entrada"
+
+#: contact_form.php:2016
+msgid "Placeholder color of the input field errors"
+msgstr "El color de marcador de posición de los errores de campo de entrada"
+
+#: contact_form.php:2021
+msgid "Input fields"
+msgstr "Campos de entrada"
+
+#: contact_form.php:2026
+msgid "Input fields background color"
+msgstr "Color de fondo de los campos de entrada"
+
+#: contact_form.php:2031
+msgid "Text fields color"
+msgstr "Color de los campos de texto"
+
+#: contact_form.php:2035
+msgid "Border width in px, numbers only"
+msgstr "Ancho del borde en píxeles, sólo números"
+
+#: contact_form.php:2040 contact_form.php:2064
+msgid "Border color"
+msgstr "Color del borde"
+
+#: contact_form.php:2045
+msgid "Submit button"
+msgstr "Botón enviar"
+
+#: contact_form.php:2049
+msgid "Width in px, numbers only"
+msgstr "Ancho en píxeles, sólo números"
+
+#: contact_form.php:2054
+msgid "Button color"
+msgstr "Color del botón"
+
+#: contact_form.php:2059
+msgid "Button text color"
+msgstr "Color del texto del botón"
+
+#: contact_form.php:2091
+msgid "Contact Form | Preview"
+msgstr "Formulario de Contacto | Vista previa"
+
+#: contact_form.php:2092
+msgid "Drag the necessary field to sort fields."
+msgstr "Arrastre el campo necesario para ordenar los campos."
+
+#: contact_form.php:2308
+#, fuzzy
+msgid ""
+"If you would like to add the Contact Form to your website, just copy and "
+"paste this shortcode to your post or page or widget"
+msgstr ""
+"Si quieres agregar el formulario de contacto en tu sitio web, sólo tienes "
+"que copiar y pegar este código corto a tu post, una página o un widget:"
+
+#: contact_form.php:2436
+msgid "Sorry, email message could not be delivered."
+msgstr "Lo sentimos, el mensaje de correo electrónico no se pudo entregar."
+
+#: contact_form.php:3025 contact_form.php:3027
+msgid "Sent from (ip address)"
+msgstr "Enviado desde (dirección IP)"
+
+#: contact_form.php:3055
+msgid "Contact from"
+msgstr "Contact from"
+
+#: contact_form.php:3060 contact_form.php:3109
+msgid "Site"
+msgstr "Sitio"
+
+#: contact_form.php:3239
+msgid ""
+"If you can see this MIME, it means that the MIME type is not supported by "
+"your email client!"
+msgstr ""
+"Si puede ver esta MIME, significa que el tipo MIME no es compatible con su "
+"cliente de correo electrónico!"
+
+#: contact_form.php:3322
+msgid "FAQ"
+msgstr "Preguntas más frecuentes"
+
+#: contact_form.php:3323
+msgid "Support"
+msgstr "Soporte técnico"
+
+#: contact_form.php:3372
+msgid "Are you sure that you want to delete this language data?"
+msgstr "¿Estás seguro de que quieres eliminar este idioma?"
+
+#: contact_form.php:3393
+msgid "Add multiple forms"
+msgstr "Añadir múltiples forularios"
+
+#: contact_form.php:3393
+msgid ""
+"Install Contact Form Multi plugin to create unlimited number of contact "
+"forms."
+msgstr ""
+"Instalar el plugin Contact Form Multi para crear un número ilimitado de "
+"formas de contacto."
+
+#: contact_form.php:3398
+msgid "Learn more"
+msgstr "Más información"
+
+#: contact_form.php:3624
+msgid "Close notice"
+msgstr "Cerrar aviso"
+
+#: contact_form.php:3629
+msgid "allows to store your messages to the database."
+msgstr "Permite almacenar sus mensajes en la base de datos."
+
+#: contact_form.php:3630
+msgid "Manage messages that have been sent from your website."
+msgstr "Administración de mensajes que han sido enviados desde su sitio web."
+
+#: contact_form.php:3693
+msgid "Contact form"
+msgstr "Formulario de contacto"
+
+#: contact_form.php:3706 contact_form.php:3716
+msgid "Language"
+msgstr "Idioma"
+
+#: includes/deprecated.php:168
+#, php-format
+msgid ""
+"Deprecated shortcode %1s from the %2s plugin is used on your site. Please "
+"replace it with %3s. If you close this message it'll appear again after "
+"deprecated shortcode reuse."
+msgstr ""
+
+#~ msgid "Name:"
+#~ msgstr "Nombre:"
+
+#~ msgid "Address:"
+#~ msgstr "Dirección:"
+
+#~ msgid "Email Address:"
+#~ msgstr "Dirección de correo electrónico:"
+
+#~ msgid "Phone number:"
+#~ msgstr "Número de teléfono:"
+
+#~ msgid "Subject:"
+#~ msgstr "Asunto:"
+
+#~ msgid "Message:"
+#~ msgstr "Mensaje:"
+
+#~ msgid "Attachment:"
+#~ msgstr "Datos adjuntos:"
+
+#~ msgid ""
+#~ "Please enable JavaScript to add language in the contact form, change the "
+#~ "names of the contact form fields and error messages."
+#~ msgstr ""
+#~ "Por favor, activa JavaScript para añadir un idioma en el formulario de "
+#~ "contacto, cambiar los nombres de los campos del formulario de contacto y "
+#~ "mensajes de error"
+
+#~ msgid "What to use?"
+#~ msgstr "Qué usar?"
+
+#~ msgid "Using Contact Form to DB by BestWebSoft"
+#~ msgstr "Mediante Formularios de Contacto de BD de BestWebSoft"
+
+#~ msgid "Activate Subscriber"
+#~ msgstr "Activar suscripción"
+
+#~ msgid "Download Subscriber"
+#~ msgstr "Descargar suscripción"
+
+#~ msgid "Activate Captcha"
+#~ msgstr "Activar Captcha"
+
+#~ msgid "Download Captcha"
+#~ msgstr "Descargar Captcha"
+
+#~ msgid "Phone"
+#~ msgstr "Teléfono"
+
+#~ msgid "To send mail you can use the php mail function"
+#~ msgstr "Para enviar el correo se puede utilizar la función de correo php"
+
+#~ msgid "English"
+#~ msgstr "Inglés"
+
+#~ msgid "or"
+#~ msgstr "o"
+
+#, fuzzy
+#~ msgid ""
+#~ "If you have any problems with the standard shortcode [contact_form], you "
+#~ "should use the shortcode"
+#~ msgstr ""
+#~ "Si tiene algún problema con el shortcode estándar [contact_form], se debe "
+#~ "utilizar el shortcode"
+
+#~ msgid "They work the same way."
+#~ msgstr "Funcionan de la misma manera."
+
+#~ msgid ""
+#~ "If have any problems with the standard shortcode [contact_form], you "
+#~ "should use the shortcode"
+#~ msgstr ""
+#~ "Si tiene algún problema con el shortcode estándar [contact_form], se debe "
+#~ "utilizar el shortcode"
+
+#~ msgid "The $_SERVER variable that is used to build a URL of the form"
+#~ msgstr ""
+#~ "La variable $_SERVER que se utiliza para construir una URL de la forma"
+
+#~ msgid ""
+#~ "If you are not sure whether to change this setting or not, please do not "
+#~ "do that."
+#~ msgstr ""
+#~ "Si no está seguro de si se debe cambiar esta configuración o no, por "
+#~ "favor, no hagas eso."
+
+#~ msgid ""
+#~ "The plugin's settings have been changed. In order to save them please "
+#~ "don't forget to click the 'Save Changes' button."
+#~ msgstr ""
+#~ "Configuración del plugin se han cambiado. Para salvar los cambios, no "
+#~ "olvide hacer clic en el botón \"Guardar cambios\"."
+
+#, fuzzy
+#~ msgid "Unlock premium options by upgrading to PRO version."
+#~ msgstr ""
+#~ "Desbloquear opciones premium mediante la actualización a una versión PRO."
+
+#~ msgid "Go"
+#~ msgstr "Ir"
+
+#~ msgid "Show with errors"
+#~ msgstr "Mostrar con errores"
+
+#~ msgid "Please enter your full name..."
+#~ msgstr "Escriba su nombre completo..."
+
+#~ msgid "Please enter your address..."
+#~ msgstr "Escriba su dirección..."
+
+#~ msgid "Please enter your email address..."
+#~ msgstr "Introduzca su correo electrónico ..."
+
+#~ msgid "Please enter your phone number..."
+#~ msgstr "Escriba su número de teléfono..."
+
+#~ msgid "Please enter subject..."
+#~ msgstr "Escriba un asunto..."
+
+#~ msgid "Please enter your message..."
+#~ msgstr "Escriba el mensaje..."
+
+#~ msgid "powered by"
+#~ msgstr "impulsado por"
+
+#~ msgid "Activate Contact Form to DB"
+#~ msgstr "Activar Formulario de contacto para DB"
+
+#~ msgid "Download Contact Form to DB"
+#~ msgstr "Descargue  Contact Form para DB"
+
+#~ msgid "Captcha"
+#~ msgstr "Captcha"
+
+#~ msgid "(powered by bestwebsoft.com)"
+#~ msgstr "(hecho por bestwebsoft.com)"
+
+#~ msgid "requires"
+#~ msgstr "requiere"
+
+#~ msgid ""
+#~ "or higher, that is why it has been deactivated! Please upgrade WordPress "
+#~ "and try again."
+#~ msgstr ""
+#~ "o superior, es por eso que ha sido desactivado! Por favor actualize "
+#~ "WordPress y vuelva a intentarlo."
+
+#~ msgid "Back to the WordPress"
+#~ msgstr "Volver a WordPress"
+
+#~ msgid "Plugins page"
+#~ msgstr "Página de Plugins"
+
+#~ msgid "Wrong license key"
+#~ msgstr "Clave de licencia incorrecta"
+
+#~ msgid ""
+#~ "Something went wrong. Try again later. If the error will appear again, "
+#~ "please, contact us <a href=http://support.bestwebsoft.com>BestWebSoft</"
+#~ "a>. We are sorry for inconvenience."
+#~ msgstr ""
+#~ "Algo salió mal. Inténtelo de nuevo más tarde. Si el error vuelve a "
+#~ "aparecer, por favor, contacte con nosotros <a href=http://support."
+#~ "bestwebsoft.com>BestWebSoft</a>. Pedimos disculpas por los inconvenientes."
+
+#~ msgid "This license key is bind to another site"
+#~ msgstr "Esta clave de licencia se usa en otro sitio"
+
+#~ msgid ""
+#~ "Unfortunately, you have exceeded the number of available tries per day. "
+#~ "Please, upload the plugin manually."
+#~ msgstr ""
+#~ "Por desgracia, se ha superado el número de intentos disponibles por día. "
+#~ "Por favor, carga el plugin manualmente."
+
+#~ msgid ""
+#~ "Failed to download the zip archive. Please, upload the plugin manually"
+#~ msgstr ""
+#~ "Error al descargar el archivo zip. Por favor, cargar el plugin manualmente"
+
+#~ msgid "Failed to open the zip archive. Please, upload the plugin manually"
+#~ msgstr ""
+#~ "No se pudo abrir el archivo zip. Por favor, carga el plugin manualmente"
+
+#~ msgid ""
+#~ "Your server does not support either ZipArchive or Phar. Please, upload "
+#~ "the plugin manually"
+#~ msgstr ""
+#~ "Su servidor no soporta bien ZipArchive o Phar. Por favor, carga el plugin "
+#~ "manualmente"
+
+#, fuzzy
+#~ msgid "UploadDir is not writable. Please, upload the plugin manually"
+#~ msgstr ""
+#~ "No se pudo abrir el archivo zip. Por favor, carga el plugin manualmente"
+
+#~ msgid ""
+#~ "Something went wrong. Try again later or upload the plugin manually. We "
+#~ "are sorry for inconvienience."
+#~ msgstr ""
+#~ "Algo salió mal. Inténtelo de nuevo más tarde o carge el plugin "
+#~ "manualmente. Pedimos disculpas por los inconvenientes."
+
+#~ msgid "Please, enter Your license key"
+#~ msgstr "Por favor, introduzca su clave de licencia"
+
+#~ msgid "If you enjoy our plugin, please give it 5 stars on WordPress"
+#~ msgstr ""
+#~ "Si usted disfruta de nuestro plugin, por favor, darle 5 estrellas en "
+#~ "WordPress"
+
+#~ msgid "Rate the plugin"
+#~ msgstr "Valorar el plugin"
+
+#~ msgid "If there is something wrong about it, please contact us"
+#~ msgstr "Si hay algo malo en el, por favor, póngase en contacto con nosotros"
+
+#~ msgid ""
+#~ "Congratulations! The PRO version of the plugin is successfully download "
+#~ "and activated."
+#~ msgstr ""
+#~ "Enhorabuena La versión PRO del plugin ha sido descargada y se activó con "
+#~ "éxito."
+
+#~ msgid "Please, go to"
+#~ msgstr "Por favor, vaya a"
+
+#~ msgid "You will be redirected automatically in 5 seconds."
+#~ msgstr "Usted será redirigido automáticamente en 5 segundos."
+
+#~ msgid "You can download and activate"
+#~ msgstr "Puede descargar y activar"
+
+#~ msgid "version of this plugin by entering Your license key."
+#~ msgstr "versión de este plugin introduciendo su clave de licencia."
+
+#~ msgid ""
+#~ "You can find your license key on your personal page Client area, by "
+#~ "clicking on the link"
+#~ msgstr ""
+#~ "Puede encontrar su clave de licencia en el área de la página de cliente "
+#~ "personal, haciendo clic en el enlace"
+
+#~ msgid ""
+#~ "(your username is the email you specify when purchasing the product)."
+#~ msgstr ""
+#~ "(su nombre de usuario es el correo electrónico que usted especifique a la "
+#~ "hora de comprar el producto)."
+
+#~ msgid ""
+#~ "It’s time to upgrade your <strong>Contact Form plugin</strong> to "
+#~ "<strong>PRO</strong> version"
+#~ msgstr ""
+#~ "Es hora de actualizar su <strong>Contact Form plugin</strong> a versión "
+#~ "<strong>PRO</strong>"
+
+#~ msgid "Extend standard plugin functionality with new great options."
+#~ msgstr ""
+#~ "Extienda la funcionalidad plug-in de serie con los nuevas grandes "
+#~ "opciones."
+
+#~ msgid "Extra settings"
+#~ msgstr "Ajustes adicionales"
+
+#~ msgid "Show"
+#~ msgstr "Mostrar"
+
+#~ msgid "Hide"
+#~ msgstr "Ocultar"
+
+#~ msgid "The text in the 'From' field"
+#~ msgstr "El texto en el campo \"De\""
+
+#~ msgid "This text will be used in the 'FROM' field"
+#~ msgstr "Este texto se utiliza en el campo \"De\""
+
+#~ msgid "The email address in the 'From' field"
+#~ msgstr "La dirección de correo electrónico en el campo \"De\""
+
+#~ msgid "This email address will be used in the 'From' field."
+#~ msgstr ""
+#~ "Esta dirección de correo electrónico se utilizará en el campo \"De\"."
+
+#~ msgid "Go!"
+#~ msgstr "Ir!"
+
+#, fuzzy
+#~ msgid "Contact Form Pro"
+#~ msgstr "Contact Form"
+
+#, fuzzy
+#~ msgid "Contact Form Pro Extra Settings"
+#~ msgstr "Opzioni Contact Form"
+
+#, fuzzy
+#~ msgid "Contact Form Pro | Extra Settings"
+#~ msgstr "Opzioni Contact Form"
+
+#, fuzzy
+#~ msgid "Display fields"
+#~ msgstr "Visualizza il testo"
+
+#, fuzzy
+#~ msgid "Display tips below the Attachment block"
+#~ msgstr "Visualizza suggeriementi sotto il blocco Allegato"
+
+#~ msgid "Required fields"
+#~ msgstr "Campi richiesti"
+
+#, fuzzy
+#~ msgid "Display the asterisk near required fields"
+#~ msgstr "VIsualizza un campo numero di telefono"
+
+#~ msgid "You can attach the following file formats"
+#~ msgstr "Gli utenti possono allegare i files nei seguenti tipi"
+
+#, fuzzy
+#~ msgid "Memory usage"
+#~ msgstr "Messaggio"
+
+#, fuzzy
+#~ msgid "Site URL"
+#~ msgstr "Sito"
+
+#, fuzzy
+#~ msgid "Please enter a valid email address."
+#~ msgstr "Utilizza questa e-mail:"
+
+#~ msgid "Read more"
+#~ msgstr "Leggi"
+
+#~ msgid "Installed plugins"
+#~ msgstr "Plugin installati"
+
+#~ msgid "Recommended plugins"
+#~ msgstr "Plugin raccomandati"
+
+#~ msgid "Install %s"
+#~ msgstr "Installa %s"
+
+#~ msgid "Install now from wordpress.org"
+#~ msgstr "Installa ora da wordpress.org"
+
+#, fuzzy
+#~ msgid "Active Plugins"
+#~ msgstr "Plugin attivati"
+
+#, fuzzy
+#~ msgid "Inactive Plugins"
+#~ msgstr "Plugin attivati"
+
+#, fuzzy
+#~ msgid "Send to support"
+#~ msgstr "Supporto"
+
+#~ msgid "Contact Form Options"
+#~ msgstr "Opzioni Contact Form"
+
+#~ msgid "Display Attachment tips"
+#~ msgstr "Visualizza suggerimenti Allegato"
+
+#~ msgid "Please enter a valid email address. Settings are not saved."
+#~ msgstr "Perfavore inserisci una e-mail corretta. Opzioni non salvate."
+
+#, fuzzy
+#~ msgid "E-Mail Address"
+#~ msgstr "Indirizzo e-mail:"
+
+#~ msgid "E-Mail Addresse:"
+#~ msgstr "Indirizzo e-mail:"
+
+#~ msgid "Install Now"
+#~ msgstr "Installa Ora"
