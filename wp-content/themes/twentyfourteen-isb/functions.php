@@ -32,5 +32,5 @@ add_filter( 'gettext', 'remove_lostpassword_text' );
 
 
 
-update_option( 'siteurl', 'http://biocuration.wpengine.com' );
-update_option( 'home', 'http://biocuration.wpengine.com' );
+update_option( 'siteurl', 'http://biocuration.org' );
+update_option( 'home', 'http://biocuration.org' );
