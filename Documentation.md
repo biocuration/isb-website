@@ -19,8 +19,8 @@ $ clip <~/.ssh/id_rsa
 
 
 ## Step 3: Add The Agent
-`$ eval $(ssh-agent -s)`
-`$ ssh-add ~/.ssh/id_rsa`
+1. `$ eval $(ssh-agent -s)`
+2. `$ ssh-add ~/.ssh/id_rsa`
 
 
 ## Step 4: Add the SSH Public Key to wpengine
