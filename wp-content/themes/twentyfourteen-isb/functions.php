@@ -31,6 +31,5 @@ function remove_lostpassword_text ( $text ) {
 add_filter( 'gettext', 'remove_lostpassword_text' );
 
 
-
-update_option( 'siteurl', 'https://www.biocuration.org' );
-update_option( 'home', 'https://www.biocuration.org' );
+// update_option( 'siteurl', 'https://www.biocuration.org' );
+// update_option( 'home', 'https://www.biocuration.org' );
