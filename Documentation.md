@@ -35,3 +35,36 @@ https://github.com/settings/keys
 For GitHub: `$ ssh -T git@github.com` for wpengine: `$ ssh git@git.wpengine.com info`
 
 
+### Step 5: Copy the latest files from wpengin
+Log in to your account at https://my.wpengine.com/installs/biocuration/backup_points#production and navigate to the Backup Points section. Once there, choose the latest one and select **Download Zip**.
+
+Once the download of the preferred backup point is complete, extract the contents to a directory of your choosing. For this site will assume *~/biocuration/isb-website*.
+
+
+### Step 6: Working with Git Command
+1. Explore the project directory
+`$ cd ~/biocuration/isb-website` 
+
+2. Add GitHub repository as **origin**
+`$ git remote add origin git@github.com:biocuration/isb-website.git`
+
+3. Add wpengine repository as **production**
+`$ git remote add production git@git.wpengine.com:production/biocuration.git`
+
+4. Add all file to staging after modification
+`$ git add -A`
+
+5. Commit the changes with a massage
+`$ git commit -m "your_message"`
+
+7. Git Push to GitHub
+`$ git push origin master`
+
+6. Git Push to wpengine
+`$ git push production master`
+
+
+
+## NOTE
+The example commends are for windows users, for MAC user there are a few different way.
+To know more about SSH setup visit https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
