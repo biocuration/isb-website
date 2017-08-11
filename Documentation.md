@@ -67,11 +67,11 @@ create new database with the name `wp_biocuration` and import the database that 
 
 
 ### Step 4: Site configuration
-Edit wp-config.php file from the folder *~/www/isb-website* and modify `DB_USER` and `DB_PASSWORD`,
+Edit wp-config.php file from the folder *~/www/isb-website* and modify the value of `DB_USER` and `DB_PASSWORD` field,
 
 and add two new lines to set the site URL
-define('WP_HOME','http://example.com');
-define('WP_SITEURL','http://example.com');
+`define('WP_HOME','http://example.com');`
+`define('WP_SITEURL','http://example.com');`
 
 you have to replace `http://example.com` by `http://localhost/isb-website`
 
