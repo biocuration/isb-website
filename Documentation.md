@@ -72,6 +72,7 @@ Edit wp-config.php file from the folder *~/www/isb-website* and modify the value
 and add two new lines to set the site URL 
 
 `define('WP_HOME','http://example.com');`
+
 `define('WP_SITEURL','http://example.com');`
 
 you have to replace `http://example.com` by `http://localhost/isb-website`
