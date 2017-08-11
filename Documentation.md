@@ -77,6 +77,7 @@ and add two new lines to set the site URL
 
 you have to replace `http://example.com` by `http://localhost/isb-website`
 
+now you should able to visit the site using the URL `http://localhost/isb-website`
 
 ### Step 5: Working with Git Command
 Explore the project directory
