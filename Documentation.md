@@ -40,14 +40,14 @@ For GitHub: `$ ssh -T git@github.com` for wpengine: `$ ssh git@git.wpengine.com 
 
 
 
-## Working on Local Machine and Push to WPENGIN
+## Working on Local Machine and Push to WPENGINE
 
 ### Step 1: Setup local environment
 You can setup any server you comfortable with, I am using XAMPP, If you want to setup **XAMPP** then follow the istruction below
 For windows http://www.wikihow.com/Install-XAMPP-for-Windows
 For MAC https://www.webucator.com/how-to/how-install-start-test-xampp-on-mac-osx.cfm
 
-### Step 2: Copy the latest files from wpengin
+### Step 2: Copy the latest files from wpengine
 Log in to your account at https://my.wpengine.com/installs/biocuration/backup_points#production and navigate to the Backup Points section. Once there, choose the latest one and select **Download Zip**.
 
 Once the download of the preferred backup point is complete, extract the contents to a directory of your choosing. For this site will assume *~/biocuration/isb-website*.
@@ -56,7 +56,7 @@ Once the download of the preferred backup point is complete, extract the content
 Since you are going to setup this WordPress site in your local machine you have to extract the folders inside `www` folder of XAPPM server, For this site it will be like this *~/www/isb-website*
 
 
-### Step 3: Export database from WPENGIN and import to local machine
+### Step 3: Export database from WPENGINE and import to local machine
 Go to 
 https://my.wpengine.com/installs/biocuration/phpmyadmin
 Chose the database named `wp_biocuration` and export it.
