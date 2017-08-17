@@ -125,4 +125,4 @@ Git Push to wpengine
 2.The example commends are for windows users, for MAC user there are a few different way.
 To know more about SSH setup: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
 
-3. For Git push in wpengin: https://wpengine.com/git/
+3. For Git push in wpengine: https://wpengine.com/git/
