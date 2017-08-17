@@ -1,0 +1,107 @@
+0000.007 () Opened log file at time: Fri, 21 Jul 2017 16:47:25 +0000 on https://biocuration.wpengine.com
+0000.007 () UpdraftPlus WordPress backup plugin (https://updraftplus.com): 1.13.4 WP: 4.8 PHP: 5.6.30-1+wpengine8 (apache2handler, Linux pod-101063 3.13.0-123-generic #172-Ubuntu SMP Mon Jun 26 18:04:35 UTC 2017 x86_64) MySQL: 5.6.36 WPLANG: en_US Server: Apache safe_mode: 0 max_execution_time: 900 memory_limit: 512M (used: 46.7M | 47M) multisite: N openssl: OpenSSL 1.0.1f 6 Jan 2014 mcrypt: Y LANG: C ZipArchive::addFile: Y
+0000.007 () Free space on disk containing Updraft's temporary directory: Unknown
+0000.009 () Restore job started. Entities to restore: db. Restore options: {"updraft_restorer_replacesiteurl":false,"updraft_encryptionphrase":"","updraft_restorer_wpcore_includewpconfig":false}
+0000.019 () Will not delete any archives after unpacking them, because there was no cloud storage for this backup
+0000.030 () Entity: db
+0000.030 () restore_backup(backup_file=backup_2017-07-17-0457_International_Society_for_Biocur_46547b273d28-db.gz, type=db, info=a:0:{}, last_one=1)
+0000.030 () Unpacking backup... (backup_2017-07-17-0457_International_Society_for_Biocur_46547b273d28-db.gz, 3.1 Mb)
+0000.034 () Database successfully unpacked
+0000.034 () Restoring the database (on a large site this can take a long time - if it times out (which can happen if your web hosting company has configured your hosting to limit resources) then you should use a different method, such as phpMyAdmin)...
+0000.034 () Using direct MySQL access; value of use_mysqli is: 1
+0000.190 () Tried to raise max_allowed_packet from 16 MB to 32 MB, but failed (Access denied; you need (at least one of) the SUPER privilege(s) for this operation, b:0;)
+0000.191 () Max packet size: 16 MB
+0000.191 () Entering maintenance mode
+0000.191 () Enabling Maintenance mode&#8230;
+0000.191 () Backup of: http://biocuration.org
+0000.201 () Content URL: http://biocuration.org/wp-content
+0000.201 () Uploads URL: http://biocuration.org/wp-content/uploads
+0000.201 () Old table prefix: wp_
+0000.201 () Site information: multisite=0
+0000.205 () New table prefix: wp_
+0000.357 () Processing table (InnoDB): wp_options
+0000.865 () Restoring prior UD configuration (table: wp_options; keys: 89)
+0001.119 () PHP event: code E_NOTICE: Undefined index: settings (line 3483, wp-content/plugins/updraftplus/class-updraftplus.php)
+0001.119 () PHP event: code E_WARNING: Invalid argument supplied for foreach() (line 3483, wp-content/plugins/updraftplus/class-updraftplus.php)
+0001.225 () Processing table (InnoDB): wp_users
+0001.512 () Processing table (InnoDB): wp_usermeta
+0003.336 () Processing table (InnoDB): wp_commentmeta
+0003.433 () Processing table (InnoDB): wp_comments
+0003.520 () Processing table (InnoDB): wp_links
+0003.600 () Processing table (InnoDB): wp_postmeta
+0004.281 () Processing table (InnoDB): wp_posts
+0004.419 () Database queries processed: 50 in 4.35 seconds
+0005.020 () Processing table (InnoDB): wp_term_relationships
+0005.120 () Processing table (InnoDB): wp_term_taxonomy
+0005.153 () Processing table (MyISAM): wp_termmeta
+0005.384 () Processing table (InnoDB): wp_terms
+0005.426 () Processing table (MyISAM): wp_cimy_uef_data
+0006.070 () Processing table (MyISAM): wp_cimy_uef_fields
+0006.079 () Processing table (MyISAM): wp_cimy_uef_wp_fields
+0006.089 () Processing table (MyISAM): wp_cntctfrm_field
+0006.099 () Processing table (MyISAM): wp_icwp_wpsf_audit_trail
+0006.123 () Processing table (MyISAM): wp_icwp_wpsf_ip_lists
+0006.137 () Processing table (MyISAM): wp_icwp_wpsf_reporting
+0006.147 () Processing table (MyISAM): wp_icwp_wpsf_statistics
+0006.155 () Database queries processed: 100 in 6.09 seconds
+0006.157 () Processing table (MyISAM): wp_icwp_wpsf_user_management
+0006.168 () Processing table (MyISAM): wp_mailing_group
+0006.177 () Processing table (MyISAM): wp_mailing_group_attachments
+0006.187 () Processing table (MyISAM): wp_mailing_group_messages
+0006.199 () Processing table (MyISAM): wp_mailing_group_parsed_emails
+0006.230 () Processing table (MyISAM): wp_mailing_group_requestmanager
+0006.238 () Processing table (MyISAM): wp_mailing_group_sent_emails
+0006.245 () Processing table (MyISAM): wp_mailing_group_taxonomy
+0006.252 () Processing table (MyISAM): wp_mailing_group_user_taxonomy
+0006.283 () Processing table (InnoDB): wp_pmpro_discount_codes
+0006.361 () Processing table (InnoDB): wp_pmpro_discount_codes_levels
+0006.469 () Processing table (InnoDB): wp_pmpro_discount_codes_uses
+0006.494 () Processing table (MyISAM): wp_pmpro_membership_levelmeta
+0006.562 () Processing table (InnoDB): wp_pmpro_membership_levels
+0006.666 () Processing table (InnoDB): wp_pmpro_membership_orders
+0006.843 () Processing table (InnoDB): wp_pmpro_memberships_categories
+0006.906 () Processing table (InnoDB): wp_pmpro_memberships_pages
+0007.012 () Processing table (InnoDB): wp_pmpro_memberships_users
+0007.289 () Processing table (InnoDB): wp_slim_browsers
+0007.456 () Processing table (InnoDB): wp_slim_content_info
+0007.499 () Database queries processed: 150 in 7.43 seconds
+0007.608 () Processing table (InnoDB): wp_slim_events
+0007.717 () Processing table (InnoDB): wp_slim_outbound
+0007.757 () Processing table (InnoDB): wp_slim_screenres
+0007.813 () Processing table (InnoDB): wp_slim_stats
+0011.706 () Processing table (InnoDB): wp_slim_stats_3
+0012.724 () Database queries processed: 200 in 12.65 seconds
+0017.877 () Database queries processed: 250 in 17.81 seconds
+0022.789 () Processing table (InnoDB): wp_slim_stats_archive
+0022.857 () Processing table (InnoDB): wp_slim_stats_archive_3
+0022.904 () Processing table (MyISAM): wp_sml
+0022.913 () Processing table (MyISAM): wp_wfBadLeechers
+0022.920 () Processing table (MyISAM): wp_wfBlockedIPLog
+0023.070 () Processing table (MyISAM): wp_wfBlocks
+0023.100 () Processing table (MyISAM): wp_wfBlocksAdv
+0023.125 () Processing table (MyISAM): wp_wfConfig
+0023.178 () Processing table (MyISAM): wp_wfCrawlers
+0023.188 () Processing table (MyISAM): wp_wfFileMods
+0023.713 () Processing table (MyISAM): wp_wfHits
+0023.965 () Processing table (MyISAM): wp_wfHoover
+0023.975 () Processing table (MyISAM): wp_wfIssues
+0023.998 () Processing table (MyISAM): wp_wfKnownFileList
+0024.424 () Processing table (MyISAM): wp_wfLeechers
+0024.500 () Processing table (MyISAM): wp_wfLockedOut
+0024.511 () Processing table (MyISAM): wp_wfLocs
+0024.520 () Processing table (MyISAM): wp_wfLogins
+0024.570 () Processing table (MyISAM): wp_wfNet404s
+0024.577 () Processing table (MyISAM): wp_wfNotifications
+0024.587 () Processing table (MyISAM): wp_wfPendingIssues
+0024.594 () Processing table (MyISAM): wp_wfReverseCache
+0024.604 () Processing table (MyISAM): wp_wfSNIPCache
+0024.612 () Processing table (MyISAM): wp_wfScanners
+0024.626 () Processing table (MyISAM): wp_wfStatus
+0024.725 () Processing table (MyISAM): wp_wfThrottleLog
+0024.750 () Processing table (MyISAM): wp_wfVulnScanners
+0024.778 () Unlocking database and leaving maintenance mode
+0024.778 () Disabling Maintenance mode&#8230;
+0024.778 () Finished: lines processed: 382 in 24.71 seconds
+0024.779 () Cleaning up rubbish...
+0024.813 () Restore successful!
+0024.813 () Restore successful

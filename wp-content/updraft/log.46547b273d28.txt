@@ -1,0 +1,4 @@
+0000.000 (1) Opened log file at time: Fri, 21 Jul 2017 16:49:07 +0000 on https://biocuration.wpengine.com
+0000.003 (1) UpdraftPlus WordPress backup plugin (https://updraftplus.com): 1.13.4 WP: 4.8 PHP: 5.6.30-1+wpengine8 (apache2handler, Linux pod-101063 3.13.0-123-generic #172-Ubuntu SMP Mon Jun 26 18:04:35 UTC 2017 x86_64) MySQL: 5.6.36 WPLANG: en_US Server: Apache safe_mode: 0 max_execution_time: 900 memory_limit: 512M (used: 48.5M | 49M) multisite: N openssl: OpenSSL 1.0.1f 6 Jan 2014 mcrypt: Y LANG: C ZipArchive::addFile: Y
+0000.006 (1) Free space on disk containing Updraft's temporary directory: Unknown
+0000.010 (1) This backup task (46547b273d28) is either complete or began over 2 days ago: ending (1500655747.29, ) (existing jobdata keys: )
