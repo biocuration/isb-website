@@ -15,8 +15,8 @@ class UpdraftPlus_UpdraftCentral_Main {
 		add_action('updraftplus_debugtools_dashboard', array($this, 'debugtools_dashboard'), 20);
 		add_action('udrpc_log', array($this, 'udrpc_log'), 10, 3);
 		
-		add_action('wp_ajax_updraftcentral_receivepublickey', array($this, 'wp_ajax_updraftcentral_receivepublickey')); 
-		add_action('wp_ajax_nopriv_updraftcentral_receivepublickey', array($this, 'wp_ajax_updraftcentral_receivepublickey')); 
+		add_action('wp_ajax_updraftcentral_receivepublickey', array($this, 'wp_ajax_updraftcentral_receivepublickey'));
+		add_action('wp_ajax_nopriv_updraftcentral_receivepublickey', array($this, 'wp_ajax_updraftcentral_receivepublickey'));
 	
 		// The 'updraftplus' commands are registered in UpdraftPlus::plugins_loaded()
 		$command_classes = apply_filters('updraftplus_remotecontrol_command_classes', array(
@@ -25,12 +25,16 @@ class UpdraftPlus_UpdraftCentral_Main {
 			'users' => 'UpdraftCentral_Users_Commands',
 			'comments' => 'UpdraftCentral_Comments_Commands',
 			'updraftvault' => 'UpdraftCentral_UpdraftVault_Commands',
+			'analytics' => 'UpdraftCentral_Analytics_Commands'
 		));
 	
+		// If nothing was sent, then there is no incoming message, so no need to set up a listener (or CORS request, etc.). This avoids a DB SELECT query on the option below in the case where it didn't get autoloaded, which is the case when there are no keys.
+		if (('GET' == $_SERVER['REQUEST_METHOD'] || 'POST' == $_SERVER['REQUEST_METHOD']) && (empty($_REQUEST['action']) || 'updraft_central' !== $_REQUEST['action']) && empty($_REQUEST['udcentral_action']) && empty($_REQUEST['udrpc_message'])) return;
+		
 		// Remote control keys
 		// These are different from the remote send keys, which are set up in the Migrator add-on
 		$our_keys = UpdraftPlus_Options::get_updraft_option('updraft_central_localkeys');
-		if (is_array($our_keys) && !empty($our_keys)) {	
+		if (is_array($our_keys) && !empty($our_keys)) {
 			$remote_control = new UpdraftPlus_UpdraftCentral_Listener($our_keys, $command_classes);
 		}
 
@@ -50,30 +54,23 @@ class UpdraftPlus_UpdraftCentral_Main {
 			echo __('An UpdraftCentral connection has been made successfully.', 'updraftplus');
 		} else {
 			echo '<strong>'.__('A new UpdraftCentral connection has not been made.', 'updraftplus').'</strong><br>';
-			switch($result['code']) {
+			switch ($result['code']) {
 				case 'unknown_key':
-				echo __('The key referred to was unknown.', 'updraftplus');
-				break;
-				case 'not_logged_in';
-				
-// 				$the_url = admin_url('admin-ajax.php').'?action=updraftcentral_receivepublickey&_wpnonce='.urlencode($_GET['_wpnonce']).'&updraft_key_index='.urlencode($_GET['updraft_key_index']).'&public_key='.urlencode($_GET['public_key']);
-				
-				echo __('You are not logged into this WordPress site in your web browser.', 'updraftplus').' '.__('You must visit this URL in the same browser and login session as you created the key in.', 'updraftplus');
-				
-				break;
-				case 'nonce_failure';
-				
-				echo 'Security check. ';
-				
-				_e('You must visit this link in the same browser and login session as you created the key in.', 'updraftplus');
-				
-				break;
-				case 'already_have';
-				echo __('This connection appears to already have been made.', 'updraftplus');
-				break;
+					echo __('The key referred to was unknown.', 'updraftplus');
+					break;
+				case 'not_logged_in':
+					echo __('You are not logged into this WordPress site in your web browser.', 'updraftplus').' '.__('You must visit this URL in the same browser and login session as you created the key in.', 'updraftplus');
+					break;
+				case 'nonce_failure':
+					echo 'Security check. ';
+					_e('You must visit this link in the same browser and login session as you created the key in.', 'updraftplus');
+					break;
+				case 'already_have':
+					echo __('This connection appears to already have been made.', 'updraftplus');
+					break;
 				default:
-				echo htmlspecialchars(print_r($result, true));
-				break;
+					echo htmlspecialchars(print_r($result, true));
+					break;
 			}
 		}
 		
@@ -81,6 +78,11 @@ class UpdraftPlus_UpdraftCentral_Main {
 		die;
 	}
 	
+	/**
+	 * Checks _wpnonce, and if successful, saves the public key found in $_GET
+	 *
+	 * @return Array - with keys responsetype (can be 'error' or 'ok') and code, indicating whether the parse was successful
+	 */
 	private function receive_public_key() {
 		
 		if (!is_user_logged_in()) {
@@ -108,7 +110,13 @@ class UpdraftPlus_UpdraftCentral_Main {
 		return array('responsetype' => 'ok', 'code' => 'ok');
 	}
 	
-	// Action parameters, from udrpc: $message, $level, $this->key_name_indicator, $this->debug, $this
+	/**
+	 * Action parameters, from udrpc: $message, $level, $this->key_name_indicator, $this->debug, $this
+	 *
+	 * @param  string $message			  The log message
+	 * @param  string $level			  Log level
+	 * @param  string $key_name_indicator This indicates the key name
+	 */
 	public function udrpc_log($message, $level, $key_name_indicator) {
 		$udrpc_log = get_site_option('updraftcentral_client_log');
 		if (!is_array($udrpc_log)) $udrpc_log = array();
@@ -186,9 +194,9 @@ class UpdraftPlus_UpdraftCentral_Main {
 		// Use the site URL - this means that if the site URL changes, communication ends; which is the case anyway
 		$user = wp_get_current_user();
 		
-		$where_send = empty($params['where_send']) ? '' : (string)$params['where_send'];
+		$where_send = empty($params['where_send']) ? '' : (string) $params['where_send'];
 		
-		if ($where_send != '__updraftpluscom') {
+		if ('__updraftpluscom' != $where_send) {
 			$purl = parse_url($where_send);
 			if (empty($purl) || !array($purl) || empty($purl['scheme']) || empty($purl['host'])) return array('error' => __('An invalid URL was entered', 'updraftplus'));
 		}
@@ -210,10 +218,10 @@ class UpdraftPlus_UpdraftCentral_Main {
 		}
 
 		if (!empty($params['key_description'])) {
-			$extra_info['name'] = (string)$params['key_description'];
+			$extra_info['name'] = (string) $params['key_description'];
 		}
 
-		$key_size = (empty($params['key_size']) || !is_numeric($params['key_size']) || $params['key_size'] < 512) ? 2048 : (int)$params['key_size'];
+		$key_size = (empty($params['key_size']) || !is_numeric($params['key_size']) || $params['key_size'] < 512) ? 2048 : (int) $params['key_size'];
 		
 		$extra_info['key_size'] = $key_size;
 		
@@ -224,7 +232,6 @@ class UpdraftPlus_UpdraftCentral_Main {
 		}
 		
 		return $created;
-		die;
 	}
 
 	private function indicator_name_from_index($index) {
@@ -269,8 +276,7 @@ class UpdraftPlus_UpdraftCentral_Main {
 		
 		@set_time_limit(UPDRAFTPLUS_SET_TIME_LIMIT);
 		
-		$key_size = (empty($extra_info['key_size']) || !is_numeric($extra_info['key_size']) || $extra_info['key_size'] < 512) ? 2048 : (int)$extra_info['key_size'];
-// 		unset($extra_info['key_size']);
+		$key_size = (empty($extra_info['key_size']) || !is_numeric($extra_info['key_size']) || $extra_info['key_size'] < 512) ? 2048 : (int) $extra_info['key_size'];
 
 		if (is_object($ud_rpc) && $ud_rpc->generate_new_keypair($key_size)) {
 		
@@ -307,7 +313,7 @@ class UpdraftPlus_UpdraftCentral_Main {
 				);
 				
 				if (is_wp_error($sent_key) || empty($sent_key)) {
-					$err_msg = sprintf(__('A key was created, but the attempt to register it with %s was unsuccessful - please try again later.', 'updraftplus'), (string)$post_it_description);
+					$err_msg = sprintf(__('A key was created, but the attempt to register it with %s was unsuccessful - please try again later.', 'updraftplus'), (string) $post_it_description);
 					if (is_wp_error($sent_key)) $err_msg .= ' '.$sent_key->get_error_message().' ('.$sent_key->get_error_code().')';
 					return array(
 						'r' => $err_msg
@@ -318,7 +324,7 @@ class UpdraftPlus_UpdraftCentral_Main {
 
 				if (!is_array($response) || !isset($response['key_id']) || !isset($response['key_public'])) {
 					return array(
-						'r' => sprintf(__('A key was created, but the attempt to register it with %s was unsuccessful - please try again later.', 'updraftplus'), (string)$post_it_description),
+						'r' => sprintf(__('A key was created, but the attempt to register it with %s was unsuccessful - please try again later.', 'updraftplus'), (string) $post_it_description),
 						'raw' => wp_remote_retrieve_body($sent_key)
 					);
 				}
@@ -341,7 +347,7 @@ class UpdraftPlus_UpdraftCentral_Main {
 		
 
 			if (isset($extra_info['name'])) {
-				$name = (string)$extra_info['name'];
+				$name = (string) $extra_info['name'];
 				unset($extra_info['name']);
 			} else {
 				$name = 'UpdraftCentral Remote Control';
@@ -362,8 +368,8 @@ class UpdraftPlus_UpdraftCentral_Main {
 			return array(
 				'bundle' => $local_bundle,
 				'r' => __('Key created successfully.', 'updraftplus').' '.__('You must copy and paste this key now - it cannot be shown again.', 'updraftplus'),
-// 				'selector' => $this->get_remotesites_selector(array()),
-// 				'ourkeys' => $this->list_our_keys($our_keys),
+// 'selector' => $this->get_remotesites_selector(array()),
+// 'ourkeys' => $this->list_our_keys($our_keys),
 			);
 		}
 
@@ -432,8 +438,8 @@ class UpdraftPlus_UpdraftCentral_Main {
 				<table>
 					<thead>
 						<tr>
-							<th style="text-align:left;"><?php _e('Key description', 'updraftplus') ?></th>
-							<th style="text-align:left;"><?php _e('Details', 'updraftplus') ?></th>
+							<th style="text-align:left;"><?php _e('Key description', 'updraftplus'); ?></th>
+							<th style="text-align:left;"><?php _e('Details', 'updraftplus'); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -450,16 +456,17 @@ class UpdraftPlus_UpdraftCentral_Main {
 		return ob_get_clean();
 	}
 
-	private function create_key_markup(){ 
-		ob_start(); ?> 
+	private function create_key_markup(){
+		ob_start();
+		?> 
 		<div class="create_key_container"> 
-			<h4> <?php _e('Create new key', 'updraftplus') ?></h4> 
+			<h4> <?php _e('Create new key', 'updraftplus'); ?></h4> 
 			<table style="width: auto; table-layout:fixed;"> 
 				<thead></thead> 
 				<tbody> 
 					<tr class="updraft_debugrow"> 
 						<th style="width: 20%;"> 
-							<?php _e('Description', 'updraftplus') ?>: 
+							<?php _e('Description', 'updraftplus'); ?>: 
 						</th> 
 						<td style="width:80%;"> 
 							<input id="updraftcentral_keycreate_description" type="text" size="20" placeholder="<?php _e('Enter any description', 'updraftplus'); ?>" value="" > 
@@ -467,26 +474,26 @@ class UpdraftPlus_UpdraftCentral_Main {
 					</tr> 
 
 					<tr class="updraft_debugrow"> 
-						<th style=""> <?php _e('Dashboard at', 'updraftplus') ?>:</th> 
+						<th style=""> <?php _e('Dashboard at', 'updraftplus'); ?>:</th> 
 						<td style="width:80%;"> 
 							<label> 
 								<input checked="checked" type="radio" name="updraftcentral_mothership" id="updraftcentral_mothership_updraftpluscom"> 
-								UpdraftPlus.Com (<?php _e('i.e. you have an account there', 'updraftplus') ?>) 
+								UpdraftPlus.Com (<?php _e('i.e. you have an account there', 'updraftplus'); ?>) 
 							</label> 
 							<br> 
 							<label> 
 								<input type="radio" name="updraftcentral_mothership" id="updraftcentral_mothership_other"> 
-								<?php _e('Other (please specify - i.e. the site where you have installed an UpdraftCentral dashboard)', 'updraftplus') ?>: 
+								<?php _e('Other (please specify - i.e. the site where you have installed an UpdraftCentral dashboard)', 'updraftplus'); ?>: 
 							</label> 
 							<br> 
-							<input disabled="disabled" id="updraftcentral_keycreate_mothership" type="text" size="40" placeholder="<?php _e('URL of mothership', 'updraftplus') ?>" value=""> 
+							<input disabled="disabled" id="updraftcentral_keycreate_mothership" type="text" size="40" placeholder="<?php _e('URL of mothership', 'updraftplus'); ?>" value=""> 
 							<br> 
 							<div id="updraftcentral_keycreate_mothership_firewalled_container"> 
 								<label> 
 									<input id="updraftcentral_keycreate_mothership_firewalled" type="checkbox"> 
-									<?php _e('Use the alternative method for making a connection with the dashboard.', 'updraftplus') ?> 
+									<?php _e('Use the alternative method for making a connection with the dashboard.', 'updraftplus'); ?> 
 									<a href="#" id="updraftcentral_keycreate_altmethod_moreinfo_get"> 
-										<?php _e('More information...', 'updraftplus') ?> 
+										<?php _e('More information...', 'updraftplus'); ?> 
 									</a> 
 									<p id="updraftcentral_keycreate_altmethod_moreinfo" style="display:none;"> 
 										<?php _e('This is useful if the dashboard webserver cannot be contacted with incoming traffic by this website (for example, this is the case if this website is hosted on the public Internet, but the UpdraftCentral dashboard is on localhost, or on an Intranet, or if this website has an outgoing firewall), or if the dashboard website does not have a SSL certificate.');?>  
@@ -500,32 +507,32 @@ class UpdraftPlus_UpdraftCentral_Main {
 						<td style="width:80%;"> 
 							<?php _e('Encryption key size:', 'updraftplus'); ?> 
 							<select style="" id="updraftcentral_keycreate_keysize"> 
-								<option value="512"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('easy to break, fastest', 'updraftplus'), '512') ?></option> 
-								<option value="1024"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('faster (possibility for slow PHP installs)', 'updraftplus'), '1024') ?></option> 
-								<option value="2048" selected="selected"><?php echo sprintf(__('%s bytes', 'updraftplus').' - '.__('recommended', 'updraftplus'), '2048') ?></option> 
-								<option value="4096"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('slower, strongest', 'updraftplus'), '4096') ?></option> 
+								<option value="512"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('easy to break, fastest', 'updraftplus'), '512'); ?></option> 
+								<option value="1024"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('faster (possibility for slow PHP installs)', 'updraftplus'), '1024'); ?></option> 
+								<option value="2048" selected="selected"><?php echo sprintf(__('%s bytes', 'updraftplus').' - '.__('recommended', 'updraftplus'), '2048'); ?></option> 
+								<option value="4096"><?php echo sprintf(__('%s bits', 'updraftplus').' - '.__('slower, strongest', 'updraftplus'), '4096'); ?></option> 
 							</select> 
 						</td> 
 					</tr> 
 					<tr class="updraft_debugrow"> 
 						<th style=""></th> 
 						<td style="width:80%;"> 
-							<button type="button" class="button button-primary" id="updraftcentral_keycreate_go"><?php _e('Create', 'updraftplus') ?></button> 
+							<button type="button" class="button button-primary" id="updraftcentral_keycreate_go"><?php _e('Create', 'updraftplus'); ?></button> 
 						</td> 
 					</tr> 
 				</tbody> 
 			</table> 
 		</div> 
-		<?php 
-		return ob_get_clean(); 
-	} 
+		<?php
+		return ob_get_clean();
+	}
 
 	private function create_log_markup(){
 		ob_start();
 		?>
 			<div id="updraftcentral_view_log_container">
-				<h4><?php _e('View recent UpdraftCentral log events', 'updraftplus') ?> - 
-					<a href="#" id="updraftcentral_view_log"><?php _e('fetch...', 'updraftplus') ?></a>
+				<h4><?php _e('View recent UpdraftCentral log events', 'updraftplus'); ?> - 
+					<a href="#" id="updraftcentral_view_log"><?php _e('fetch...', 'updraftplus'); ?></a>
 				</h4>
 				<pre id="updraftcentral_view_log_contents" style="padding: 0 4px;">
 				</pre>
@@ -549,7 +556,6 @@ class UpdraftPlus_UpdraftCentral_Main {
 		</div>
 	<?php
 	}
-	
 }
 
 global $updraftplus_updraftcentral_main;

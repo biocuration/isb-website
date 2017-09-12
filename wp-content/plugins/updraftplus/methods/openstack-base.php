@@ -9,9 +9,13 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 	protected $chunk_size;
 
 	protected $client;
+	
 	protected $method;
+
 	protected $desc;
+
 	protected $long_desc;
+
 	protected $img_url;
 
 	public function __construct($method, $desc, $long_desc = null, $img_url = '') {
@@ -35,7 +39,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		try {
 			$service = $this->get_service($opts, UpdraftPlus_Options::get_updraft_option('updraft_ssl_useservercerts'), UpdraftPlus_Options::get_updraft_option('updraft_ssl_disableverify'));
-		} catch(AuthenticationError $e) {
+		} catch (AuthenticationError $e) {
 			$updraftplus->log($this->desc.' authentication failed ('.$e->getMessage().')');
 			$updraftplus->log(sprintf(__('%s authentication failed', 'updraftplus'), $this->desc).' ('.$e->getMessage().')', 'error');
 			return false;
@@ -44,7 +48,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			$updraftplus->log(sprintf(__('%s error - failed to access the container', 'updraftplus'), $this->desc).' ('.$e->getMessage().')', 'error');
 			return false;
 		}
-		# Get the container
+		// Get the container
 		try {
 			$this->container_object = $service->getContainer($this->container);
 		} catch (Exception $e) {
@@ -55,11 +59,11 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		foreach ($backup_array as $key => $file) {
 		
-			$file_key = 'openstack_status_'.md5($file);
-			$file_status = $updraftplus->jobdata_get($file_key);
+			$file_key = 'status_'.md5($file);
+			$file_status = $this->jobdata_get($file_key, null, 'openstack_'.$file_key);
 			if (is_array($file_status) && !empty($file_status['chunks']) && !empty($file_status['chunks'][1]['size'])) $this->chunk_size = $file_status['chunks'][1]['size'];
 		
-			# First, see the object's existing size (if any)
+			// First, see the object's existing size (if any)
 			$uploaded_size = $this->get_remote_size($file);
 
 			try {
@@ -74,7 +78,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 						}
 					} catch (Exception $e) {
 						$this->log("$logname regular upload: failed ($file) (".$e->getMessage().")");
-						$this->log("$file: ".sprintf(__('%s Error: Failed to upload','updraftplus'),$logname), 'error');
+						$this->log("$file: ".sprintf(__('%s Error: Failed to upload', 'updraftplus'), $logname), 'error');
 					}
 				}
 			} catch (Exception $e) {
@@ -94,7 +98,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			$response_object = $this->container_object->dataObject()->populateFromResponse($response)->setName($file);
 			return $response_object->getContentLength();
 		} catch (Exception $e) {
-			# Allow caller to distinguish between zero-sized and not-found
+			// Allow caller to distinguish between zero-sized and not-found
 			return false;
 		}
 	}
@@ -104,7 +108,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		$container = $opts['path'];
 		$path = $container;
 
-		if (empty($opts['user']) || (empty($opts['apikey']) && empty($opts['password']))) return new WP_Error('no_settings', __('No settings were found','updraftplus'));
+		if (empty($opts['user']) || (empty($opts['apikey']) && empty($opts['password']))) return new WP_Error('no_settings', __('No settings were found', 'updraftplus'));
 
 		try {
 			$service = $this->get_service($opts, UpdraftPlus_Options::get_updraft_option('updraft_ssl_useservercerts'), UpdraftPlus_Options::get_updraft_option('updraft_ssl_disableverify'));
@@ -112,7 +116,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			return new WP_Error('no_access', sprintf(__('%s error - failed to access the container', 'updraftplus'), $this->desc).' ('.$e->getMessage().')');
 		}
 
-		# Get the container
+		// Get the container
 		try {
 			$this->container_object = $service->getContainer($container);
 		} catch (Exception $e) {
@@ -127,7 +131,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 				try {
 					if ((is_object($file) && !empty($file->name))) {
 						$result = array('name' => $file->name);
-						# Rackspace returns the size of a manifested file properly; other OpenStack implementations may not
+						// Rackspace returns the size of a manifested file properly; other OpenStack implementations may not
 						if (!empty($file->bytes)) {
 							$result['size'] = $file->bytes;
 						} else {
@@ -137,10 +141,12 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 						$results[] = $result;
 					}
 				} catch (Exception $e) {
+					// Catch
 				}
 				$index++;
 			}
 		} catch (Exception $e) {
+			// Catch
 		}
 
 		return $results;
@@ -153,10 +159,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 			$headers = array(
 				'Content-Length'    => 0,
-				'X-Object-Manifest' => sprintf('%s/%s', 
-					$this->container,
-					$chunk_path.'_'
-				)
+				'X-Object-Manifest' => sprintf('%s/%s', $this->container, $chunk_path.'_')
 			);
 			
 			$url = $this->container_object->getUrl($file);
@@ -170,13 +173,24 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		}
 	}
 
-	// N.B. Since we use varying-size chunks, we must be careful as to what we do with $chunk_index
+	/**
+	 * N.B. Since we use varying-size chunks, we must be careful as to what we do with $chunk_index
+	 *
+	 * @param  string $file 		   Filename
+	 * @param  string $fp 			   Filepath to be used in chunked upload
+	 * @param  string $chunk_index 	   Index of chunked upload
+	 * @param  string $upload_size 	   Size of the upload, in bytes
+	 * @param  string $upload_start    Upload start file size
+	 * @param  string $upload_end 	   Upload end file size
+	 * @param  string $total_file_size Total file size
+	 * @return boolean
+	 */
 	public function chunked_upload($file, $fp, $chunk_index, $upload_size, $upload_start, $upload_end, $total_file_size) {
 
 		global $updraftplus;
 
-		$file_key = 'openstack_status_'.md5($file);
-		$file_status = $updraftplus->jobdata_get($file_key);
+		$file_key = 'status_'.md5($file);
+		$file_status = $this->jobdata_get($file_key, null, 'openstack_'.$file_key);
 		
 		$next_chunk_size = $upload_size;
 		
@@ -197,7 +211,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			$file_status = array('chunks' => array());
 		}
 		
-		$updraftplus->jobdata_set($file_key, $file_status);
+		$this->jobdata_set($file_key, $file_status);
 		
 		if ($upload_start < $bytes_already_uploaded) {
 			if ($next_chunk_size != $upload_size) {
@@ -249,7 +263,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 						
 						$new_chunk = max(min($upload_secs * $upload_rate * 0.9, 52428800, $bytes_free), 5242880);
 						$new_chunk = $new_chunk - ($new_chunk % 5242880);
-						$next_chunk_size = (int)$new_chunk;
+						$next_chunk_size = (int) $new_chunk;
 						$updraftplus->jobdata_set('openstack_chunk_size', $next_chunk_size);
 					}
 				}
@@ -263,7 +277,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 				if ($remote_size >= $upload_size) {
 					$updraftplus->log("$file: Chunk now exists; ignoring error (presuming it was an apparently known curl bug)");
 				} else {
-					$updraftplus->log("$file: ".sprintf(__('%s Error: Failed to upload','updraftplus'), $this->desc), 'error');
+					$updraftplus->log("$file: ".sprintf(__('%s Error: Failed to upload', 'updraftplus'), $this->desc), 'error');
 					return false;
 				}
 			}
@@ -271,7 +285,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		
 		$file_status['chunks'][$chunk_index]['size'] = $upload_size;
 
-		$updraftplus->jobdata_set($file_key, $file_status);
+		$this->jobdata_set($file_key, $file_status);
 		
 		if ($next_chunk_size != $upload_size) {
 			$response = new stdClass;
@@ -282,7 +296,6 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		
 		return true;
 	}
-
 
 	public function delete($files, $data = false, $sizeinfo = array()) {
 
@@ -299,7 +312,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			$path = $container;
 			try {
 				$service = $this->get_service($opts, UpdraftPlus_Options::get_updraft_option('updraft_ssl_useservercerts'), UpdraftPlus_Options::get_updraft_option('updraft_ssl_disableverify'));
-			} catch(AuthenticationError $e) {
+			} catch (AuthenticationError $e) {
 				$updraftplus->log($this->desc.' authentication failed ('.$e->getMessage().')');
 				$updraftplus->log(sprintf(__('%s authentication failed', 'updraftplus'), $this->desc).' ('.$e->getMessage().')', 'error');
 				return false;
@@ -308,7 +321,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 				$updraftplus->log(sprintf(__('%s error - failed to access the container', 'updraftplus'), $this->desc).' ('.$e->getMessage().')', 'error');
 				return false;
 			}
-			# Get the container
+			// Get the container
 			try {
 				$container_object = $service->getContainer($container);
 			} catch (Exception $e) {
@@ -344,7 +357,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 				$updraftplus->log($this->desc.' chunk delete failed: '.$e->getMessage());
 			}
 
-			# Finally, delete the object itself
+			// Finally, delete the object itself
 			try {
 				$container_object->dataObject()->setName($file)->delete();
 				$updraftplus->log($this->desc.': Deleted: '.$file);
@@ -364,7 +377,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		try {
 			$service = $this->get_service($opts, UpdraftPlus_Options::get_updraft_option('updraft_ssl_useservercerts'), UpdraftPlus_Options::get_updraft_option('updraft_ssl_disableverify'));
-		} catch(AuthenticationError $e) {
+		} catch (AuthenticationError $e) {
 			$updraftplus->log($this->desc.' authentication failed ('.$e->getMessage().')');
 			$updraftplus->log(sprintf(__('%s authentication failed', 'updraftplus'), $this->desc).' ('.$e->getMessage().')', 'error');
 			return false;
@@ -377,7 +390,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		$container = untrailingslashit($opts['path']);
 		$updraftplus->log($this->desc." download: ".$this->method."://$container/$file");
 
-		# Get the container
+		// Get the container
 		try {
 			$this->container_object = $service->getContainer($container);
 		} catch (Exception $e) {
@@ -386,7 +399,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			return false;
 		}
 
-		# Get information about the object within the container
+		// Get information about the object within the container
 		$remote_size = $this->get_remote_size($file);
 		if (false === $remote_size) {
 			$updraftplus->log('Could not access '.$this->desc.' object');
@@ -404,7 +417,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		} catch (Exception $e) {
 			global $updraftplus;
 			$updraftplus->log("$file: Failed to download (".$e->getMessage().")");
-			$updraftplus->log("$file: ".sprintf(__("%s Error",'updraftplus'), $this->desc).": ".__('Error downloading remote file: Failed to download'.' ('.$e->getMessage().")",'updraftplus'), 'error');
+			$updraftplus->log("$file: ".sprintf(__("%s Error", 'updraftplus'), $this->desc).": ".__('Error downloading remote file: Failed to download', 'updraftplus').' ('.$e->getMessage().")", 'error');
 			return false;
 		}
 		return $dl->getContent();
@@ -421,13 +434,14 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 		}
 
 		if (empty($container)) {
-			_e('Failure: No container details were given.' ,'updraftplus');
+			_e('Failure: No container details were given.', 'updraftplus');
 			return;
 		}
 
 		try {
 			$service = $this->get_service($opts, $useservercerts, $disableverify);
-		} catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
+		// @codingStandardsIgnoreLine
+		} catch (Guzzle\Http\Exception\ClientErrorResponseException $e) {
 			$response = $e->getResponse();
 			$code = $response->getStatusCode();
 			$reason = $response->getReasonPhrase();
@@ -437,7 +451,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 				echo __('Authorisation failed (check your credentials)', 'updraftplus')." ($code:$reason)";
 			}
 			return;
-		} catch(AuthenticationError $e) {
+		} catch (AuthenticationError $e) {
 			echo sprintf(__('%s authentication failed', 'updraftplus'), $this->desc).' ('.$e->getMessage().')';
 			return;
 		} catch (Exception $e) {
@@ -447,7 +461,8 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		try {
 			$container_object = $service->getContainer($container);
-		} catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
+		// @codingStandardsIgnoreLine
+		} catch (Guzzle\Http\Exception\ClientErrorResponseException $e) {
 			$response = $e->getResponse();
 			$code = $response->getStatusCode();
 			$reason = $response->getReasonPhrase();
@@ -482,11 +497,12 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		try {
 			if (!empty($object)) {
-				# One OpenStack server we tested on did not delete unless we slept... some kind of race condition at their end
+				// One OpenStack server we tested on did not delete unless we slept... some kind of race condition at their end
 				sleep(1);
 				$object->delete();
 			}
 		} catch (Exception $e) {
+			// Catch
 		}
 
 	}
@@ -496,7 +512,6 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 	/**
 	 * This outputs the html to the settings page for the Openstack settings.
-	 * @param  Array $opts - this is an array of Openstack settings
 	 */
 	public function config_print() {
 
@@ -507,10 +522,13 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			<td></td>
 			<td>
 				<?php
-					if (!empty($this->img_url)) { ?>
-					<img alt="<?php echo $this->long_desc;?>" src="<?php echo UPDRAFTPLUS_URL.$this->img_url ?>">
-				<?php } ?>
-				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.','updraftplus'),$this->long_desc);?></em></p></td>
+					if (!empty($this->img_url)) {
+					?>
+						<img alt="<?php echo $this->long_desc; ?>" src="<?php echo UPDRAFTPLUS_URL.$this->img_url; ?>">
+					<?php
+					}
+					?>
+				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.', 'updraftplus'), $this->long_desc);?></em></p></td>
 		</tr>
 
 		<tr class="<?php echo $classes; ?>">
@@ -520,7 +538,7 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 			// Check requirements.
 			global $updraftplus_admin;
 			if (!function_exists('mb_substr')) {
-				$updraftplus_admin->show_double_warning('<strong>'.__('Warning','updraftplus').':</strong> '.sprintf(__('Your web server\'s PHP installation does not included a required module (%s). Please contact your web hosting provider\'s support.', 'updraftplus'), 'mbstring').' '.sprintf(__("UpdraftPlus's %s module <strong>requires</strong> %s. Please do not file any support requests; there is no alternative.",'updraftplus'), $this->desc, 'mbstring'), $this->method);
+				$updraftplus_admin->show_double_warning('<strong>'.__('Warning', 'updraftplus').':</strong> '.sprintf(__('Your web server\'s PHP installation does not included a required module (%s). Please contact your web hosting provider\'s support.', 'updraftplus'), 'mbstring').' '.sprintf(__("UpdraftPlus's %s module <strong>requires</strong> %s. Please do not file any support requests; there is no alternative.", 'updraftplus'), $this->desc, 'mbstring'), $this->method);
 			}
 			$updraftplus_admin->curl_check($this->long_desc, false, $this->method);
 			?>
@@ -532,5 +550,4 @@ class UpdraftPlus_BackupModule_openstack_base extends UpdraftPlus_BackupModule {
 
 		echo $this->get_test_button_html($this->desc);
 	}
-
 }

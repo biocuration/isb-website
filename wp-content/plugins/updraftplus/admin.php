@@ -21,10 +21,10 @@ class UpdraftPlus_Admin {
 		// wp_normalize_path is not present before WP 3.9
 		if (function_exists('wp_normalize_path')) return wp_normalize_path($path);
 		// Taken from WP 4.6
-		$path = str_replace( '\\', '/', $path );
-		$path = preg_replace( '|(?<=.)/+|', '/', $path );
-		if ( ':' === substr( $path, 1, 1 ) ) {
-			$path = ucfirst( $path );
+		$path = str_replace('\\', '/', $path);
+		$path = preg_replace('|(?<=.)/+|', '/', $path);
+		if (':' === substr($path, 1, 1)) {
+			$path = ucfirst($path);
 		}
 		return $path;
 	}
@@ -111,13 +111,17 @@ class UpdraftPlus_Admin {
 				$updraftplus->log_wp_error($settings, true, true);
 			} elseif (!empty($settings['settings'])) {
 				foreach ($settings['settings'] as $instance_id => $storage_options) {
-					if (!empty($storage_options['clientid'])) {
-						$clientid = $storage_options['clientid'];
-						$token = empty($storage_options['token']) ? '' : $storage_options['token'];
+					if ((defined('UPDRAFTPLUS_CUSTOM_GOOGLEDRIVE_APP') && UPDRAFTPLUS_CUSTOM_GOOGLEDRIVE_APP) || !empty($storage_options['clientid'])) {
+						if (!empty($storage_options['clientid'])) {
+							$clientid = $storage_options['clientid'];
+							$token = empty($storage_options['token']) ? '' : $storage_options['token'];
+						}
+						if (!empty($clientid) && '' == $token) add_action('all_admin_notices', array($this, 'show_admin_warning_googledrive'));
+						unset($clientid);
+						unset($token);
+					} else {
+						if (empty($storage_options['user_id'])) add_action('all_admin_notices', array($this, 'show_admin_warning_googledrive'));
 					}
-					if (!empty($clientid) && '' == $token) add_action('all_admin_notices', array($this,'show_admin_warning_googledrive'));
-					unset($clientid);
-					unset($token);
 				}
 			}
 		}
@@ -168,12 +172,12 @@ class UpdraftPlus_Admin {
 				foreach ($settings['settings'] as $instance_id => $storage_options) {
 					if((defined('UPDRAFTPLUS_CUSTOM_ONEDRIVE_APP') && UPDRAFTPLUS_CUSTOM_ONEDRIVE_APP)){
 						if(!empty($storage_options['clientid']) && !empty($storage_options['secret']) && empty($storage_options['refresh_token'])) {
-								add_action('all_admin_notices', array($this,'show_admin_warning_onedrive') );
+								add_action('all_admin_notices', array($this,'show_admin_warning_onedrive'));
 						} elseif (empty($storage_options['refresh_token'])) {
-							add_action('all_admin_notices', array($this,'show_admin_warning_onedrive') );
+							add_action('all_admin_notices', array($this,'show_admin_warning_onedrive'));
 						}
 					} else{
-						if(empty($storage_options['refresh_token']))add_action('all_admin_notices', array($this,'show_admin_warning_onedrive') );
+						if(empty($storage_options['refresh_token']))add_action('all_admin_notices', array($this,'show_admin_warning_onedrive'));
 					}
 				}
 			}
@@ -190,7 +194,7 @@ class UpdraftPlus_Admin {
 			} elseif (!empty($settings['settings'])) {
 				foreach ($settings['settings'] as $instance_id => $storage_options) {
 					if (empty($storage_options['token']) && empty($storage_options['email'])) {
-						add_action('all_admin_notices', array($this,'show_admin_warning_updraftvault') );
+						add_action('all_admin_notices', array($this,'show_admin_warning_updraftvault'));
 					}
 				}
 			}
@@ -350,7 +354,7 @@ class UpdraftPlus_Admin {
 				$installed_for = time() - $installed;
 
 				if (($installed && time() > $dismissed_until && $installed_for > 28*86400  && !defined('UPDRAFTPLUS_NOADS_B')) || (defined('UPDRAFTPLUS_FORCE_DASHNOTICE') && UPDRAFTPLUS_FORCE_DASHNOTICE)) {
-					add_action('all_admin_notices', array($this, 'show_admin_notice_upgradead') );
+					add_action('all_admin_notices', array($this, 'show_admin_notice_upgradead'));
 				}
 			}
 			
@@ -570,17 +574,19 @@ class UpdraftPlus_Admin {
 	private function ensure_sufficient_jquery_and_enqueue() {
 		global $updraftplus, $wp_version;
 		
-		$enqueue_version = @constant('WP_DEBUG') ? $updraftplus->version.'-'.time() : $updraftplus->version;
+		$enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? $updraftplus->version.'.'.time() : $updraftplus->version;
+		$min_or_not = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
 		
 		if (version_compare($wp_version, '3.3', '<')) {
 			// Require a newer jQuery (3.2.1 has 1.6.1, so we go for something not too much newer). We use .on() in a way that is incompatible with < 1.7
 			wp_deregister_script('jquery');
-			wp_register_script('jquery', 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js', false, '1.7.2', false);
+			$jquery_enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '1.7.2'.'.'.time() : '1.7.2';
+			wp_register_script('jquery', 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery'.$min_or_not.'.js', false, $jquery_enqueue_version, false);
 			wp_enqueue_script('jquery');
 			// No plupload until 3.3
-			wp_enqueue_script('updraftplus-admin', UPDRAFTPLUS_URL.'/includes/updraft-admin.js', array('jquery', 'jquery-ui-dialog'), $enqueue_version, true);
+			wp_enqueue_script('updraftplus-admin', UPDRAFTPLUS_URL.'/includes/updraft-admin'.$min_or_not.'.js', array('jquery', 'jquery-ui-dialog'), $enqueue_version, true);
 		} else {
-			wp_enqueue_script('updraftplus-admin', UPDRAFTPLUS_URL.'/includes/updraft-admin.js', array('jquery', 'jquery-ui-dialog', 'plupload-all'), $enqueue_version);
+			wp_enqueue_script('updraftplus-admin', UPDRAFTPLUS_URL.'/includes/updraft-admin'.$min_or_not.'.js', array('jquery', 'jquery-ui-dialog', 'plupload-all'), $enqueue_version);
 		}
 		
 	}
@@ -589,24 +595,26 @@ class UpdraftPlus_Admin {
 	public function admin_enqueue_scripts() {
 
 		global $updraftplus, $wp_locale;
+		
+		$enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? $updraftplus->version.'.'.time() : $updraftplus->version;
+		$min_or_not = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
 
 		// Defeat other plugins/themes which dump their jQuery UI CSS onto our settings page
 		wp_deregister_style('jquery-ui');
-		wp_enqueue_style('jquery-ui', UPDRAFTPLUS_URL.'/includes/jquery-ui.custom.css', array(), '1.11.4');
-		
-		$our_version = @constant('SCRIPT_DEBUG') ? $updraftplus->version.'.'.time() : $updraftplus->version;
+		$jquery_ui_css_enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '1.11.4'.'.'.time() : '1.11.4';
+		wp_enqueue_style('jquery-ui', UPDRAFTPLUS_URL.'/includes/jquery-ui.custom'.$min_or_not.'.css', array(), $jquery_ui_css_enqueue_version);		
 	
-		wp_enqueue_style('updraft-admin-css', UPDRAFTPLUS_URL.'/css/admin.css', array(), $our_version);
+		wp_enqueue_style('updraft-admin-css', UPDRAFTPLUS_URL.'/css/admin'.$min_or_not.'.css', array(), $enqueue_version);
 // 		add_filter('style_loader_tag', array($this, 'style_loader_tag'), 10, 2);
 
 		$this->ensure_sufficient_jquery_and_enqueue();
-		
-		wp_enqueue_script('jquery-blockui', UPDRAFTPLUS_URL.'/includes/jquery.blockUI.js', array('jquery'), '2.70.0');
+		$jquery_blockui_enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '2.70.0'.'.'.time() : '2.70.0';
+		wp_enqueue_script('jquery-blockui', UPDRAFTPLUS_URL.'/includes/jquery.blockUI'.$min_or_not.'.js', array('jquery'), $jquery_blockui_enqueue_version);
 	
-		wp_enqueue_script('jquery-labelauty', UPDRAFTPLUS_URL.'/includes/labelauty/jquery-labelauty.js', array('jquery'), '20160622-ud');
-		wp_enqueue_style('jquery-labelauty', UPDRAFTPLUS_URL.'/includes/labelauty/jquery-labelauty.css', array(), '20150925');
-
-		wp_enqueue_script('jquery.serializeJSON', UPDRAFTPLUS_URL.'/includes/jquery.serializeJSON/jquery.serializejson.min.js', array('jquery'), '2.8.1');
+		wp_enqueue_script('jquery-labelauty', UPDRAFTPLUS_URL.'/includes/labelauty/jquery-labelauty'.$min_or_not.'.js', array('jquery'), $enqueue_version);
+		wp_enqueue_style('jquery-labelauty', UPDRAFTPLUS_URL.'/includes/labelauty/jquery-labelauty'.$min_or_not.'.css', array(), $enqueue_version);
+		$serialize_js_enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '2.8.1'.'.'.time() : '2.8.1';
+		wp_enqueue_script('jquery.serializeJSON', UPDRAFTPLUS_URL.'/includes/jquery.serializeJSON/jquery.serializejson'.$min_or_not.'.js', array('jquery'), $serialize_js_enqueue_version);
 
 		$this->enqueue_jstree();
 		
@@ -728,7 +736,8 @@ class UpdraftPlus_Admin {
 			'testing_settings' => __('Testing %s Settings...', 'updraftplus'),
 			'settings_test_result' => __('%s settings test result:', 'updraftplus'),
 			'nothing_yet_logged' => __('Nothing yet logged', 'updraftplus'),
-			'import_select_file' => __('You have not yet selected a file to import.', 'updraftplus'), 
+			'import_select_file' => __('You have not yet selected a file to import.', 'updraftplus'),
+			'import_invalid_json_file' => __('Error: The chosen file is corrupt. Please choose a valid UpdraftPlus export file.', 'updraftplus'), 
 			'updraft_settings_url' => UpdraftPlus_Options::admin_page_url().'?page=updraftplus', 
 			'network_site_url' => network_site_url(),
 			'importing' => __('Importing...', 'updraftplus'),
@@ -748,7 +757,7 @@ class UpdraftPlus_Admin {
 			'updraftplus_version' => $updraftplus->version
 		) );
 	}
-
+	
 	// Despite the name, this fires irrespective of what capabilities the user has (even none - so be careful)
 	public function core_upgrade_preamble() {
 		// They need to be able to perform backups, and to perform updates
@@ -892,7 +901,7 @@ class UpdraftPlus_Admin {
 			$dismissed_until = UpdraftPlus_Options::get_updraft_option('updraftplus_dismissedautobackup', 0);
 			if ($dismissed_until > time()) return;
 
-			if ( 'upgrade-plugin' == $_GET['action'] ) {
+			if ('upgrade-plugin' == $_GET['action']) {
 				$title = __('Update Plugin');
 				$parent_file = 'plugins.php';
 				$submenu_file = 'plugins.php';
@@ -1207,8 +1216,24 @@ class UpdraftPlus_Admin {
 
 		$objname = "UpdraftPlus_BackupModule_${service}";
 		if (method_exists($objname, "download")) {
-			$remote_obj = new $objname;
-			return $remote_obj->download($file);
+		
+			try {
+				$remote_obj = new $objname;
+				return $remote_obj->download($file);
+			} catch (Exception $e) {
+				$log_message = 'Exception ('.get_class($e).') occurred during download: '.$e->getMessage().' (Code: '.$e->getCode().', line '.$e->getLine().' in '.$e->getFile().')';
+				$updraftplus->log($log_message);
+				error_log($log_message);
+				$updraftplus->log(sprintf(__('A PHP exception (%s) has occurred: %s', 'updraftplus'), get_class($e), $e->getMessage()), 'error');
+				return false;
+			// @codingStandardsIgnoreLine
+			} catch (Error $e) {
+				$log_message = 'PHP Fatal error ('.get_class($e).') has occurred. Error Message: '.$e->getMessage().' (Code: '.$e->getCode().', line '.$e->getLine().' in '.$e->getFile().')';
+				$updraftplus->log($log_message);
+				error_log($log_message);
+				$updraftplus->log(sprintf(__('A PHP fatal error (%s) has occurred: %s', 'updraftplus'), get_class($e), $e->getMessage()), 'error');
+				return false;
+			}
 		} else {
 			$updraftplus->log("Automatic backup restoration is not available with the method: $service.");
 			$updraftplus->log("$file: ".sprintf(__("The backup archive for this file could not be found. The remote storage method in use (%s) does not allow us to retrieve files. To perform any restoration using UpdraftPlus, you will need to obtain a copy of this file and place it inside UpdraftPlus's working folder", 'updraftplus'), $service)." (".$this->prune_updraft_dir_prefix($updraftplus->backups_dir_location()).")", 'error');
@@ -1303,8 +1328,15 @@ class UpdraftPlus_Admin {
 
 	}
 	
-	// This echoes output; so, you will need to do output buffering if you want to capture it
-	public function do_credentials_test($test_settings) {
+	/**
+	 * Run a credentials test for the indicated remote storage module
+	 *
+	 * @param Array $test_settings - the test parameters, including the method itself indicated in the key 'method'
+	 * @param Boolean $return_instead_of_echo - whether to return or echo the results. N.B. More than just the results to echo will be returned
+	 *
+	 * @return Array|Void - the results, if they are being returned (rather than echoed). Keys: 'output' (the output), 'data' (other data)
+	 */
+	public function do_credentials_test($test_settings, $return_instead_of_echo = false) {
 	
 		$method = (!empty($test_settings['method']) && preg_match("/^[a-z0-9]+$/", $test_settings['method'])) ? $test_settings['method'] : "";
 		
@@ -1316,19 +1348,28 @@ class UpdraftPlus_Admin {
 		
 		if (!class_exists($objname)) include_once(UPDRAFTPLUS_DIR."/methods/$method.php");
 
+		$ret = '';
+		$data = null;
+		
 		# TODO: Add action for WP HTTP SSL stuff
 		if (method_exists($objname, "credentials_test")) {
 			$obj = new $objname;
-			$obj->credentials_test($test_settings);
+			if ($return_instead_of_echo) ob_start();
+			$data = $obj->credentials_test($test_settings);
+			if ($return_instead_of_echo) $ret .= ob_get_clean();
 		}
 		
 		if (count($this->logged) >0) {
-			echo "\n\n".__('Messages:', 'updraftplus')."\n";
+			$ret .= "\n\n".__('Messages:', 'updraftplus')."\n";
 			foreach ($this->logged as $err) {
-				echo "* $err\n";
+				$ret .= "* $err\n";
 			}
+			if (!$return_instead_of_echo) echo $ret;
 		}
 		restore_error_handler();
+		
+		if ($return_instead_of_echo) return array('output' => $ret, 'data' => $data);
+		
 	}
 	
 	// Relevant options (array keys): backup_timestamp, delete_remote, [remote_delete_limit]
@@ -1692,7 +1733,16 @@ class UpdraftPlus_Admin {
 		do_action($event, apply_filters('updraft_backupnow_options', $options, $request));
 	}
 	
-	public function fetch_log($backup_nonce, $log_pointer = 0) {
+	/**
+	 * Get the contents of a log file
+	 *
+	 * @param String  $backup_nonce	 - the backup id; or empty, for the most recently modified
+	 * @param Integer $log_pointer	 - the byte count to fetch from
+	 * @param String  $output_format - the format to return in; allowed as 'html' (which will escape HTML entities in what is returned) and 'raw'
+	 *
+	 * @return String
+	 */
+	public function fetch_log($backup_nonce = '', $log_pointer = 0, $output_format = 'html') {
 		global $updraftplus;
 
 		if (empty($backup_nonce)) {
@@ -1736,6 +1786,8 @@ class UpdraftPlus_Admin {
 			$log_content .= __('The log file could not be read.', 'updraftplus');
 		}
 		
+		if ('html' == $output_format) $log_content = htmlspecialchars($log_content);
+		
 		$ret_array = array(
 			'log' => $log_content,
 			'nonce' => $nonce,
@@ -1772,7 +1824,7 @@ class UpdraftPlus_Admin {
 
 	private function download_status($timestamp, $type, $findex) {
 		global $updraftplus;
-		$response = array( 'm' => $updraftplus->jobdata_get('dlmessage_'.$timestamp.'_'.$type.'_'.$findex).'<br>' );
+		$response = array('m' => $updraftplus->jobdata_get('dlmessage_'.$timestamp.'_'.$type.'_'.$findex).'<br>');
 		if ($file = $updraftplus->jobdata_get('dlfile_'.$timestamp.'_'.$type.'_'.$findex)) {
 			if ('failed' == $file) {
 				$response['e'] = __('Download failed', 'updraftplus').'<br>';
@@ -1963,7 +2015,7 @@ class UpdraftPlus_Admin {
 		add_filter('sanitize_file_name', array($this, 'sanitize_file_name'));
 		// handle file upload
 
-		$farray = array( 'test_form' => true, 'action' => 'plupload_action2' );
+		$farray = array('test_form' => true, 'action' => 'plupload_action2');
 
 		$farray['test_type'] = false;
 		$farray['ext'] = 'crypt';
@@ -2314,7 +2366,7 @@ class UpdraftPlus_Admin {
 				if (isset($restore_jobdata['job_type']) && 'restore' == $restore_jobdata['job_type'] && isset($restore_jobdata['second_loop_entities']) && !empty($restore_jobdata['second_loop_entities']) && isset($restore_jobdata['job_time_ms']) && (time() - $restore_jobdata['job_time_ms'] > 120 || (defined('UPDRAFTPLUS_RESTORE_PROGRESS_ALWAYS_SHOW') && UPDRAFTPLUS_RESTORE_PROGRESS_ALWAYS_SHOW)) && time() - $restore_jobdata['job_time_ms'] < 86400 && (empty($_REQUEST['action']) || ('updraft_restore' != $_REQUEST['action'] && 'updraft_restore_continue' != $_REQUEST['action']))) {
 					$restore_jobdata['jobid'] = $restore_in_progress;
 					$this->restore_in_progress_jobdata = $restore_jobdata;
-					add_action('all_admin_notices', array($this, 'show_admin_restore_in_progress_notice') );
+					add_action('all_admin_notices', array($this, 'show_admin_restore_in_progress_notice'));
 				}
 			}
 		}
@@ -2367,7 +2419,7 @@ class UpdraftPlus_Admin {
 
 		$premium_link = apply_filters('updraftplus_com_link','https://updraftplus.com/landing/updraftplus-premium');
 
-		$free_ret = '<em>'.__('All WordPress tables will be backed up.', 'updraftplus').' <a href="'.$premium_link.'">'. __('With UpdraftPlus Premium, you can choose to backup non-WordPress tables, backup only specified tables, and backup other databases too.','updraftplus').'</a></em>';
+		$free_ret = '<em>'.__('All WordPress tables will be backed up.', 'updraftplus').' <a href="'.$premium_link.'">'. __('With UpdraftPlus Premium, you can choose to backup non-WordPress tables, backup only specified tables, and backup other databases too.', 'updraftplus').'</a></em>';
 
 		$ret .= apply_filters('updraft_backupnow_database_showmoreoptions', $free_ret, '') . '</p>';
 
@@ -2811,7 +2863,7 @@ class UpdraftPlus_Admin {
 			return false;
 		}
 
-		if ( ! WP_Filesystem($credentials) ) {
+		if (!WP_Filesystem($credentials)) {
 			// our credentials were no good, ask the user for them again
 			request_filesystem_credentials(UpdraftPlus_Options::admin_page().'?page=updraftplus&action=updraft_create_backup_dir&nonce='.wp_create_nonce('create_backup_dir'), '', true);
 			return false;
@@ -2825,8 +2877,8 @@ class UpdraftPlus_Admin {
 
 		if (!$wp_filesystem->is_dir($default_backup_dir) && !$wp_filesystem->mkdir($default_backup_dir, 0775)) {
 			$wperr = new WP_Error;
-			if ( $wp_filesystem->errors->get_error_code() ) { 
-				foreach ( $wp_filesystem->errors->get_error_messages() as $message ) {
+			if ($wp_filesystem->errors->get_error_code()) { 
+				foreach ($wp_filesystem->errors->get_error_messages() as $message) {
 					$wperr->add('mkdir_error', $message);
 				}
 				return $wperr; 
@@ -3487,12 +3539,17 @@ class UpdraftPlus_Admin {
 				</div>
 ENDHERE;
 			return $ret;
-		} else {
-// 			return str_replace(' ', '&nbsp;', '('.__('No backup log)', 'updraftplus').')');
 		}
 	}
 
-	// Return values: false = 'not yet' (not necessarily terminal); WP_Error = terminal failure; true = success
+	/**
+	 * Carry out the restore process
+	 *
+	 * @param Integer $timestamp - identifying the backup to be restored
+	 * @param Array|Null $continuation_data - for continuing a multi-stage restore (code believed to be incomplete)
+	 *
+	 * @return Boolean|WP_Error - WP_Error indicates a terminal failure; false indicates not-yet complete (not necessarily terminal); true indicates complete.
+	 */
 	private function restore_backup($timestamp, $continuation_data = null) {
 
 		@set_time_limit(UPDRAFTPLUS_SET_TIME_LIMIT);
@@ -3529,9 +3586,9 @@ ENDHERE;
 
 		$credentials = request_filesystem_credentials(UpdraftPlus_Options::admin_page()."?page=updraftplus&action=updraft_restore&backup_timestamp=$timestamp", '', false, false, $extra_fields);
 		WP_Filesystem($credentials);
-		if ( $wp_filesystem->errors->get_error_code() ) { 
+		if ($wp_filesystem->errors->get_error_code()) { 
 			echo '<p><em><a href="'.apply_filters('updraftplus_com_link', "https://updraftplus.com/faqs/asked-ftp-details-upon-restorationmigration-updates/").'">'.__('Why am I seeing this?', 'updraftplus').'</a></em></p>';
-			foreach ( $wp_filesystem->errors->get_error_messages() as $message ) show_message($message); 
+			foreach ($wp_filesystem->errors->get_error_messages() as $message) show_message($message); 
 			exit;
 		}
 
@@ -3604,8 +3661,8 @@ ENDHERE;
 		set_error_handler(array($updraftplus, 'php_error'), E_ALL & ~E_STRICT);
 
 		/*
-		$_POST['updraft_restore'] is typically something like: array( 0=>'db', 1=>'plugins', 2=>'themes'), etc.
-		i.e. array ( 'db', 'plugins', themes')
+		$_POST['updraft_restore'] is typically something like: array(0=>'db', 1=>'plugins', 2=>'themes'), etc.
+		i.e. array ('db', 'plugins', themes')
 		*/
 
 		if (empty($restore_options)) {
@@ -3806,9 +3863,24 @@ ENDHERE;
 			if (is_string($files)) $files = array($files);
 			foreach ($files as $fkey => $file) {
 				$last_one = (1 == count($second_loop) && 1 == count($files));
-
-				$val = $updraftplus_restorer->restore_backup($file, $type, $info, $last_one);
-
+				try {
+					$val = $updraftplus_restorer->restore_backup($file, $type, $info, $last_one);
+				} catch (Exception $e) {
+					$log_message = 'Exception ('.get_class($e).') occurred during restore: '.$e->getMessage().' (Code: '.$e->getCode().', line '.$e->getLine().' in '.$e->getFile().')';
+					error_log($log_message);
+					$display_log_message = sprintf(__('A PHP exception (%s) has occurred: %s', 'updraftplus'), get_class($e), $e->getMessage());
+					$updraftplus->log($log_message);
+					$updraftplus->log($display_log_message, 'notice-restore');
+					die();
+				// @codingStandardsIgnoreLine
+				} catch (Error $e) {
+					$log_message = 'PHP Fatal error ('.get_class($e).') has occurred. Error Message: '.$e->getMessage().' (Code: '.$e->getCode().', line '.$e->getLine().' in '.$e->getFile().')';
+					error_log($log_message);
+					$display_log_message = sprintf(__('A PHP fatal error (%s) has occurred: %s', 'updraftplus'), get_class($e), $e->getMessage());
+					$updraftplus->log($log_message);
+					$updraftplus->log($display_log_message, 'notice-restore');
+					die();
+				}
 				if (is_wp_error($val)) {
 					$codes = $val->get_error_codes();
 					if (is_array($codes) && in_array('not_found', $codes) && !empty($updraftplus_restorer->ud_foreign) && apply_filters('updraftplus_foreign_allow_missing_entity', false, $type, $updraftplus_restorer->ud_foreign)) {
@@ -4089,7 +4161,7 @@ ENDHERE;
 				}
 			}
 		} else {
-			$return_array = array('saved' => false, 'error_message' => sprintf(__('UpdraftPlus seems to have been updated to version (%s) different to the version running when this settings page was loaded. Please reload the settings page before trying to save settings.', 'updraftplus'), $updraftplus->version));
+			$return_array = array('saved' => false, 'error_message' => sprintf(__('UpdraftPlus seems to have been updated to version (%s), which is different to the version running when this settings page was loaded. Please reload the settings page before trying to save settings.', 'updraftplus'), $updraftplus->version));
 		}
 		
 		// Checking for various possible messages
@@ -4120,11 +4192,11 @@ ENDHERE;
 		
 		do_action('all_admin_notices');
 		
-		if (!$really_is_writable){ //Check if writable
+		if (!$really_is_writable) { //Check if writable
 			$this->show_admin_warning_unwritable();
 		}
 		
-		if ($return_array['saved']){ //
+		if ($return_array['saved']) { //
 			$this->show_admin_warning(__('Your settings have been saved.', 'updraftplus'), 'updated fade');
 		} else {
 			if (isset($return_array['error_message'])) {
@@ -4173,7 +4245,7 @@ ENDHERE;
 
 		// These aren't in get_settings_keys() because they are always in the options table, regardless of context
 		global $wpdb;
-		$wpdb->query("DELETE FROM $wpdb->options WHERE ( option_name LIKE 'updraftplus_unlocked_%' OR option_name LIKE 'updraftplus_locked_%' OR option_name LIKE 'updraftplus_last_lock_time_%' OR option_name LIKE 'updraftplus_semaphore_%' OR option_name LIKE 'updraft_jobdata_%' OR option_name LIKE 'updraft_last_scheduled_%' )");
+		$wpdb->query("DELETE FROM $wpdb->options WHERE (option_name LIKE 'updraftplus_unlocked_%' OR option_name LIKE 'updraftplus_locked_%' OR option_name LIKE 'updraftplus_last_lock_time_%' OR option_name LIKE 'updraftplus_semaphore_%' OR option_name LIKE 'updraft_jobdata_%' OR option_name LIKE 'updraft_last_scheduled_%' )");
 
 		$site_options = array('updraft_oneshotnonce');
 		foreach ($site_options as $s) delete_site_option($s);
@@ -4366,8 +4438,10 @@ ENDHERE;
 		if ($already_enqueued) return;
 		
 		$already_enqueued = true; 
+		$jstree_enqueue_version = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '3.3'.'.'.time() : '3.3';
+		$min_or_not = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
 		// Include jstree components
-		wp_enqueue_script('jstree', UPDRAFTPLUS_URL.'/includes/jstree/jstree.min.js', array('jquery'), '3.3');
-		wp_enqueue_style('jstree', UPDRAFTPLUS_URL.'/includes/jstree/themes/default/style.min.css', array(), '3.3'); 
+		wp_enqueue_script('jstree', UPDRAFTPLUS_URL.'/includes/jstree/jstree'.$min_or_not.'.js', array('jquery'), $jstree_enqueue_version);
+		wp_enqueue_style('jstree', UPDRAFTPLUS_URL.'/includes/jstree/themes/default/style'.$min_or_not.'.css', array(), $jstree_enqueue_version); 
 	}
 }

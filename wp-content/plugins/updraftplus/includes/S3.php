@@ -44,7 +44,6 @@ class UpdraftPlus_S3
 	const ACL_AUTHENTICATED_READ = 'authenticated-read';
 
 	const STORAGE_CLASS_STANDARD = 'STANDARD';
-	const STORAGE_CLASS_RRS = 'REDUCED_REDUNDANCY';
 
 	private static $__accessKey = null; // AWS Access key
 	private static $__secretKey = null; // AWS Secret key

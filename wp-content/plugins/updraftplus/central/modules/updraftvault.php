@@ -39,18 +39,4 @@ class UpdraftCentral_UpdraftVault_Commands extends UpdraftCentral_Commands {
 	*
 	* @return array
 	*/
-	/*
-	public function get_filters() {
-		$per_page_options = array(10, 20, 50, 100, 500, 1000);
-		
-		$result = array(
-			'paging' => array(
-				'per_page_options' => $per_page_options,
-			),
-		);
-		
-		return $this->_response($result);
-	}
-	*/
-	
 }

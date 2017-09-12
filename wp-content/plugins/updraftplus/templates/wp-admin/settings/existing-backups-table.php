@@ -5,7 +5,7 @@ if (!defined('UPDRAFTPLUS_DIR')) die('No direct access allowed');
 $accept = apply_filters('updraftplus_accept_archivename', array());
 if (!is_array($accept)) $accept = array();
 $image_folder = UPDRAFTPLUS_DIR.'/images/icons/';
-$image_folder_url = UPDRAFTPLUS_URL.'/images/icons/';  
+$image_folder_url = UPDRAFTPLUS_URL.'/images/icons/';
 
 ?>
 <table class="existing-backups-table">
@@ -33,7 +33,7 @@ $image_folder_url = UPDRAFTPLUS_URL.'/images/icons/';
 			// $pretty_date = date_i18n('Y-m-d G:i',$key);
 			// Convert to blog time zone
 			// $pretty_date = get_date_from_gmt(gmdate('Y-m-d H:i:s', (int)$key), 'Y-m-d G:i');
-			$pretty_date = get_date_from_gmt(gmdate('Y-m-d H:i:s', (int)$key), 'M d, Y G:i');
+			$pretty_date = get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) $key), 'M d, Y G:i');
 
 			$esc_pretty_date = esc_attr($pretty_date);
 			$entities = '';
@@ -60,15 +60,15 @@ $image_folder_url = UPDRAFTPLUS_URL.'/images/icons/';
 						<?php echo $date_label;?>
 						<?php
 							if (!is_array($backup['service'])) $backup['service'] = array($backup['service']);
-							foreach ($backup['service'] as $service) {  
-								if ('none' === $service || '' === $service || (is_array($service) && (empty($service) || $service === array('none')))) {
-									// Do nothing
-								} else {
-									$image_url = file_exists($image_folder.$service.'.png') ? $image_folder_url.$service.'.png' : $image_folder_url.'folder.png';
-									?>
-									<img class="stored_icon" src="<?php echo esc_attr($image_url);?>" title="<?php echo esc_attr(sprintf(__('Stored at: %s', 'updraftplus'), $updraftplus->backup_methods[$service]));?>">
-						<?php
-								}	 	
+							foreach ($backup['service'] as $service) {
+							if ('none' === $service || '' === $service || (is_array($service) && (empty($service) || array('none') === $service))) {
+								// Do nothing
+							} else {
+								$image_url = file_exists($image_folder.$service.'.png') ? $image_folder_url.$service.'.png' : $image_folder_url.'folder.png';
+								?>
+								<img class="stored_icon" src="<?php echo esc_attr($image_url);?>" title="<?php echo esc_attr(sprintf(__('Stored at: %s', 'updraftplus'), $updraftplus->backup_methods[$service]));?>">
+													<?php
+							}
 							}
 						?>
 					</div>

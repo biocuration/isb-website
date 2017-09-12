@@ -4,13 +4,14 @@ if (!defined('UPDRAFTPLUS_DIR')) die('No direct access allowed.');
 
 require_once(UPDRAFTPLUS_DIR.'/methods/s3.php');
 
-# Converted to multi-options (Feb 2017-) and previous options conversion removed: Yes
-
+/**
+ * Converted to multi-options (Feb 2017-) and previous options conversion removed: Yes
+ */
 class UpdraftPlus_BackupModule_s3generic extends UpdraftPlus_BackupModule_s3 {
 
 	protected function set_region($obj, $region = '', $bucket_name = '') {
 		$config = $this->get_config();
-		$endpoint = ($region != '' && $region != 'n/a') ? $region : $config['endpoint'];
+		$endpoint = ('' != $region && 'n/a' != $region) ? $region : $config['endpoint'];
 		global $updraftplus;
 		if ($updraftplus->backup_time) $updraftplus->log("Set endpoint: $endpoint");
 		$obj->setEndpoint($endpoint);
@@ -18,6 +19,7 @@ class UpdraftPlus_BackupModule_s3generic extends UpdraftPlus_BackupModule_s3 {
 
 	/**
 	 * This method overrides the parent method and lists the supported features of this remote storage option.
+	 *
 	 * @return Array - an array of supported features (any features not mentioned are asuumed to not be supported)
 	 */
 	public function get_supported_features() {
@@ -27,6 +29,7 @@ class UpdraftPlus_BackupModule_s3generic extends UpdraftPlus_BackupModule_s3 {
 
 	/**
 	 * Retrieve default options for this remote storage module.
+	 *
 	 * @return Array - an array of options
 	 */
 	public function get_default_options() {
@@ -40,6 +43,7 @@ class UpdraftPlus_BackupModule_s3generic extends UpdraftPlus_BackupModule_s3 {
 
 	/**
 	 * Retrieve specific options for this remote storage module
+	 *
 	 * @return Array - an array of options
 	 */
 	protected function get_config() {
@@ -59,5 +63,4 @@ class UpdraftPlus_BackupModule_s3generic extends UpdraftPlus_BackupModule_s3 {
 	public function credentials_test($posted_settings) {
 		$this->credentials_test_engine($this->get_config(), $posted_settings);
 	}
-
 }

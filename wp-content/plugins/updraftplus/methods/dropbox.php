@@ -1,15 +1,16 @@
 <?php
-
-// https://www.dropbox.com/developers/apply?cont=/developers/apps
+/**
+ * https://www.dropbox.com/developers/apply?cont=/developers/apps
+ */
 
 if (!defined('UPDRAFTPLUS_DIR')) die('No direct access allowed.');
 
-# Converted to multi-options (Feb 2017-) and previous options conversion removed: Yes
+// Converted to multi-options (Feb 2017-) and previous options conversion removed: Yes
 
 if (!class_exists('UpdraftPlus_BackupModule')) require_once(UPDRAFTPLUS_DIR.'/methods/backup-module.php');
 
-# Fix a potential problem for users who had the short-lived 1.12.35-1.12.38 free versions (see: https://wordpress.org/support/topic/1-12-37-dropbox-auth-broken/page/2/#post-8981457)
-# Can be removed after a few months
+// Fix a potential problem for users who had the short-lived 1.12.35-1.12.38 free versions (see: https://wordpress.org/support/topic/1-12-37-dropbox-auth-broken/page/2/#post-8981457)
+// Can be removed after a few months
 $potential_options = UpdraftPlus_Options::get_updraft_option('updraft_dropbox');
 if (is_array($potential_options) && isset($potential_options['version']) && isset($potential_options['settings']) && array() === $potential_options['settings']) {
 	// Wipe it, which wil force its re-creation in proper format
@@ -20,17 +21,29 @@ if (is_array($potential_options) && isset($potential_options['version']) && isse
 class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 	private $current_file_hash;
-	private $current_file_size;
-	private $dropbox_object;
-	private $uploaded_offset;
-	private $upload_tick; 
 
+	private $current_file_size;
+
+	private $dropbox_object;
+
+	private $uploaded_offset;
+
+	private $upload_tick;
+
+	/**
+	 * This callback is called as upload progress is made
+	 *
+	 * @param Integer		 $offset   - the byte offset
+	 * @param String		 $uploadid - identifier for the upload in progress
+	 * @param Boolean|String $fullpath - optional full path to the file being uploaded
+	 */
 	public function chunked_callback($offset, $uploadid, $fullpath = false) {
+	
 		global $updraftplus;
 
 		// Update upload ID
-		$updraftplus->jobdata_set('updraf_dbid_'.$this->current_file_hash, $uploadid);
-		$updraftplus->jobdata_set('updraf_dbof_'.$this->current_file_hash, $offset);
+		$this->jobdata_set('upload_id_'.$this->current_file_hash, $uploadid);
+		$this->jobdata_set('upload_offset_'.$this->current_file_hash, $offset);
 
 		$time_now = microtime(true);
 		
@@ -40,6 +53,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		$this->upload_tick = $time_now;
 		$this->uploaded_offset = $offset;
 		
+		// Here we use job-wide data, because we don't expect wildly different performance for different Dropbox accounts
 		$chunk_size = $updraftplus->jobdata_get('dropbox_chunk_size', 1048576);
 		// Don't go beyond 10MB, or change the chunk size after the last segment
 		if ($chunk_size < 10485760 && $this->current_file_size > 0 && $offset < $this->current_file_size) {
@@ -50,19 +64,19 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				if ($job_run_time < 15) $upload_secs = max(6, $job_run_time*0.6);
 				$new_chunk = max(min($upload_secs * $upload_rate * 0.9, 10485760), 1048576);
 				$new_chunk = $new_chunk - ($new_chunk % 524288);
-				$chunk_size = (int)$new_chunk;
+				$chunk_size = (int) $new_chunk;
 				$this->dropbox_object->setChunkSize($chunk_size);
 				$updraftplus->jobdata_set('dropbox_chunk_size', $chunk_size);
 			}
 		}
 		
 		if ($this->current_file_size > 0) {
-			$percent = round(100*($offset/$this->current_file_size),1);
+			$percent = round(100*($offset/$this->current_file_size), 1);
 			$updraftplus->record_uploaded_chunk($percent, "$uploadid, $offset, ".round($chunk_size/1024, 1)." KB", $fullpath);
 		} else {
 			$updraftplus->log("Dropbox: Chunked Upload: $offset bytes uploaded");
 			// This act is done by record_uploaded_chunk, and helps prevent overlapping runs
-			touch($fullpath);
+			if ($fullpath) touch($fullpath);
 		}
 	}
 
@@ -88,7 +102,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		
 		if (empty($opts['tk_access_token'])) {
 			$updraftplus->log('You do not appear to be authenticated with Dropbox (1)');
-			$updraftplus->log(__('You do not appear to be authenticated with Dropbox','updraftplus'), 'error');
+			$updraftplus->log(__('You do not appear to be authenticated with Dropbox', 'updraftplus'), 'error');
 			return false;
 		}
 		
@@ -110,7 +124,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			$dropbox->setChunkSize($chunk_size);
 		} catch (Exception $e) {
 			$updraftplus->log('Dropbox error when trying to gain access: '.$e->getMessage().' (line: '.$e->getLine().', file: '.$e->getFile().')');
-			$updraftplus->log(sprintf(__('Dropbox error: %s (see log file for more)','updraftplus'), $e->getMessage()), 'error');
+			$updraftplus->log(sprintf(__('Dropbox error: %s (see log file for more)', 'updraftplus'), $e->getMessage()), 'error');
 			return false;
 		}
 
@@ -128,24 +142,24 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 					Quota information is no longer provided with account information a new call to quotaInfo must be made to get this information.
 				 */
 				if (1 == $use_api_ver) {
-					$quotaInfo = $dropbox->accountInfo();
+					$quota_info = $dropbox->accountInfo();
 				} else {
-					$quotaInfo = $dropbox->quotaInfo();
+					$quota_info = $dropbox->quotaInfo();
 				}
 
-				if ($quotaInfo['code'] != "200") {
-					$message = "Dropbox account/info did not return HTTP 200; returned: ". $quotaInfo['code'];
-				} elseif (!isset($quotaInfo['body'])) {
+				if ("200" != $quota_info['code']) {
+					$message = "Dropbox account/info did not return HTTP 200; returned: ". $quota_info['code'];
+				} elseif (!isset($quota_info['body'])) {
 					$message = "Dropbox account/info did not return the expected data";
 				} else {
-					$body = $quotaInfo['body'];
+					$body = $quota_info['body'];
 					if (isset($body->quota_info)) {
-						$quota_info = $body->quota_info; 
-						$total_quota = $quota_info->quota; 
-			            $normal_quota = $quota_info->normal; 
-			            $shared_quota = $quota_info->shared; 
-			            $available_quota = $total_quota - ($normal_quota + $shared_quota); 
-			            $message = "Dropbox quota usage: normal=".round($normal_quota/1048576,1)." MB, shared=".round($shared_quota/1048576,1)." MB, total=".round($total_quota/1048576,1)." MB, available=".round($available_quota/1048576,1)." MB";
+						$quota_info = $body->quota_info;
+						$total_quota = $quota_info->quota;
+						$normal_quota = $quota_info->normal;
+						$shared_quota = $quota_info->shared;
+						$available_quota = $total_quota - ($normal_quota + $shared_quota);
+						$message = "Dropbox quota usage: normal=".round($normal_quota/1048576, 1)." MB, shared=".round($shared_quota/1048576, 1)." MB, total=".round($total_quota/1048576, 1)." MB, available=".round($available_quota/1048576, 1)." MB";
 					} else {
 						$total_quota = max($body->allocation->allocated, 1);
 						$used = $body->used;
@@ -153,13 +167,13 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 						This will give us their total usage including their individual account and team account */
 						if (isset($body->allocation->used)) $used = $body->allocation->used;
 						$available_quota = $total_quota - $used;
-						$message = "Dropbox quota usage: used=".round($used/1048576,1)." MB, total=".round($total_quota/1048576,1)." MB, available=".round($available_quota/1048576,1)." MB";
+						$message = "Dropbox quota usage: used=".round($used/1048576, 1)." MB, total=".round($total_quota/1048576, 1)." MB, available=".round($available_quota/1048576, 1)." MB";
 					}
 				}
 				$updraftplus->log($message);
 			} catch (Exception $e) {
 				$updraftplus->log("Dropbox error: exception (".get_class($e).") occurred whilst getting account info: ".$e->getMessage());
-				//$updraftplus->log(sprintf(__("%s error: %s", 'updraftplus'), 'Dropbox', $e->getMessage()).' ('.$e->getCode().')', 'warning', md5($e->getMessage()));
+				// $updraftplus->log(sprintf(__("%s error: %s", 'updraftplus'), 'Dropbox', $e->getMessage()).' ('.$e->getCode().')', 'warning', md5($e->getMessage()));
 			}
 
 			$file_success = 1;
@@ -174,9 +188,9 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			$filesize = $filesize/1024;
 			$microtime = microtime(true);
 
-			if ($upload_id = $updraftplus->jobdata_get('updraf_dbid_'.$hash)) {
-				# Resume
-				$offset =  $updraftplus->jobdata_get('updraf_dbof_'.$hash);
+			if ($upload_id = $this->jobdata_get('upload_id_'.$hash, null, 'updraf_dbid_'.$hash)) {
+				// Resume
+				$offset = $this->jobdata_get('upload_offset_'.$hash, null, 'updraf_dbof_'.$hash);
 				$updraftplus->log("This is a resumption: $offset bytes had already been uploaded");
 			} else {
 				$offset = 0;
@@ -184,9 +198,9 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			}
 
 			// We don't actually abort now - there's no harm in letting it try and then fail
-			if ($available_quota != -1 && $available_quota < ($filesize-$offset)) {
+			if (-1 != $available_quota && $available_quota < ($filesize-$offset)) {
 				$updraftplus->log("File upload expected to fail: file data remaining to upload ($file) size is ".($filesize-$offset)." b (overall file size; .".($filesize*1024)." b), whereas available quota is only $available_quota b");
-// 				$updraftplus->log(sprintf(__("Account full: your %s account has only %d bytes left, but the file to be uploaded has %d bytes remaining (total size: %d bytes)",'updraftplus'),'Dropbox', $available_quota, $filesize-$offset, $filesize), 'warning');
+// $updraftplus->log(sprintf(__("Account full: your %s account has only %d bytes left, but the file to be uploaded has %d bytes remaining (total size: %d bytes)",'updraftplus'),'Dropbox', $available_quota, $filesize-$offset, $filesize), 'warning');
 			}
 
 			// Old-style, single file put: $put = $dropbox->putFile($updraft_dir.'/'.$file, $dropbox_folder.$file);
@@ -203,7 +217,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				if (empty($response['code']) || "200" != $response['code']) {
 					$updraftplus->log('Unexpected HTTP code returned from Dropbox: '.$response['code']." (".serialize($response).")");
 					if ($response['code'] >= 400) {
-						$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)','updraftplus'), $file), 'error');
+						$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)', 'updraftplus'), $file), 'error');
 					} else {
 						$updraftplus->log(sprintf(__('%s did not return the expected response - check your log file for more details', 'updraftplus'), 'Dropbox'), 'warning');
 					}
@@ -213,7 +227,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				if (preg_match("/Submitted input out of alignment: got \[(\d+)\] expected \[(\d+)\]/i", $e->getMessage(), $matches)) {
 					// Try the indicated offset
 					$we_tried = $matches[1];
-					$dropbox_wanted = (int)$matches[2];
+					$dropbox_wanted = (int) $matches[2];
 					$updraftplus->log("Dropbox not yet aligned: tried=$we_tried, wanted=$dropbox_wanted; will attempt recovery");
 					$this->uploaded_offset = $dropbox_wanted;
 					try {
@@ -224,7 +238,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 							$updraftplus->log('Dropbox returned an error, but apparently indicating previous success: '.$msg);
 						} else {
 							$updraftplus->log('Dropbox error: '.$msg.' (line: '.$e->getLine().', file: '.$e->getFile().')');
-							$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)','updraftplus'), $ufile), 'error');
+							$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)', 'updraftplus'), $ufile), 'error');
 							$file_success = 0;
 							if (strpos($msg, 'select/poll returned error') !== false && $this->upload_tick > 0 && time() - $this->upload_tick > 800) {
 								$updraftplus->reschedule(60);
@@ -240,7 +254,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 						$updraftplus->log('Dropbox returned an error, but apparently indicating previous success: '.$msg);
 					} else {
 						$updraftplus->log('Dropbox error: '.$msg);
-						$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)','updraftplus'), $ufile), 'error');
+						$updraftplus->log('Dropbox '.sprintf(__('error: failed to upload file to %s (see log file for more)', 'updraftplus'), $ufile), 'error');
 						$file_success = 0;
 						if (strpos($msg, 'select/poll returned error') !== false && $this->upload_tick > 0 && time() - $this->upload_tick > 800) {
 							$updraftplus->reschedule(60);
@@ -254,11 +268,11 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			if ($file_success) {
 				$updraftplus->uploaded_file($file);
 				$microtime_elapsed = microtime(true)-$microtime;
-				$speedps = $filesize/$microtime_elapsed;
-				$speed = sprintf("%.2d",$filesize)." KB in ".sprintf("%.2d",$microtime_elapsed)."s (".sprintf("%.2d", $speedps)." KB/s)";
+				$speedps = ($microtime_elapsed > 0) ? $filesize/$microtime_elapsed : 0;
+				$speed = sprintf("%.2d", $filesize)." KB in ".sprintf("%.2d", $microtime_elapsed)."s (".sprintf("%.2d", $speedps)." KB/s)";
 				$updraftplus->log("Dropbox: File upload success (".$file."): $speed");
-				$updraftplus->jobdata_delete('updraft_duido_'.$hash);
-				$updraftplus->jobdata_delete('updraft_duidi_'.$hash);
+				$this->jobdata_delete('upload_id_'.$hash, 'updraf_dbid_'.$hash);
+				$this->jobdata_delete('upload_offset_'.$hash, 'updraf_dbof_'.$hash);
 			}
 
 		}
@@ -267,7 +281,12 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 	}
 
-	# $match: a substring to require (tested via strpos() !== false)
+	/**
+	 * This method gets a list of files from the remote stoage that match the string passed in and returns an array of backups
+	 *
+	 * @param  string $match a substring to require (tested via strpos() !== false)
+	 * @return array
+	 */
 	public function listfiles($match = 'backup_') {
 
 		$opts = $this->get_options();
@@ -313,7 +332,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		} catch (Exception $e) {
 			$updraftplus->log('Dropbox error: '.$e->getMessage().' (line: '.$e->getLine().', file: '.$e->getFile().')');
 			// The most likely cause of a search_error is specifying a non-existent path, which should just result in an empty result set.
-// 			return new WP_Error('search_error', $e->getMessage());
+// return new WP_Error('search_error', $e->getMessage());
 			return array();
 		}
 
@@ -326,10 +345,10 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 				if ((!isset($item->bytes) || $item->bytes > 0) && empty($item->is_dir) && !empty($item->path) && 0 === strpos($item->path, $searchpath)) {
 
-					$path = substr($item->path, strlen($searchpath)); 
-					if ('/' == substr($path, 0, 1)) $path=substr($path, 1);
+					$path = substr($item->path, strlen($searchpath));
+					if ('/' == substr($path, 0, 1)) $path = substr($path, 1);
 
-					# Ones in subfolders are not wanted
+					// Ones in subfolders are not wanted
 					if (false !== strpos($path, '/')) continue;
 
 					$result = array('name' => $path);
@@ -342,12 +361,12 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				$item = $item->metadata;
 				if (!is_object($item)) continue;
 
-				if ((!isset($item->size) || $item->size > 0)  && $item->{'.tag'} != 'folder' && !empty($item->path_display) && 0 === strpos($item->path_display, $searchpath)) {
+				if ((!isset($item->size) || $item->size > 0) && 'folder' != $item->{'.tag'} && !empty($item->path_display) && 0 === strpos($item->path_display, $searchpath)) {
 
 					$path = substr($item->path_display, strlen($searchpath));
-					if ('/' == substr($path, 0, 1)) $path=substr($path, 1);
+					if ('/' == substr($path, 0, 1)) $path = substr($path, 1);
 
-					# Ones in subfolders are not wanted
+					// Ones in subfolders are not wanted
 					if (false !== strpos($path, '/')) continue;
 
 					$result = array('name' => $path);
@@ -369,7 +388,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 	public function delete($files, $data = null, $sizeinfo = array()) {
 
 		global $updraftplus;
-		if (is_string($files)) $files=array($files);
+		if (is_string($files)) $files = array($files);
 
 		$opts = $this->get_options();
 
@@ -416,7 +435,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 		if (empty($opts['tk_access_token'])) {
 			$updraftplus->log('You do not appear to be authenticated with Dropbox (4)');
-			$updraftplus->log(sprintf(__('You do not appear to be authenticated with %s','updraftplus'), 'Dropbox'), 'error');
+			$updraftplus->log(sprintf(__('You do not appear to be authenticated with %s', 'updraftplus'), 'Dropbox'), 'error');
 			return false;
 		}
 
@@ -452,9 +471,9 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			try {
 				$get = $dropbox->getFile($dropbox_folder.'/'.$file, $updraft_dir.'/'.$file, null, true);
 				if (isset($get['response']['body'])) {
-					$updraftplus->log("Dropbox: downloaded ".round(strlen($get['response']['body'])/1024,1).' KB');
+					$updraftplus->log("Dropbox: downloaded ".round(strlen($get['response']['body'])/1024, 1).' KB');
 				}
-			}  catch (Exception $e) {
+			} catch (Exception $e) {
 				$updraftplus->log($possible_error, 'error');
 				$updraftplus->log($e->getMessage(), 'error');
 				$get = false;
@@ -474,8 +493,8 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			<tr class="<?php echo $classes;?>">
 				<td></td>
 				<td>
-				<img alt="<?php _e(sprintf(__('%s logo', 'updraftplus'), 'Dropbox')); ?>" src="<?php echo UPDRAFTPLUS_URL.'/images/dropbox-logo.png' ?>">
-				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.','updraftplus'),'Dropbox');?></em></p>
+				<img alt="<?php _e(sprintf(__('%s logo', 'updraftplus'), 'Dropbox')); ?>" src="<?php echo UPDRAFTPLUS_URL.'/images/dropbox-logo.png'; ?>">
+				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.', 'updraftplus'), 'Dropbox');?></em></p>
 				</td>
 			</tr>
 
@@ -491,9 +510,9 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 			<?php
 
-				$defmsg = '<tr class="'.$classes.'"><td></td><td><strong>'.__('Need to use sub-folders?','updraftplus').'</strong> '.__('Backups are saved in','updraftplus').' apps/UpdraftPlus. '.__('If you back up several sites into the same Dropbox and want to organise with sub-folders, then ','updraftplus').'<a href="https://updraftplus.com/shop/">'.__("there's an add-on for that.",'updraftplus').'</a></td></tr>';
+				$defmsg = '<tr class="'.$classes.'"><td></td><td><strong>'.__('Need to use sub-folders?', 'updraftplus').'</strong> '.__('Backups are saved in', 'updraftplus').' apps/UpdraftPlus. '.__('If you back up several sites into the same Dropbox and want to organise with sub-folders, then ', 'updraftplus').'<a href="https://updraftplus.com/shop/">'.__("there's an add-on for that.", 'updraftplus').'</a></td></tr>';
 
-				$defmsg = '<tr class="'.$classes.'"><td></td><td><strong>'.__('Need to use sub-folders?','updraftplus').'</strong> '.__('Backups are saved in','updraftplus').' apps/UpdraftPlus. '.__('If you back up several sites into the same Dropbox and want to organise with sub-folders, then ','updraftplus').'<a href="'.apply_filters("updraftplus_com_link","https://updraftplus.com/shop/").'">'.__("there's an add-on for that.",'updraftplus').'</a></td></tr>';
+				$defmsg = '<tr class="'.$classes.'"><td></td><td><strong>'.__('Need to use sub-folders?', 'updraftplus').'</strong> '.__('Backups are saved in', 'updraftplus').' apps/UpdraftPlus. '.__('If you back up several sites into the same Dropbox and want to organise with sub-folders, then ', 'updraftplus').'<a href="'.apply_filters("updraftplus_com_link", "https://updraftplus.com/shop/").'">'.__("there's an add-on for that.", 'updraftplus').'</a></td></tr>';
 				
 				$extra_config = apply_filters('updraftplus_dropbox_extra_config', $defmsg, $this);
 				
@@ -503,21 +522,29 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 			<tr class="<?php echo $classes;?>">
 				<th><?php echo sprintf(__('Authenticate with %s', 'updraftplus'), __('Dropbox', 'updraftplus'));?>:</th>
 				<td><p>
-					<?php 
-						$rt = (empty($opts['tk_access_token'])) ? '' : $opts['tk_access_token']; 
-						if (!empty($rt)) { 
-							echo "<p><strong>".__('(You appear to be already authenticated).','updraftplus')."</strong>"; 
-							echo ' <a class="updraft_deauthlink" href="'; echo UpdraftPlus_Options::admin_page_url(); echo'?page=updraftplus&action=updraftmethod-dropbox-auth&updraftplus_dropboxauth=deauth&nonce='.wp_create_nonce('dropbox_deauth_nonce').'">'; echo sprintf(__('Follow this link to  deauthenticate with %s.','updraftplus'), __('Dropbox', 'updraftplus'));echo '</a></p>';
+					<?php
+						$rt = (empty($opts['tk_access_token'])) ? '' : $opts['tk_access_token'];
+						if (!empty($rt)) {
+						echo "<p><strong>".__('(You appear to be already authenticated).', 'updraftplus')."</strong>";
+						echo ' <a class="updraft_deauthlink" href="';
+echo UpdraftPlus_Options::admin_page_url();
+echo '?page=updraftplus&action=updraftmethod-dropbox-auth&updraftplus_dropboxauth=deauth&nonce='.wp_create_nonce('dropbox_deauth_nonce').'">';
+echo sprintf(__('Follow this link to  deauthenticate with %s.', 'updraftplus'), __('Dropbox', 'updraftplus'));
+echo '</a></p>';
 						}
-						echo '<p><a class="updraft_authlink" href="'; echo UpdraftPlus_Options::admin_page_url(); echo'?page=updraftplus&action=updraftmethod-dropbox-auth&updraftplus_dropboxauth=doit">'; echo sprintf(__('<strong>After</strong> you have saved your settings (by clicking \'Save Changes\' below), then come back here once and click this link to complete authentication with %s.','updraftplus'), __('Dropbox', 'updraftplus'));echo '</a></p>';
+						echo '<p><a class="updraft_authlink" href="';
+echo UpdraftPlus_Options::admin_page_url();
+echo '?page=updraftplus&action=updraftmethod-dropbox-auth&updraftplus_dropboxauth=doit">';
+echo sprintf(__('<strong>After</strong> you have saved your settings (by clicking \'Save Changes\' below), then come back here once and click this link to complete authentication with %s.', 'updraftplus'), __('Dropbox', 'updraftplus'));
+echo '</a></p>';
 					?>
 				</p>
 				<?php
 					if (!empty($rt)) {
-						$ownername = empty($opts['ownername']) ? '' : $opts['ownername'];
-						if (!empty($ownername)) {
-							echo '<br>'.sprintf(__("Account holder's name: %s.", 'updraftplus'), htmlspecialchars($opts['ownername'])).' ';
-						}
+					$ownername = empty($opts['ownername']) ? '' : $opts['ownername'];
+					if (!empty($ownername)) {
+						echo '<br>'.sprintf(__("Account holder's name: %s.", 'updraftplus'), htmlspecialchars($opts['ownername'])).' ';
+					}
 					}
 				?>
 				</td>
@@ -533,12 +560,12 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				<tr class="<?php echo $classes;?>">
 					<th></th>
 					<td>
-						<?php echo '<p>'.htmlspecialchars(__('You must add the following as the authorised redirect URI in your Dropbox console (under "API Settings") when asked','updraftplus')).': <kbd>'.UpdraftPlus_Options::admin_page_url().'?page=updraftplus&action=updraftmethod-dropbox-auth</kbd></p>'; ?>
+						<?php echo '<p>'.htmlspecialchars(__('You must add the following as the authorised redirect URI in your Dropbox console (under "API Settings") when asked', 'updraftplus')).': <kbd>'.UpdraftPlus_Options::admin_page_url().'?page=updraftplus&action=updraftmethod-dropbox-auth</kbd></p>'; ?>
 					</td>
 				</tr>
 				<tr class="<?php echo $classes;?>">
 					<th>Your Dropbox App Key:</th>
-					<td><input type="text" autocomplete="off" style="width:332px" <?php $this->output_settings_field_name_and_id('appkey');?> value="<?php echo esc_attr($appkey) ?>" /></td>
+					<td><input type="text" autocomplete="off" style="width:332px" <?php $this->output_settings_field_name_and_id('appkey');?> value="<?php echo esc_attr($appkey); ?>" /></td>
 				</tr>
 				<tr class="<?php echo $classes;?>">
 					<th>Your Dropbox App Secret:</th>
@@ -575,20 +602,20 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 				
 			}
 		} elseif (isset($_GET['state'])) {
-			//Get the CSRF from setting and check it matches the one returned if it does no CSRF attack has happened
+			// Get the CSRF from setting and check it matches the one returned if it does no CSRF attack has happened
 			$opts = $this->get_options();
-			$CSRF = $opts['CSRF'];
+			$csrf = $opts['CSRF'];
 			$state = stripslashes($_GET['state']);
-			if (strcmp($CSRF, $state) == 0) {
+			if (strcmp($csrf, $state) == 0) {
 				$opts['CSRF'] = '';
 				if (isset($_GET['code'])) {
-					//set code so it can be accessed in the next authentication step
+					// set code so it can be accessed in the next authentication step
 					$opts['code'] = stripslashes($_GET['code']);
 					$this->set_options($opts, true);
 					$this->auth_token();
 				}
 			} else {
-				error_log("UpdraftPlus: CSRF comparison failure: $CSRF != $state");
+				error_log("UpdraftPlus: CSRF comparison failure: $csrf != $state");
 			}
 		}
 		try {
@@ -606,55 +633,55 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		if (false === $dropbox) return false;
 
 		try {
-			$accountInfo = $dropbox->accountInfo();
+			$account_info = $dropbox->accountInfo();
 		} catch (Exception $e) {
 			$accountinfo_err = sprintf(__("%s error: %s", 'updraftplus'), 'Dropbox', $e->getMessage()).' ('.$e->getCode().')';
 		}
 
-		$message = "<strong>".__('Success:','updraftplus').'</strong> '.sprintf(__('you have authenticated your %s account','updraftplus'),'Dropbox');
-		# We log, because otherwise people get confused by the most recent log message of 'Parameter not found: oauth_token' and raise support requests
-		$updraftplus->log(__('Success:','updraftplus').' '.sprintf(__('you have authenticated your %s account','updraftplus'),'Dropbox'));
+		$message = "<strong>".__('Success:', 'updraftplus').'</strong> '.sprintf(__('you have authenticated your %s account', 'updraftplus'), 'Dropbox');
+		// We log, because otherwise people get confused by the most recent log message of 'Parameter not found: oauth_token' and raise support requests
+		$updraftplus->log(__('Success:', 'updraftplus').' '.sprintf(__('you have authenticated your %s account', 'updraftplus'), 'Dropbox'));
 
-		if (empty($accountInfo['code']) || "200" != $accountInfo['code']) {
-			$message .= " (".__('though part of the returned information was not as expected - your mileage may vary','updraftplus').") ". $accountInfo['code'];
+		if (empty($account_info['code']) || "200" != $account_info['code']) {
+			$message .= " (".__('though part of the returned information was not as expected - your mileage may vary', 'updraftplus').") ". $account_info['code'];
 			if (!empty($accountinfo_err)) $message .= "<br>".htmlspecialchars($accountinfo_err);
 		} else {
-			$body = $accountInfo['body'];
+			$body = $account_info['body'];
 			$name = '';
 			if (isset($body->display_name)) {
 				$name = $body->display_name;
 			} else {
 				$name = $body->name->display_name;
 			}
-			$message .= ". <br>".sprintf(__('Your %s account name: %s','updraftplus'),'Dropbox', htmlspecialchars($name));
+			$message .= ". <br>".sprintf(__('Your %s account name: %s', 'updraftplus'), 'Dropbox', htmlspecialchars($name));
 			$opts = $this->get_options();
 			$opts['ownername'] = $name;
 			$this->set_options($opts, true);
 
 			try {
-				/*
-					Quota information is no longer provided with account information a new call to qoutaInfo must be made to get this information.
+				/**
+				 * Quota information is no longer provided with account information a new call to qoutaInfo must be made to get this information.
+				 * 28 June 2017 - https://blogs.dropbox.com/developers/2016/06/api-v1-deprecated/
 				 */
-				 // 28 June 2017 - https://blogs.dropbox.com/developers/2016/06/api-v1-deprecated/			
-				if (defined('UPDRAFTPLUS_DROPBOX_API_V1') && UPDRAFTPLUS_DROPBOX_API_V1 && time() < 1498608000) { 
-		        	$quotaInfo = $accountInfo; 
-		        } else { 
-		          	$quotaInfo = $dropbox->quotaInfo(); 
-		        } 
+				if (defined('UPDRAFTPLUS_DROPBOX_API_V1') && UPDRAFTPLUS_DROPBOX_API_V1 && time() < 1498608000) {
+					$quota_info = $account_info;
+				} else {
+					$quota_info = $dropbox->quotaInfo();
+				}
 
-				if (empty($quotaInfo['code']) || "200" != $quotaInfo['code']) {
-					$message .= " (".__('though part of the returned information was not as expected - your mileage may vary','updraftplus').")". $quotaInfo['code'];
+				if (empty($quota_info['code']) || "200" != $quota_info['code']) {
+					$message .= " (".__('though part of the returned information was not as expected - your mileage may vary', 'updraftplus').")". $quota_info['code'];
 					if (!empty($accountinfo_err)) $message .= "<br>".htmlspecialchars($accountinfo_err);
 				} else {
-					$body = $quotaInfo['body'];
-					if (isset($body->quota_info)){
-						$quota_info = $body->quota_info; 
-						$total_quota = max($quota_info->quota, 1); 
-						$normal_quota = $quota_info->normal; 
-						$shared_quota = $quota_info->shared; 
-						$available_quota =$total_quota - ($normal_quota + $shared_quota); 
-						$used_perc = round(($normal_quota + $shared_quota)*100/$total_quota, 1); 
-						$message .= ' <br>'.sprintf(__('Your %s quota usage: %s %% used, %s available','updraftplus'), 'Dropbox', $used_perc, round($available_quota/1048576, 1).' MB'); 
+					$body = $quota_info['body'];
+					if (isset($body->quota_info)) {
+						$quota_info = $body->quota_info;
+						$total_quota = max($quota_info->quota, 1);
+						$normal_quota = $quota_info->normal;
+						$shared_quota = $quota_info->shared;
+						$available_quota =$total_quota - ($normal_quota + $shared_quota);
+						$used_perc = round(($normal_quota + $shared_quota)*100/$total_quota, 1);
+						$message .= ' <br>'.sprintf(__('Your %s quota usage: %s %% used, %s available', 'updraftplus'), 'Dropbox', $used_perc, round($available_quota/1048576, 1).' MB');
 					} else {
 						$total_quota = max($body->allocation->allocated, 1);
 						$used = $body->used;
@@ -663,10 +690,11 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 						if (isset($body->allocation->used)) $used = $body->allocation->used;
 						$available_quota =$total_quota - $used;
 						$used_perc = round($used*100/$total_quota, 1);
-						$message .= ' <br>'.sprintf(__('Your %s quota usage: %s %% used, %s available','updraftplus'), 'Dropbox', $used_perc, round($available_quota/1048576, 1).' MB');
+						$message .= ' <br>'.sprintf(__('Your %s quota usage: %s %% used, %s available', 'updraftplus'), 'Dropbox', $used_perc, round($available_quota/1048576, 1).' MB');
 					}
 				}
 			} catch (Exception $e) {
+				// Catch
 			}
 
 		}
@@ -678,16 +706,23 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		$this->bootstrap();
 		$opts = $this->get_options();
 		if (!empty($opts['tk_access_token'])) {
-			add_action('all_admin_notices', array($this, 'show_authed_admin_warning') );
+			add_action('all_admin_notices', array($this, 'show_authed_admin_warning'));
 		}
 	}
 
-	// Acquire single-use authorization code
+	/**
+	 * Acquire single-use authorization code
+	 */
 	public function auth_request() {
 		$this->bootstrap();
 	}
 
-	// This basically reproduces the relevant bits of bootstrap.php from the SDK
+	/**
+	 * This basically reproduces the relevant bits of bootstrap.php from the SDK
+	 *
+	 * @param  boolean $deauthenticate indicates if we should bootstrap for a deauth or auth request
+	 * @return object
+	 */
 	public function bootstrap($deauthenticate = false) {
 		if (!empty($this->dropbox_object) && !is_wp_error($this->dropbox_object)) return $this->dropbox_object;
 
@@ -696,14 +731,14 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		 */
 		$dropbox_api = (defined('UPDRAFTPLUS_DROPBOX_API_V1') && UPDRAFTPLUS_DROPBOX_API_V1 && time() < 1498608000) ? 'Dropbox' : 'Dropbox2';
 
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/API.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/Exception.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/ConsumerAbstract.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/StorageInterface.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/Encrypter.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/WordPress.php');
-		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/Curl.php');
-//		require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/WordPress.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/API.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/Exception.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/ConsumerAbstract.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/StorageInterface.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/Encrypter.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Storage/WordPress.php');
+		include_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/Curl.php');
+// require_once(UPDRAFTPLUS_DIR.'/includes/'.$dropbox_api.'/OAuth/Consumer/WordPress.php');
 
 		$opts = $this->get_options();
 
@@ -722,12 +757,19 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		// Instantiate the storage
 		$storage = new Dropbox_WordPress($encrypter, "tk_", 'updraft_dropbox', $this);
 
-//		WordPress consumer does not yet work
-//		$OAuth = new Dropbox_ConsumerWordPress($sec, $key, $storage, $callback);
+		// WordPress consumer does not yet work
+		// $oauth = new Dropbox_ConsumerWordPress($sec, $key, $storage, $callback);
 
 		// Get the DropBox API access details
 		list($d2, $d1) = $this->defaults();
-		if (empty($sec)) { $sec = base64_decode($d1); }; if (empty($key)) { $key = base64_decode($d2); }
+		if (empty($sec)) {
+			$sec = base64_decode($d1);
+		}
+
+		if (empty($key)) {
+			$key = base64_decode($d2);
+		}
+
 		$root = 'sandbox';
 		if ('dropbox:' == substr($sec, 0, 8)) {
 			$sec = substr($sec, 8);
@@ -735,7 +777,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 		}
 		
 		try {
-			$OAuth = new Dropbox_Curl($sec, $oauth2_id, $key, $storage, $callback, $callbackhome, $deauthenticate);
+			$oauth = new Dropbox_Curl($sec, $oauth2_id, $key, $storage, $callback, $callbackhome, $deauthenticate);
 		} catch (Exception $e) {
 			global $updraftplus;
 			$updraftplus->log("Dropbox Curl error: ".$e->getMessage());
@@ -745,8 +787,7 @@ class UpdraftPlus_BackupModule_dropbox extends UpdraftPlus_BackupModule {
 
 		if ($deauthenticate) return true;
 		
-		$this->dropbox_object = new UpdraftPlus_Dropbox_API($OAuth, $root);
+		$this->dropbox_object = new UpdraftPlus_Dropbox_API($oauth, $root);
 		return $this->dropbox_object;
 	}
-
 }
