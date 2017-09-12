@@ -38,9 +38,72 @@ https://github.com/settings/keys
 For GitHub: `$ ssh -T git@github.com` for wpengine: `$ ssh git@git.wpengine.com info`
 
 
+## Updating plugins via WPengine staging site
+
+### add remote wpengine repositories
+
+git remote add production git@git.wpengine.com:production/biocuration.git
+git remote add staging git@git.wpengine.com:staging/biocuration.git
 
 
-## Working on Local Machine and Push to WPENGINE
+### check to see if any changes were made to prod (eg by wpengine or hacker)
+
+* git clone or pull locally
+   - git clone git@github.com:biocuration/isb-website.git
+   - git pull
+* download latest daily production backup ZIP file (couple minutes)
+   - https://my.wpengine.com/installs/biocuration/backup_points#production
+   - select latest backup, click "Download ZIP", choose "full backup"
+   - locally, wget "<URL>"
+* unzip local 
+   - mkdir prod_<date>
+   - unzip -d snapshot_date site-archive-biocuration-live-*.zip
+   - rm site-archive-biocuration-live-*.zip
+* overwrite git version with production snapshot version 
+   - cp -rf snapshot_2017-09-11/* isb-website/
+* do diff
+   - git status
+   - if nothing's changed, good!  If something has changed, evaluate whether it's wpengine or a hacker
+
+### update plugins/themes on staging, then commit to github
+
+* git clone or pull locally
+   - git clone git@github.com:biocuration/isb-website.git
+   - git pull
+* Copy database from live to staging (couple minutes)
+   - go to https://www.biocuration.org/wp-admin/admin.php?page=wpengine-staging
+* push from github to staging
+   - git push staging master
+* do updates on staging
+* create and download backup from staging
+   - https://my.wpengine.com/installs/biocuration/backup_points#staging
+   - click "back it up now"
+   - when complete (email notification), select backup, click "Download ZIP", choose "full backup"
+   - locally, wget "<URL>"
+* unzip local 
+   - export DATE=`date +%F`
+   - /bin/rm -rf staging_$DATE; mkdir staging_$DATE
+   - unzip -d staging_$DATE site-archive-biocuration-*.zip
+   - rm site-archive-biocuration-*.zip
+* overwrite git version with production snapshot version 
+   - rm -rf isb-website/wp-content
+   - cp -rf staging_$DATE/* isb-website/
+* do diff
+   - cd isb-website
+   - git status
+* commit changes
+   - git add . (stages new and modified, without deleted)
+   - git add -A (stages all files)
+   - git add -A <path> (stage all files in a specific directory)
+   - git commit -m "<comment>"
+* push new version to github
+   - git push origin master
+* push new version to production
+   - git push production master
+
+
+
+## Updating plugins on Local Machine and Push to WPENGINE
 
 ### Step 1: Setup local environment
 You can setup any server you comfortable with, I am using XAMPP, If you want to setup **XAMPP** then follow the istruction below
@@ -116,7 +179,7 @@ Git Push to wpengine
 
 
 
-## NOTE
+### NOTE
 
 1. Since you have a local environment and the site installed on it, you do not have to worry about the site being hacked or theme/plugin updates, you can updates the theme and plugin from the local machine and then push to WPENGIN.
 
