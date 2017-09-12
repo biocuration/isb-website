@@ -7,6 +7,7 @@
     "storage_key": "firewall",
     "tagline": "Automatically block malicious URLs and data sent to your site",
     "show_central": true,
+    "access_restricted": true,
     "order": 30
   },
   "sections": [
@@ -313,7 +314,9 @@
         "regex": [
           "GLOBALS(=|\\[|%%)",
           "REQUEST(=|\\[|%%)",
-          "(`|\\<|\\>|\\[|\\]|\\{|\\}|\\?)"
+          "(`|\\<|\\>|\\[|\\]|\\{|\\}|\\?)",
+          "drop\\s+table\\s+(`|'?)[a-z0-9]+\\1",
+          "'\\s+OR\\s+'([a-z0-9]+)'\\s*=\\s*'\\1'\\s+(--|\\(\\{|\\/\\*)\\s+"
         ]
       }
     }

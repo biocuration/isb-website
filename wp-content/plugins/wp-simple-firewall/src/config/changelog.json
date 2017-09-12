@@ -1,91 +1,333 @@
 {
-  "5.10.1": {
-	"version": {
-	  "series": "5.10.0",
-	  "major": 5,
-	  "minor": 10,
-	  "patch": 1
+  "versions": {
+	"5.14.0": {
+	  "version": {
+		"series": "5.14.0",
+		"major": 5,
+		"minor": 14,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1504618817",
+		"is_patch": true,
+		"options_added": true,
+		"options_removed": false
+	  }
 	},
-	"attributes": {
-	  "timestamp": "1498828475",
-	  "is_patch": false,
-	  "options_added": true,
-	  "options_removed": false
-	}
-  },
-  "5.10.0": {
-	"version": {
-	  "series": "5.10.0",
-	  "major": 5,
-	  "minor": 10,
-	  "patch": 0
+	"5.13.2": {
+	  "version": {
+		"series": "5.13.0",
+		"major": 5,
+		"minor": 13,
+		"patch": 2
+	  },
+	  "attributes": {
+		"timestamp": "1504618817",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
 	},
-	"attributes": {
-	  "timestamp": "1497916800",
-	  "is_patch": false,
-	  "options_added": true,
-	  "options_removed": false
-	}
-  },
-  "5.9.0": {
-	"version": {
-	  "series": "5.9.0",
-	  "major": 5,
-	  "minor": 9,
-	  "patch": 0
+	"5.13.1": {
+	  "version": {
+		"series": "5.13.0",
+		"major": 5,
+		"minor": 13,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1502830656",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
 	},
-	"attributes": {
-	  "timestamp": "1496218394",
-	  "is_patch": false,
-	  "options_removed": true
+	"5.13.0": {
+	  "version": {
+		"series": "5.13.0",
+		"major": 5,
+		"minor": 13,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1502787859",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.12.2": {
+	  "version": {
+		"series": "5.12.0",
+		"major": 5,
+		"minor": 12,
+		"patch": 2
+	  },
+	  "attributes": {
+		"timestamp": "1501840824",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.12.1": {
+	  "version": {
+		"series": "5.12.0",
+		"major": 5,
+		"minor": 12,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1501774434",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.12.0": {
+	  "version": {
+		"series": "5.12.0",
+		"major": 5,
+		"minor": 12,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1501742306",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.11.1": {
+	  "version": {
+		"series": "5.11.0",
+		"major": 5,
+		"minor": 11,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1501084082",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.11.0": {
+	  "version": {
+		"series": "5.11.0",
+		"major": 5,
+		"minor": 11,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1501059402",
+		"is_patch": false,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.10.2": {
+	  "version": {
+		"series": "5.10.0",
+		"major": 5,
+		"minor": 10,
+		"patch": 2
+	  },
+	  "attributes": {
+		"timestamp": "1498828475",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.10.1": {
+	  "version": {
+		"series": "5.10.0",
+		"major": 5,
+		"minor": 10,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1498828475",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.10.0": {
+	  "version": {
+		"series": "5.10.0",
+		"major": 5,
+		"minor": 10,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1497916800",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.9.0": {
+	  "version": {
+		"series": "5.9.0",
+		"major": 5,
+		"minor": 9,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1496218394",
+		"is_patch": false,
+		"options_removed": true
+	  }
+	},
+	"5.8.2": {
+	  "version": {
+		"series": "5.8.0",
+		"major": 5,
+		"minor": 8,
+		"patch": 2
+	  },
+	  "attributes": {
+		"timestamp": "1493047356",
+		"is_patch": true
+	  }
+	},
+	"5.8.1": {
+	  "version": {
+		"series": "5.8.0",
+		"major": 5,
+		"minor": 8,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1491523200",
+		"is_patch": true
+	  }
+	},
+	"5.8.0": {
+	  "version": {
+		"series": "5.8.0",
+		"major": 5,
+		"minor": 8,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1491523200",
+		"name": "",
+		"summary": "Introduction of Login Authentication Portal",
+		"link": "http://icwp.io/86",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": true
+	  },
+	  "requirements": {
+		"php": 5.2,
+		"wordpress": 3.5
+	  }
 	}
-  },
-  "5.8.2": {
-    "version": {
-      "series": "5.8.0",
-      "major": 5,
-      "minor": 8,
-      "patch": 2
-    },
-    "attributes": {
-      "timestamp": "1493047356",
-      "is_patch": true
-    }
-  },
-  "5.8.1": {
-    "version": {
-      "series": "5.8.0",
-      "major": 5,
-      "minor": 8,
-      "patch": 1
-    },
-    "attributes": {
-      "timestamp": "1491523200",
-      "is_patch": true
-    }
-  },
-  "5.8.0": {
-    "version": {
-      "series": "5.8.0",
-      "major": 5,
-      "minor": 8,
-      "patch": 0
-    },
-    "attributes": {
-      "timestamp": "1491523200",
-      "name": "",
-      "summary": "Introduction of Login Authentication Portal",
-      "link": "http://icwp.io/86",
-      "is_patch": false,
-      "options_added": true,
-      "options_removed": true
-    },
-    "requirements": {
-      "php": 5.2,
-      "wordpress": 3.5
-    }
   },
   "changelog": [
+	{
+	  "type": "added",
+	  "summary": "Option for administrators to manually override and set the source of the visitor IP address.",
+	  "version": "5.14.0"
+	},
+	{
+	  "type": "updated",
+	  "summary": "In-plugin documentation links to updated and revised helpdesk articles/blogs.",
+	  "version": "5.14.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Strip out any non-alphanumeric characters uses in the generation of Google Authenticator URLs.",
+	  "version": "5.14.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Shield now ignores any requests sent to Rest API URIs with respect to Shield user sessions.",
+	  "version": "5.14.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Small adjustment to handling of Shield User sessions in conjunction with WordPress sessions.",
+	  "version": "5.13.2"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Restore display of help links for options.",
+	  "version": "5.13.2"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "PHP 5.2 incompatibility with anonymous function.",
+	  "version": "5.13.1"
+	},
+	{
+	  "type": "added",
+	  "summary": "New option for Unrecognised File Scanner to scan the Uploads folder for JS and PHP files.",
+	  "version": "5.13.0"
+	},
+	{
+	  "type": "added",
+	  "summary": "Option to provide custom list of files to be excluded from the Unrecognised File Scanner.",
+	  "version": "5.13.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Improved support for Windows IIS hosting for Unrecognised File Scanner.",
+	  "version": "5.12.2"
+	},
+	{
+	  "type": "changed",
+	  "summary": "Removed the email-based 2FA automatic login link.",
+	  "version": "5.12.2"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Potential bug with Shield not recognising plugin configuration updates and not rebuilding options accordingly.",
+	  "version": "5.12.2"
+	},
+	{
+	  "type": "added",
+	  "summary": "A few more exclusions for the Unrecognised File Scanner.",
+	  "version": "5.12.1"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Fix for Fatal error: Class ‘ICWP_WPSF_FeatureHandler_HackProtect’ not found.",
+	  "version": "5.12.1"
+	},
+	{
+	  "type": "added",
+	  "summary": "Unrecognised File Scanner.",
+	  "version": "5.12.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "JSON syntax error.",
+	  "version": "5.11.1"
+	},
+	{
+	  "type": "added",
+	  "summary": "Better Shield Central page.",
+	  "version": "5.11.0"
+	},
+	{
+	  "type": "changed",
+	  "summary": "Removed unused options sections.",
+	  "version": "5.11.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Fatal error with GASP + Password Reset.",
+	  "version": "5.10.2"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Fatal error with failing reCAPTCHA HTTP requests.",
+	  "version": "5.10.2"
+	},
 	{
 	  "type": "improved",
 	  "summary": "Further preparation for the Shield Central release.",

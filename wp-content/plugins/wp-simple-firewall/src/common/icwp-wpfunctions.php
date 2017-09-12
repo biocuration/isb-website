@@ -138,7 +138,7 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 		}
 
 		/**
-		 * @return array|false
+		 * @return string[]
 		 */
 		public function getCoreChecksums() {
 			$aChecksumData = false;
@@ -161,7 +161,17 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 					}
 				}
 			}
-			return $aChecksumData;
+			return is_array( $aChecksumData ) ? $aChecksumData : array();
+		}
+
+		/**
+		 * @return string
+		 */
+		public function getDirUploads() {
+			$aDirParts = wp_get_upload_dir();
+			$bHasUploads = is_array( $aDirParts ) && !empty( $aDirParts[ 'basedir' ] )
+				&& $this->loadFS()->exists( $aDirParts[ 'basedir' ] );
+			return $bHasUploads ? $aDirParts[ 'basedir' ] : '';
 		}
 
 		/**
@@ -775,6 +785,20 @@ if ( !class_exists( 'ICWP_WPSF_WpFunctions', false ) ):
 				$this->bIsMultisite = function_exists( 'is_multisite' ) && is_multisite();
 			}
 			return $this->bIsMultisite;
+		}
+
+		/**
+		 * @return bool
+		 */
+		public function isRestUrl() {
+			$bIsRest = false;
+			if ( function_exists( 'rest_url' ) ) {
+				$sRestUrlBase = get_rest_url( get_current_blog_id(), '/' );
+				$sRestPath = trim( parse_url( $sRestUrlBase, PHP_URL_PATH ), '/' );
+				$sRequestPath = trim( $this->loadDataProcessor()->getRequestPath(), '/' );
+				$bIsRest = ( strpos( $sRequestPath, $sRestPath ) === 0 );
+			}
+			return $bIsRest;
 		}
 
 		/**

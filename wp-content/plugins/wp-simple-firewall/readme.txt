@@ -3,10 +3,10 @@ Contributors: paultgoodchild
 Donate link: http://icwp.io/q
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
-Tags: security, shield, firewall, two-factor authentication, 2FA, audit trail, brute force, whitelist, blacklist, spam, ithemes, wordfence, better wp security, all-in-one, lockdown, login, hack
+Tags: security, firewall, spam, scan, two-factor authentication, login, 2FA, ithemes, wordfence, better wp security, all-in-one, lockdown, hack
 Requires at least: 3.5.0
 Tested up to: 4.8
-Stable tag: 5.10.1
+Stable tag: 5.14.0
 
 Protect your website, your reputation, and your customers for free with Shield Security, the most powerful security system for WordPress
 
@@ -308,14 +308,50 @@ Possible options are: network_admin, administrator, editor, author, contributor,
 
 == Changelog ==
 
-= 5.10.1 Latest Point Release =
-*Released: 30th June, 2017*
+= 5.14.0 Latest Point Release =
+*Released: 9th September, 2017*
 
-* **(v.1)**  IMPROVEMENTS:	Further preparation for [Shield Central](http://icwp.io/83) release.
+* **(v.0)**  ADDED:			Option for administrators to manually override and set the source of the visitor IP address.
+* **(v.0)**  UPDATED:		In-plugin documentation links to updated and revised helpdesk articles/blogs.
+* **(v.0)**  IMPROVEMENTS:	Strip out any non-alphanumeric characters uses in the generation of Google Authenticator URLs.
+* **(v.0)**  FIX:			Shield now ignores any requests sent to Rest API URIs with respect to Shield user sessions.
+
+= 5.14 Series =
+*Released: 9th September, 2017*
+
+= 5.13 Series =
+*Released: 15th August, 2017*
+
+* **(v.2)**  IMPROVEMENTS:	Small adjustment to handling of Shield User sessions in conjunction with WordPress sessions.
+* **(v.2)**  FIX:			Restore display of help links for options.
+* **(v.1)**  FIX:			PHP 5.2 incompatibility.
+* **(v.0)**  ADDED:			New option for [Unrecognised File Scanner](http://icwp.io/94) to scan the Uploads folder for JS and PHP files.
+* **(v.0)**  ADDED:			Option to provide custom list of files to be excluded from the [Unrecognised File Scanner](http://icwp.io/94).
+
+= 5.12 Series =
+*Released: 3rd August, 2017*
+
+* **(v.2)**  IMPROVEMENTS:	Improved support for Windows IIS hosting for [Unrecognised File Scanner](http://icwp.io/94)
+* **(v.2)**  CHANGED:		Removed the email-based 2FA automatic login link.
+* **(v.2)**  FIX:			Potential bug with Shield not recognising plugin configuration updates and not rebuilding options accordingly.
+* **(v.1)**  ADDED:			A few more exclusions for the [Unrecognised File Scanner](http://icwp.io/94)
+* **(v.1)**  FIX:			Fix for Fatal error.
+* **(v.0)**  ADDED:			[Unrecognised File Scanner](http://icwp.io/94) release. Automatically detect and delete
+							any files present in core WordPress directories that aren't part of your core installation.
+* **(v.0)**  ADDED:			Updated Firewall rules for SQL under the 'Aggressive' rule set.
+
+= 5.11 Series =
+*Released: 26th July, 2017*
+
+* **(v.1)**  FIX:			JSON syntax
+* **(v.0)**  IMPROVEMENTS:	Final preparation for [Shield Central](http://icwp.io/83) release.
 
 = 5.10 Series =
 *Released: 19th June, 2017*
 
+* **(v.2)**  FIXED:			Fatal error with GASP + Password Reset.
+* **(v.2)**  FIXED:			Fatal error with failing reCAPTCHA HTTP requests.
+* **(v.1)**  IMPROVEMENTS:	Further preparation for [Shield Central](http://icwp.io/83) release.
 * **(v.0)**  ADDED:			More in-depth reporting and statistics gathering - options for reports will be made available
  							in a later release.
 
