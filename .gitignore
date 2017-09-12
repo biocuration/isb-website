@@ -21,6 +21,7 @@ wp-content/cache/supercache/*
 .smushit-status
 .gitattributes
 _wpeprivate
+last-mod
 wp-content/object-cache.php
 wp-content/mu-plugins/
 wp-content/mu-plugins/mu-plugin.php
