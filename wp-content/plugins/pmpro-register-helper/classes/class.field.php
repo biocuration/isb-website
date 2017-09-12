@@ -37,6 +37,7 @@
 			$this->profile = null;
 			$this->just_profile = false;
 			$this->class = null;
+			$this->sanitize = true;
 		}
 
 		/*
@@ -123,7 +124,7 @@
 			elseif($this->type == "file")
 			{
 				//use the file save function
-				$this->save_function = array("PMProRH_Field", "saveFile");
+				$this->save_function = array($this, "saveFile");
 			}
 			elseif($this->type == "checkbox")
 			{
@@ -136,7 +137,7 @@
             elseif($this->type == "date")
             {
                 //use the save date function
-                $this->save_function = array("PMProRH_Field", "saveDate");
+                $this->save_function = array($this, "saveDate");
             }
 			
 			return true;
@@ -256,6 +257,11 @@
         //fix date then update user meta
         function saveDate($user_id, $name, $value)
         {
+	        if ( isset( $this->sanitize ) && true === $this->sanitize ) {
+
+		        $value = pmprorh_sanitize( $value );
+	        }
+
         	$meta_key = str_replace("pmprorhprefix_", "", $name);
             $date = date('Y-m-d', strtotime(date($value['y'] . '-' . $value['m'] . '-' . $value['d'])));
         	update_user_meta($user_id, $meta_key, $date);
@@ -414,6 +420,33 @@
 				$r .= '<label class="pmprorh_checkbox_label" for="' . $this->name . '">' . $this->text . '</label> &nbsp; ';
 				$r .= '<input type="hidden" name="'.$this->name.'_checkbox" value="1" />';	//extra field so we can track unchecked boxes
 			}
+			
+			elseif($this->type == "checkbox_grouped")
+			{
+				//value must be an array
+				if(!is_array($value))
+					$value = array($value);
+				
+				$r = '';
+				foreach($this->options as $ovalue => $option)
+				{	
+					$r .= '<input name="'.$this->name.'[]"' .' type="checkbox" value='.$ovalue.' id="'.$this->id.'"  ';
+					
+					if(in_array($ovalue, $value))
+						$r.= 'checked="checked" ';
+					
+					if(!empty($this->readonly))
+						$r .= 'readonly="readonly" ';
+					if(!empty($this->html_attributes))
+						$r .= $this->getHTMLAttributes();	
+					
+					$r .= '/>';
+					$r .= '<label class="pmprorh_checkbox_label" for="' . $this->name . '">' . $option . '</label>';
+					$r .= '<input type="hidden" name="'.$this->name.'_checkbox[]" value='.$ovalue.' />';	//extra field so we can track unchecked boxes
+				}
+				
+			}
+			
 			elseif($this->type == "textarea")
 			{
 				$r = '<textarea id="' . $this->id . '" name="' . $this->name . '" rows="' . $this->rows . '" cols="' . $this->cols . '" ';
