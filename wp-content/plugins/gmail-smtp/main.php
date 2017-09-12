@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Gmail SMTP
-Version: 1.1.1
+Version: 1.1.5
 Plugin URI: http://wphowto.net/
 Author: naa986
 Author URI: http://wphowto.net/
@@ -16,8 +16,9 @@ if (!defined('ABSPATH')){
 
 class GMAIL_SMTP {
     
-    var $plugin_version = '1.1.1';
-    var $phpmailer_version = '5.2.22';
+    var $plugin_version = '1.1.5';
+    var $phpmailer_version = '5.2.24';
+    var $google_api_client_version = '2.2.0';
     var $plugin_url;
     var $plugin_path;
     
@@ -32,10 +33,17 @@ class GMAIL_SMTP {
     }
 
     function plugin_includes() {
-        include_once('google-api-php-client/src/Google/autoload.php');
+        //Google API client library was too big to push to wordpress.org. I had to make it lightweight by keeping only the essential files
+        //Open src/Google/Client.php and check which classes are in use from the /vendor directory.
+        //In addition to the ones in use I had to keep composer and phpseclib as well to avoid a fatal error (and remove everything else).
+        //vendor/google/apiclient-services/src/Google/Service was taking too much space. The plugin only needed to keep the "Gmail.php" file in it.
+        //do a cleanup in both the PHPMailer & Google API Client folders to remove all the git related unnecessary files.
+        /* Only include these scripts when needed to avoid conflicts with other plugins that are using Google API Client
+        include_once('google-api-php-client/vendor/autoload.php');
         include_once('PHPMailer/PHPMailerAutoload.php');
         include_once('class.phpmaileroauthgoogle.php');
         include_once('class.phpmaileroauth.php');
+         */
     }
 
     function loader_operations() {
@@ -127,6 +135,10 @@ class GMAIL_SMTP {
     function plugin_init(){
         if(is_admin()){
             if(isset($_GET['action']) && $_GET['action'] == "oauth_grant"){
+                include_once('google-api-php-client/vendor/autoload.php');
+                include_once('PHPMailer/PHPMailerAutoload.php');
+                include_once('class.phpmaileroauthgoogle.php');
+                include_once('class.phpmaileroauth.php');
                 if (isset($_GET['code'])) {
                     $authCode = $_GET['code'];
                     $accessToken = GmailXOAuth2::resetCredentials($authCode);
@@ -374,24 +386,7 @@ class GMAIL_SMTP {
         if(!isset($options['disable_ssl_verification'])){
             $options['disable_ssl_verification'] = '';
         }
-        
-        $url = "https://www.google.com/accounts/Logout?continue=https://console.developers.google.com/start/api?id=gmail";
-        $link_text = sprintf(wp_kses(__('Create a new <a target="_blank" href="%s">web application</a> and set its Authorized Redirect URL to the one shown on this page.', 'gmail-smtp'), array('a' => array('href' => array(), 'target' => array()))), esc_url($url));
         ?>
-
-        <div class="update-nag">
-            <h3><?php _e('Basic Setup Instructions', 'gmail-smtp');?></li></h3>
-            <ol>
-                <li><?php echo $link_text;?></li>
-                <li><?php _e('Once the application is created it will generate a client ID and client secret. Copy them into the fields here.', 'gmail-smtp');?></li>
-                <li><?php _e('Enter your OAuth Email, From Email and From name.', 'gmail-smtp');?></li>
-                <li><?php _e('Select an encryption.', 'gmail-smtp');?></li>
-                <li><?php _e('Enter a port number.', 'gmail-smtp');?></li>
-                <li><?php _e('Save the settings.', 'gmail-smtp');?></li>
-                <li><?php _e('Now you can authorize your app to access the Gmail API by clicking on the Grant Permission button.', 'gmail-smtp');?></li>
-            </ol>    
-        </div>
-
         <form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>">
             <?php wp_nonce_field('gmail_smtp_general_settings'); ?>
 
@@ -543,6 +538,13 @@ function gmail_smtp_admin_notice() {
         </div>
         <?php
     }
+    if(version_compare(PHP_VERSION, '5.6', '<')){
+        ?>
+        <div class="error">
+            <p><?php _e('Gmail SMTP plugin requires PHP 5.6 or higher. Please contact your web host to update your PHP version.', 'gmail-smtp'); ?></p>
+        </div>
+        <?php
+    }
 }
 
 function is_gmail_smtp_configured() {
@@ -616,6 +618,11 @@ if(!function_exists('wp_mail') && is_gmail_smtp_configured()){
                     $attachments = explode( "\n", str_replace( "\r\n", "\n", $attachments ) );
             }
 
+            include_once('google-api-php-client/vendor/autoload.php');
+            include_once('PHPMailer/PHPMailerAutoload.php');
+            include_once('class.phpmaileroauthgoogle.php');
+            include_once('class.phpmaileroauth.php');
+            
             $options = gmail_smtp_get_option();
 
             $phpmailer = new PHPMailerOAuth; /* this must be the custom class we created */
