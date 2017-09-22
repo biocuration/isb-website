@@ -24,11 +24,11 @@ add_filter( 'login_headertitle', 'my_login_logo_url_title' );
 
 
 // Remove "lost password" from login page (safer!)
-function remove_lostpassword_text ( $text ) {
-     if ($text == 'Lost your password?'){$text = '';}
-        return $text;
-     }
-add_filter( 'gettext', 'remove_lostpassword_text' );
+// function remove_lostpassword_text ( $text ) {
+//      if ($text == 'Lost your password?'){$text = '';}
+//         return $text;
+//      }
+// add_filter( 'gettext', 'remove_lostpassword_text' );
 
 
 // update_option( 'siteurl', 'https://www.biocuration.org' );
