@@ -43,6 +43,7 @@ For GitHub: `$ ssh -T git@github.com` for wpengine: `$ ssh git@git.wpengine.com 
 ### add remote wpengine repositories
 
 git remote add production git@git.wpengine.com:production/biocuration.git
+
 git remote add staging git@git.wpengine.com:staging/biocuration.git
 
 
