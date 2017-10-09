@@ -52,18 +52,10 @@ function pmproeewe_cleanup_test() {
 
 	$emails = apply_filters( 'pmproeewe_email_frequency_and_templates', array(
 			1 => 'membership_expiring',
-			2 => 'membership_expiring',
 			3 => 'membership_expiring',
-			4 => 'membership_expiring',
-			5 => 'membership_expiring',
-			6 => 'membership_expiring',
 			7 => 'membership_expiring',
-			8 => 'membership_expiring',
-			9 => 'membership_expiring',
-			10 => 'membership_expiring',
 			30 => 'membership_expiring',
-			60 => 'membership_expiring',
-			90 => 'membership_expiring'
+			60 => 'membership_expiring'
 		)
 	);
 
@@ -109,18 +101,10 @@ function pmproeewe_extra_emails() {
 	*/
 	$emails = apply_filters( 'pmproeewe_email_frequency_and_templates', array(
 			1 => 'membership_expiring',
-			2 => 'membership_expiring',
 			3 => 'membership_expiring',
-			4 => 'membership_expiring',
-			5 => 'membership_expiring',
-			6 => 'membership_expiring',
 			7 => 'membership_expiring',
-			8 => 'membership_expiring',
-			9 => 'membership_expiring',
-			10 => 'membership_expiring',
 			30 => 'membership_expiring',
-			60 => 'membership_expiring',
-			90 => 'membership_expiring'
+			60 => 'membership_expiring'
 		)
 	);        //<--- !!! UPDATE THIS ARRAY TO CHANGE WHEN EMAILS GO OUT AND THEIR TEMPLATE FILES !!! -->
 
