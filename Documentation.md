@@ -57,7 +57,7 @@ git remote add staging git@git.wpengine.com:staging/biocuration.git
    - select latest backup, click "Download ZIP", choose "full backup"
    - locally, wget "<URL>"
 * unzip local 
-   - mkdir prod_<date>
+   - mkdir snapshot_<date>
    - unzip -d snapshot_date site-archive-biocuration-live-*.zip
    - rm site-archive-biocuration-live-*.zip
 * overwrite git version with production snapshot version 
