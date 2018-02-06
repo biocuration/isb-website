@@ -478,8 +478,8 @@
 			else {
 				$total = (float)$amount + (float)$tax;
 				$this->total = $total;
-			}
-
+			}			
+			
 			//these fix some warnings/notices
 			if(empty($this->billing))
 			{
@@ -508,6 +508,10 @@
 				$this->accountnumber = "";
 			if(empty($this->cardtype))
 				$this->cardtype = "";
+			if(empty($this->expirationmonth))
+				$this->expirationmonth = "";
+			if(empty($this->expirationyear))
+				$this->expirationyear = "";
 			if(empty($this->ExpirationDate))
 				$this->ExpirationDate = "";
 			if (empty($this->status))
@@ -583,6 +587,13 @@
 				//set up actions
 				$before_action = "pmpro_add_order";
 				$after_action = "pmpro_added_order";
+				
+				//only on inserts, we might want to set the expirationmonth and expirationyear from ExpirationDate
+				if( (empty($this->expirationmonth) || empty($this->expirationyear)) && !empty($this->ExpirationDate)) {
+					$this->expirationmonth = substr($this->ExpirationDate, 0, 2);
+					$this->expirationyear = substr($this->ExpirationDate, 2, 4);
+				}
+				
 				//insert
 				$this->sqlQuery = "INSERT INTO $wpdb->pmpro_membership_orders
 								(`code`, `session_id`, `user_id`, `membership_id`, `paypal_token`, `billing_name`, `billing_street`, `billing_city`, `billing_state`, `billing_zip`, `billing_country`, `billing_phone`, `subtotal`, `tax`, `couponamount`, `certificate_id`, `certificateamount`, `total`, `payment_type`, `cardtype`, `accountnumber`, `expirationmonth`, `expirationyear`, `status`, `gateway`, `gateway_environment`, `payment_transaction_id`, `subscription_transaction_id`, `timestamp`, `affiliate_id`, `affiliate_subid`, `notes`, `checkout_id`)
@@ -607,8 +618,8 @@
 									   '" . $this->payment_type . "',
 									   '" . $this->cardtype . "',
 									   '" . hideCardNumber($this->accountnumber, false) . "',
-									   '" . substr($this->ExpirationDate, 0, 2) . "',
-									   '" . substr($this->ExpirationDate, 2, 4) . "',
+									   '" . $this->expirationmonth . "',
+									   '" . $this->expirationyear . "',
 									   '" . esc_sql($this->status) . "',
 									   '" . $this->gateway . "',
 									   '" . $this->gateway_environment . "',
@@ -700,17 +711,18 @@
 		/**
 		 * Cancel an order and call the cancel step of the gateway class if needed.
 		 */
-		function cancel()
-		{
+		function cancel() {
+			global $wpdb;
+			
 			//only need to cancel on the gateway if there is a subscription id
-			if(empty($this->subscription_transaction_id))
-			{
+			if(empty($this->subscription_transaction_id)) {
 				//just mark as cancelled
 				$this->updateStatus("cancelled");
 				return true;
-			}
-			else
-			{
+			} else {
+				//get some data
+				$order_user = get_userdata($this->user_id);
+
 				//cancel the gateway subscription first
 				if (is_object($this->Gateway)) {
 					$result = $this->Gateway->cancel( $this );
@@ -718,8 +730,7 @@
 					$result = false;
 				}
 
-				if($result == false)
-				{
+				if($result == false) {
 					//there was an error, but cancel the order no matter what
 					$this->updateStatus("cancelled");
 
@@ -727,22 +738,39 @@
 					$pmproemail = new PMProEmail();
 					$pmproemail->template = "subscription_cancel_error";
 					$pmproemail->data = array("body"=>"<p>" . sprintf(__("There was an error canceling the subscription for user with ID=%s. You will want to check your payment gateway to see if their subscription is still active.", 'paid-memberships-pro' ), strval($this->user_id)) . "</p><p>Error: " . $this->error . "</p>");
-					$pmproemail->data["body"] .= "<p>Associated Order:<br />" . nl2br(var_export($this, true)) . "</p>";
+					$pmproemail->data["body"] .= '<p>' . __('User Email', 'paid-memberships-pro') . ': ' . $order_user->user_email . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('User Display Name', 'paid-memberships-pro') . ': ' . $order_user->display_name . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Order', 'paid-memberships-pro') . ': ' . $this->code . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Gateway', 'paid-memberships-pro') . ': ' . $this->gateway . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Subscription Transaction ID', 'paid-memberships-pro') . ': ' . $this->subscription_transaction_id . '</p>';
 					$pmproemail->sendEmail(get_bloginfo("admin_email"));
-
-					return false;
-				}
-				else
-				{
+				} else {
 					//Note: status would have been set to cancelled by the gateway class. So we don't have to update it here.
 
-					//remove billing numbers in pmpro_memberships_users if the membership is still active
-					global $wpdb;
+					//remove billing numbers in pmpro_memberships_users if the membership is still active					
 					$sqlQuery = "UPDATE $wpdb->pmpro_memberships_users SET initial_payment = 0, billing_amount = 0, cycle_number = 0 WHERE user_id = '" . $this->user_id . "' AND membership_id = '" . $this->membership_id . "' AND status = 'active'";
 					$wpdb->query($sqlQuery);
-
-					return $result;
 				}
+				
+				//cancel orders for the same subscription
+				$sqlQuery = $wpdb->prepare(
+					"UPDATE $wpdb->pmpro_membership_orders 
+						SET `status` = 'cancelled' 
+						WHERE user_id = %d 
+							AND membership_id = %d 
+							AND gateway = %s 
+							AND gateway_environment = %s 
+							AND subscription_transaction_id = %s 
+							AND `status` IN('success', '') ",					
+					$this->user_id,
+					$this->membership_id,
+					$this->gateway,
+					$this->gateway_environment,
+					$this->subscription_transaction_id
+				);								
+				$wpdb->query($sqlQuery);
+				
+				return $result;
 			}
 		}
 

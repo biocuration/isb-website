@@ -13,14 +13,29 @@
 	//define options
 	$payment_options = array_unique(apply_filters("pmpro_payment_options", array('gateway')));
 
+	//check nonce for saving settings
+	if (!empty($_REQUEST['savesettings']) && (empty($_REQUEST['pmpro_paymentsettings_nonce']) || !check_admin_referer('savesettings', 'pmpro_paymentsettings_nonce'))) {
+		$msg = -1;
+		$msgt = __("Are you sure you want to do that? Try again.", 'paid-memberships-pro' );
+		unset($_REQUEST['savesettings']);
+	}
+	
 	//get/set settings
 	if(!empty($_REQUEST['savesettings']))
 	{
 		/*
 			Save any value that might have been passed in
 		*/
-		foreach($payment_options as $option)
-			pmpro_setOption($option);
+		foreach($payment_options as $option) {
+			//for now we make a special case for sslseal, but we need a way to specify sanitize functions for other fields
+			if( in_array( $option, array( 'sslseal', 'instructions' ) ) ) {
+				global $allowedposttags;
+				$html = wp_kses(wp_unslash($_POST[$option]), $allowedposttags);
+				update_option("pmpro_{$option}", $html);
+            } else {
+				pmpro_setOption($option);
+			}
+		}
 
 		/*
 			Some special case options still worked out here
@@ -90,6 +105,8 @@
 ?>
 
 	<form action="" method="post" enctype="multipart/form-data">
+		<?php wp_nonce_field('savesettings', 'pmpro_paymentsettings_nonce');?>
+		
 		<h2><?php _e('Payment Gateway', 'paid-memberships-pro' );?> &amp; <?php _e('SSL Settings', 'paid-memberships-pro' );?></h2>
 
 		<p><?php _e('Learn more about <a title="Paid Memberships Pro - SSL Settings" target="_blank" href="http://www.paidmembershipspro.com/support/initial-plugin-setup/ssl/">SSL</a> or <a title="Paid Memberships Pro - Payment Gateway Settings" target="_blank" href="http://www.paidmembershipspro.com/support/initial-plugin-setup/payment-gateway/">Payment Gateway Settings</a>.', 'paid-memberships-pro' ); ?></p>
@@ -192,7 +209,7 @@
 					<input type="text" id="tax_state" name="tax_state" size="4" value="<?php echo esc_attr($tax_state)?>" /> <small>(<?php _e('abbreviation, e.g. "PA"', 'paid-memberships-pro' );?>)</small>
 					&nbsp; <?php _e('Tax Rate', 'paid-memberships-pro' ); ?>:
 					<input type="text" id="tax_rate" name="tax_rate" size="10" value="<?php echo esc_attr($tax_rate)?>" /> <small>(<?php _e('decimal, e.g. "0.06"', 'paid-memberships-pro' );?>)</small>
-					<p><small><?php _e('US only. If values are given, tax will be applied for any members ordering from the selected state.<br />For non-US or more complex tax rules, use the <a target="_blank" href="http://www.paidmembershipspro.com/2013/10/non-us-taxes-paid-memberships-pro/">pmpro_tax filter</a>.', 'paid-memberships-pro' );?></small></p>
+					<p><small><?php _e('US only. If values are given, tax will be applied for any members ordering from the selected state.<br />For non-US or more complex tax rules, use the <a target="_blank" href="http://www.paidmembershipspro.com/2013/10/non-us-taxes-paid-memberships-pro/?utm_source=plugin&utm_medium=banner&utm_campaign=payment_settings">pmpro_tax filter</a>.', 'paid-memberships-pro' );?></small></p>
 				</td>
 			</tr>
 
@@ -232,7 +249,7 @@
 				</th>
 				<td>
 					<textarea id="sslseal" name="sslseal" rows="3" cols="80"><?php echo stripslashes(esc_textarea($sslseal))?></textarea>
-					<br /><small><?php _e('Your <strong><a target="_blank" href="http://www.paidmembershipspro.com/documentation/initial-plugin-setup/ssl/">SSL Certificate</a></strong> must be installed by your web host. Your <strong>SSL Seal</strong> will be a short HTML or JavaScript snippet that can be pasted here.', 'paid-memberships-pro' ); ?></small>
+					<br /><small><?php _e('Your <strong><a target="_blank" href="http://www.paidmembershipspro.com/documentation/initial-plugin-setup/ssl/?utm_source=plugin&utm_medium=banner&utm_campaign=payment_settings">SSL Certificate</a></strong> must be installed by your web host. Your <strong>SSL Seal</strong> will be a short HTML or JavaScript snippet that can be pasted here.', 'paid-memberships-pro' ); ?></small>
 				</td>
 			</tr>
 			<tr>

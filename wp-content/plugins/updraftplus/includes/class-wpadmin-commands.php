@@ -96,7 +96,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 		
 	public function restore_alldownloaded($params) {
 
-		$backups = $this->_updraftplus->get_backup_history();
+		$backups = UpdraftPlus_Backup_History::get_history();
 		$updraft_dir = $this->_updraftplus->backups_dir_location();
 
 		$timestamp = (int) $params['timestamp'];
@@ -128,7 +128,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 			}
 
 			if (isset($elements['db'])) {
-			
+				
 				// Analyse the header of the database file + display results
 				list ($mess2, $warn2, $err2, $info) = $this->_updraftplus->analyse_db_file($timestamp, $res);
 				$mess = array_merge($mess, $mess2);
@@ -224,7 +224,14 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 			
 			do_action_ref_array('updraftplus_restore_all_downloaded_postscan', array($backups, $timestamp, $elements, &$info, &$mess, &$warn, &$err));
 
-			return array('m' => '<p>'.$mess_first.'</p>'.implode('<br>', $mess), 'w' => implode('<br>', $warn), 'e' => implode('<br>', $err), 'i' => json_encode($info));
+			$warn_result = '';
+			foreach ($warn as $warning) {
+				if (!$warn_result) $warn_result = '<ul id="updraft_restore_warnings">';
+				$warn_result .= '<li>'.$warning.'</li>';
+			}
+			if ($warn_result) $warn_result .= '</ul>';
+			
+			return array('m' => '<p>'.$mess_first.'</p>'.implode('<br>', $mess), 'w' => $warn_result, 'e' => implode('<br>', $err), 'i' => json_encode($info));
 		}
 	
 	}
@@ -310,7 +317,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 		// The purpose of this is to look at the list of indicated downloads, and indicate which are not already fully downloaded. i.e. Which need further action.
 		$send_back = array();
 
-		$backup = $this->_updraftplus->get_backup_history($params['timestamp']);
+		$backup = UpdraftPlus_Backup_History::get_history($params['timestamp']);
 		$updraft_dir = $this->_updraftplus->backups_dir_location();
 		$backupable_entities = $this->_updraftplus->get_backupable_file_entities();
 
@@ -419,7 +426,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 						);
 					} else {
 						$node_array[] = array(
-'text' => $value,
+							'text' => $value,
 							'children' => false,
 							'id' => $path . DIRECTORY_SEPARATOR . $value,
 							'type' => 'file',
@@ -459,7 +466,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 		}
 
 		// Retrieve the information from our backup history
-		$backup_history = $updraftplus->get_backup_history();
+		$backup_history = UpdraftPlus_Backup_History::get_history();
 
 		if (!isset($backup_history[$params['timestamp']][$params['type']])) {
 			return array('error' => __('Backup set not found', 'updraftplus'));
@@ -554,7 +561,7 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 							'icon' => 'jstree-file',
 							'li_attr' => array(
 								'path' => $parent_name . DIRECTORY_SEPARATOR . $si['name'],
-'size' => $updraftplus->convert_numeric_size_to_text($si['size'])
+								'size' => $updraftplus->convert_numeric_size_to_text($si['size'])
 							)
 						);
 					}
@@ -580,5 +587,75 @@ class UpdraftPlus_WPAdmin_Commands extends UpdraftPlus_Commands {
 
 	public function get_zipfile_download($params) {
 		return apply_filters('updraftplus_command_get_zipfile_download', array('error' => 'UpdraftPlus: command (get_zipfile_download) not installed (are you missing an add-on?)'), $params);
+	}
+	
+	/**
+	 * Dismiss the notice  which will if .htaccess have any old migrated site reference.
+	 *
+	 * @return boolean Return true if migration notice is dismissed
+	 */
+	public function dismiss_migration_notice_for_old_site_reference() {
+		delete_site_option('updraftplus_migrated_site_domain');
+		return true;
+	}
+
+	/**
+	 * When character set and collate both are unsupported at restoration time and if user change anyone substitution dropdown from both, Other substitution select box value should be change respectively. To achieve this functionality, Ajax calls comes here.
+	 *
+	 * @param  Array $params this is an array of parameters sent via ajax it can include the following:
+	 * collate_change_on_charset_selection_data - It is data in serialize form which is need for choose other dropdown option value. It contains below elemts data:
+	 * 	db_supported_collations - All collations supported by current database. This is result of 'SHOW COLLATION' query
+	 * 	db_unsupported_collate_unique - Unsupported collates unique array
+	 * 	db_collates_found - All collates found in database backup file
+	 * event_source_elem - Dropdown elemtn id which trigger the ajax request
+	 * updraft_restorer_charset - Charset dropdown selected value option
+	 * updraft_restorer_collate - Collate dropdown selected value option
+	 *
+	 * @return array - $action_data which contains following data:
+	 * is_action_required - 1 or 0 Whether or not change other dropdown value
+	 * elem_id - Dropdown element id which value need to change. The other dropdown element id
+	 * elem_val - Dropdown element value which should be selected for other drodown
+	 */
+	public function collate_change_on_charset_selection($params) {
+		global $updraftplus;
+		$collate_change_on_charset_selection_data = json_decode($updraftplus->wp_unslash($params['collate_change_on_charset_selection_data']), true);
+		$updraft_restorer_collate = $params['updraft_restorer_collate'];
+		$updraft_restorer_charset = $params['updraft_restorer_charset'];
+
+		$db_supported_collations = $collate_change_on_charset_selection_data['db_supported_collations'];
+		$db_unsupported_collate_unique = $collate_change_on_charset_selection_data['db_unsupported_collate_unique'];
+		$db_collates_found = $collate_change_on_charset_selection_data['db_collates_found'];
+
+		$action_data = array(
+			'is_action_required' => 0,
+		);
+		// No need to change other dropdown value
+		if (isset($db_supported_collations[$updraft_restorer_collate]->Charset) && $updraft_restorer_charset == $db_supported_collations[$updraft_restorer_collate]->Charset) {
+			return $action_data;
+		}
+		$similar_type_collate = $this->_updraftplus->get_similar_collate_related_to_charset($db_supported_collations, $db_unsupported_collate_unique, $updraft_restorer_charset);
+		if (empty($similar_type_collate)) {
+			$similar_type_collate = $this->_updraftplus->get_similar_collate_based_on_ocuurence_count($db_collates_found, $db_supported_collations, $db_supported_charsets_related_to_unsupported_collations = array($updraft_restorer_collate));
+		}
+		// Default collation for changed charcter set
+		if (empty($similar_type_collate)) {
+			$charset_row = $GLOBALS['wpdb']->get_row($GLOBALS['wpdb']->prepare("SHOW CHARACTER SET LIKE '%s'", $updraft_restorer_charset));
+			if (null !== $charset_row && !empty($charset_row->{'Default collation'})) {
+				$similar_type_collate = $charset_row->{'Default collation'};
+			}
+		}
+		if (empty($similar_type_collate)) {
+			foreach ($db_supported_collations as $db_supported_collation => $db_supported_collation_info) {
+				if (isset($db_supported_collation_info->Charset) && $updraft_restorer_charset == $db_supported_collation_info->Charset) {
+					$similar_type_collate = $db_supported_collation;
+					break;
+				}
+			}
+		}
+		if (!empty($similar_type_collate)) {
+			$action_data['is_action_required'] = 1;
+			$action_data['similar_type_collate'] = $similar_type_collate;
+		}
+		return $action_data;
 	}
 }

@@ -28,7 +28,7 @@ class ICWP_WPSF_Processor_CommentsFilter_HumanSpam extends ICWP_WPSF_Processor_C
 
 		// 1st are comments enabled on this post?
 		$nPostId = $this->getRawCommentData( 'comment_post_ID' );
-		$oPost = $nPostId ? $this->loadWpFunctions()->getPostById( $nPostId ) : null;
+		$oPost = $nPostId ? $this->loadWp()->getPostById( $nPostId ) : null;
 		if ( $oPost ) {
 			$fIfDoCheck = $oWpComments->isCommentsOpen( $oPost );
 		}
@@ -58,7 +58,7 @@ class ICWP_WPSF_Processor_CommentsFilter_HumanSpam extends ICWP_WPSF_Processor_C
 
 		// Now we check whether comment status is to completely reject and then we simply redirect to "home"
 		if ( self::$sCommentStatus == 'reject' ) {
-			$oWp = $this->loadWpFunctions();
+			$oWp = $this->loadWp();
 			$oWp->doRedirect( $oWp->getHomeUrl(), array(), true, false );
 		}
 
@@ -74,7 +74,7 @@ class ICWP_WPSF_Processor_CommentsFilter_HumanSpam extends ICWP_WPSF_Processor_C
 			$aCommentData['comment_author_email'],
 			$aCommentData['comment_author_url'],
 			$aCommentData['comment_content'],
-			$this->human_ip(),
+			$this->ip(),
 			substr( $this->loadDataProcessor()->FetchServer( 'HTTP_USER_AGENT', '' ), 0, 254 )
 		);
 	}

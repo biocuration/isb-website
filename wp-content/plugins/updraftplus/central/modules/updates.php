@@ -1,6 +1,6 @@
 <?php
 
-if (!defined('UPDRAFTPLUS_DIR')) die('No access.');
+if (!defined('UPDRAFTCENTRAL_CLIENT_DIR')) die('No access.');
 
 class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 
@@ -100,7 +100,7 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 		wp_update_plugins();
 
 		// WP < 3.7
-		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTPLUS_DIR.'/central/classes/class-automatic-upgrader-skin.php');
+		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTCENTRAL_CLIENT_DIR.'/classes/class-automatic-upgrader-skin.php');
 		
 		$skin = new Automatic_Upgrader_Skin();
 		$upgrader = new Plugin_Upgrader($skin);
@@ -215,7 +215,7 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 		$update = $get_core_updates[$core_update_key];
 
 		// WP < 3.7
-		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTPLUS_DIR.'/central/classes/class-automatic-upgrader-skin.php');
+		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTCENTRAL_CLIENT_DIR.'/classes/class-automatic-upgrader-skin.php');
 		
 		$skin = new Automatic_Upgrader_Skin();
 		$upgrader = new Core_Upgrader($skin);
@@ -288,7 +288,7 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 		wp_update_themes();
 
 		// WP < 3.7
-		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTPLUS_DIR.'/central/classes/class-automatic-upgrader-skin.php');
+		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTCENTRAL_CLIENT_DIR.'/classes/class-automatic-upgrader-skin.php');
 		
 		$skin = new Automatic_Upgrader_Skin();
 		$upgrader = new Theme_Upgrader($skin);
@@ -555,6 +555,12 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			$get_plugin_updates = $this->maybe_add_third_party_items(get_plugin_updates(), 'plugin');
 			if (is_array($get_plugin_updates)) {
 				foreach ($get_plugin_updates as $update) {
+
+					// For some reason, some 3rd-party (premium) plugins are returning the same version
+					// with that of the currently installed version in WordPress. Thus, we're making sure here to
+					// only return those items for update that has new versions greater than the currently installed version.
+					if (version_compare($update->Version, $update->update->new_version, '>=')) continue;
+					
 					$plugin_updates[] = array(
 						'name' => $update->Name,
 						'plugin_uri' => $update->PluginURI,
@@ -591,6 +597,11 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			$get_theme_updates = $this->maybe_add_third_party_items(get_theme_updates(), 'theme');
 			if (is_array($get_theme_updates)) {
 				foreach ($get_theme_updates as $update) {
+
+					// We're making sure here to only return those items for update that has new
+					// versions greater than the currently installed version.
+					if (version_compare($update->Version, $update->update['new_version'], '>=')) continue;
+					
 					$theme_updates[] = array(
 						'name' => $update->Name,
 						'theme_uri' => $update->ThemeURI,
@@ -605,6 +616,7 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 							'url' => $update->update['url'],
 						),
 					);
+
 				}
 			}
 		}
@@ -646,22 +658,26 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 					
 					$is_mysql = (file_exists(WP_CONTENT_DIR . '/db.php') && empty($wpdb->is_mysql)) ? false : true;
 					
-					$core_updates[] = array(
-						'download' => $update->download,
-						'version' => $update->version,
-						'php_version' => $update->php_version,
-						'mysql_version' => $update->mysql_version,
-						'installed' => array(
-							'version' => $wp_version,
-							'mysql' => $mysql_version,
-							'php' => PHP_VERSION,
-							'is_mysql' => $is_mysql,
-						),
-						'sufficient' => array(
-							'mysql' => version_compare($mysql_version, $update->mysql_version, '>='),
-							'php' => version_compare(PHP_VERSION, $update->php_version, '>='),
-						),
-					);
+					// We're making sure here to only return those items for update that has new
+					// versions greater than the currently installed version.
+					if (version_compare($wp_version, $update->version, '<')) {
+						$core_updates[] = array(
+							'download' => $update->download,
+							'version' => $update->version,
+							'php_version' => $update->php_version,
+							'mysql_version' => $update->mysql_version,
+							'installed' => array(
+								'version' => $wp_version,
+								'mysql' => $mysql_version,
+								'php' => PHP_VERSION,
+								'is_mysql' => $is_mysql,
+							),
+							'sufficient' => array(
+								'mysql' => version_compare($mysql_version, $update->mysql_version, '>='),
+								'php' => version_compare(PHP_VERSION, $update->php_version, '>='),
+							),
+						);
+					}
 					
 				}
 			}

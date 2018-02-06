@@ -105,7 +105,7 @@ final class User_Edit {
 							<li>
 								<label>
 									<input type="checkbox" name="members_user_roles[]" value="<?php echo esc_attr( $role->name ); ?>" <?php checked( in_array( $role->name, $user_roles ) ); ?> />
-									<?php echo esc_html( $role->label ); ?>
+									<?php echo esc_html( $role->get( 'label' ) ); ?>
 								</label>
 							</li>
 							<?php endif; ?>
@@ -172,7 +172,7 @@ final class User_Edit {
 		} else {
 
 			// Loop through the current user roles.
-			foreach ( (array) $user->roles as $old_role ) {
+			foreach ( (array) $old_user_data->roles as $old_role ) {
 
 				// Remove the role if it is editable.
 				if ( members_is_role_editable( $old_role ) )

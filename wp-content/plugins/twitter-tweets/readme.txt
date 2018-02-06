@@ -3,8 +3,8 @@ Contributors: weblizar
 Donate link: http://www.weblizar.com/
 Tags: twitter, twitter widget, twitter wordpress plugin,twitter feed
 Requires at least: 3.8
-Tested up to: 4.8.1
-Stable tag: 1.7
+Tested up to: 4.9
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,7 @@ Please use WordPress support forum to ask any query regarding any issue.
 
 For more information, see Weblizar(http://wwww.weblizar.com/).
 
+= 1.7.1 - version update + WordPress 4.9 Compatible
 = 1.7 - version update + WordPress 4.8.1 Compatible
 = 1.6.0 - version update
 = 1.5.9 - update

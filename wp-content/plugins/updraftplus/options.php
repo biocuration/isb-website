@@ -24,6 +24,15 @@ class UpdraftPlus_Options {
 		return 'options-general.php';
 	}
 
+	/**
+	 * Extracts the last logged message from updraftplus last process
+	 *
+	 * @return Mixed - Value set for the option or the default message
+	 */
+	public static function get_updraft_lastmessage() {
+		return UpdraftPlus_Options::get_updraft_option('updraft_lastmessage', __('(Nothing has been logged yet)', 'updraftplus'));
+	}
+
 	public static function get_updraft_option($option, $default = null) {
 		$ret = get_option($option, $default);
 		return apply_filters('updraftplus_get_option', $ret, $option, $default);
@@ -34,7 +43,7 @@ class UpdraftPlus_Options {
 	 *
 	 * @param  String  $option    specify option name
 	 * @param  String  $value     specify option value
-	 * @param  Boolean $use_cache check if it needs to use cache
+	 * @param  Boolean $use_cache whether or not to use the WP options cache
 	 * @return Boolean - as from update_option()
 	 */
 	public static function update_updraft_option($option, $value, $use_cache = true) {
@@ -97,6 +106,9 @@ class UpdraftPlus_Options {
 		}
 	}
 
+	/**
+	 * Runs upon the WordPress action admin_init
+	 */
 	public static function admin_init() {
 
 		static $already_inited = false;
@@ -118,21 +130,13 @@ class UpdraftPlus_Options {
 		register_setting('updraft-options-group', 'updraft_encryptionphrase');
 		register_setting('updraft-options-group', 'updraft_service', array($updraftplus, 'just_one'));
 
-		register_setting('updraft-options-group', 'updraft_s3', array($updraftplus, 's3_sanitise'));
-		register_setting('updraft-options-group', 'updraft_ftp', array($updraftplus, 'ftp_sanitise'));
-		register_setting('updraft-options-group', 'updraft_dreamobjects');
-		register_setting('updraft-options-group', 'updraft_s3generic');
-		register_setting('updraft-options-group', 'updraft_cloudfiles');
-		register_setting('updraft-options-group', 'updraft_openstack');
-		register_setting('updraft-options-group', 'updraft_dropbox', array($updraftplus, 'dropbox_checkchange'));
-		register_setting('updraft-options-group', 'updraft_googledrive', array($updraftplus, 'googledrive_checkchange'));
-		register_setting('updraft-options-group', 'updraft_onedrive', array($updraftplus, 'onedrive_checkchange'));
-		register_setting('updraft-options-group', 'updraft_azure', array($updraftplus, 'azure_checkchange'));
-		register_setting('updraft-options-group', 'updraft_googlecloud', array($updraftplus, 'googlecloud_checkchange'));
-
-		register_setting('updraft-options-group', 'updraft_sftp');
-		register_setting('updraft-options-group', 'updraft_webdav', array($updraftplus, 'construct_webdav_url'));
-
+		$services_to_register = array_keys($updraftplus->backup_methods);
+		foreach ($services_to_register as $service) {
+			register_setting('updraft-options-group', 'updraft_'.$service);
+			// We have to add the filter manually in order to get the second parameter passed through (register_setting() only registers with one parameter)
+			add_filter('sanitize_option_updraft_'.$service, array($updraftplus, 'storage_options_filter'), 10, 2);
+		}
+		
 		register_setting('updraft-options-group', 'updraft_ssl_nossl', 'absint');
 		register_setting('updraft-options-group', 'updraft_log_syslog', 'absint');
 		register_setting('updraft-options-group', 'updraft_ssl_useservercerts', 'absint');
@@ -141,7 +145,6 @@ class UpdraftPlus_Options {
 		register_setting('updraft-options-group', 'updraft_split_every', array($updraftplus_admin, 'optionfilter_split_every'));
 
 		register_setting('updraft-options-group', 'updraft_dir', array($updraftplus_admin, 'prune_updraft_dir_prefix'));
-		register_setting('updraft-options-group', 'updraft_email', array($updraftplus, 'just_one_email'));
 
 		register_setting('updraft-options-group', 'updraft_report_warningsonly', array($updraftplus_admin, 'return_array'));
 		register_setting('updraft-options-group', 'updraft_report_wholebackup', array($updraftplus_admin, 'return_array'));

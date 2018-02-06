@@ -17,8 +17,8 @@ class ICWP_WPSF_Processor_CommentsFilter_GoogleRecaptcha extends ICWP_WPSF_Proce
 
 		parent::run();
 
-		add_action( 'wp_enqueue_scripts',		array( $this, 'registerGoogleRecaptchaJs' ), 99 );
-		add_action( 'comment_form',				array( $this, 'printGoogleRecaptchaCheck' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'registerGoogleRecaptchaJs' ), 99 );
+		add_action( 'comment_form_after_fields', array( $this, 'printGoogleRecaptchaCheck' ) );
 	}
 
 	/**
@@ -38,13 +38,7 @@ class ICWP_WPSF_Processor_CommentsFilter_GoogleRecaptcha extends ICWP_WPSF_Proce
 	 * @return string
 	 */
 	protected function getGoogleRecaptchaHtml() {
-		/** @var ICWP_WPSF_FeatureHandler_CommentsFilter $oFO */
-		$oFO = $this->getFeature();
-		$sSiteKey = $oFO->getGoogleRecaptchaSiteKey();
-		return sprintf(
-			'<div class="g-recaptcha" data-sitekey="%s" style="margin: 10px 0;"></div>',
-			$sSiteKey
-		);
+		return '<div class="icwpg-recaptcha" style="margin: 10px 0; clear:both;"></div>';
 	}
 
 	/**
@@ -60,24 +54,16 @@ class ICWP_WPSF_Processor_CommentsFilter_GoogleRecaptcha extends ICWP_WPSF_Proce
 			return $aCommentData;
 		}
 
-		$sCaptchaResponse = $this->loadDataProcessor()->FetchPost( 'g-recaptcha-response' );
-
 		$bIsSpam = false;
 		$sStatKey = '';
 		$sExplanation = '';
-		if ( empty( $sCaptchaResponse ) ) {
-			$bIsSpam = true;
-			$sStatKey = 'empty';
-			$sExplanation = _wpsf__( 'Google reCAPTCHA was not submitted.' );
+		try {
+			$this->checkRequestRecaptcha();
 		}
-		else {
-			$oRecaptcha = $this->loadGoogleRecaptcha()->getGoogleRecaptchaLib( $oFO->getGoogleRecaptchaSecretKey() );
-			$oResponse = $oRecaptcha->verify( $sCaptchaResponse, $this->human_ip() );
-			if ( empty( $oResponse ) || !$oResponse->isSuccess() ) {
-				$bIsSpam = true;
-				$sStatKey = 'failed';
-				$sExplanation = _wpsf__( 'Google reCAPTCHA verification failed.' );
-			}
+		catch ( Exception $oE ) {
+			$sStatKey = ( $oE->getCode() == 1 ) ? 'empty' : 'failed';
+			$sExplanation = $oE->getMessage();
+			$bIsSpam = true;
 		}
 
 		// Now we check whether comment status is to completely reject and then we simply redirect to "home"
@@ -91,7 +77,7 @@ class ICWP_WPSF_Processor_CommentsFilter_GoogleRecaptcha extends ICWP_WPSF_Proce
 			add_filter( $oFO->prefix( 'ip_black_mark' ), '__return_true' );
 
 			if ( self::$sCommentStatus == 'reject' ) {
-				$oWp = $this->loadWpFunctions();
+				$oWp = $this->loadWp();
 				$oWp->doRedirect( $oWp->getHomeUrl(), array(), true, false );
 			}
 		}

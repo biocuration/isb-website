@@ -50,7 +50,7 @@ class UpdraftPlus_BackupModule_email extends UpdraftPlus_BackupModule {
 			}
 			if ($any_sent) {
 				if (isset($toobig_hash)) {
-					$updraftplus->log_removewarning('toobigforemail_'.$toobig_hash);
+					$updraftplus->log_remove_warning('toobigforemail_'.$toobig_hash);
 					// Don't leave it still set for the next archive
 					unset($toobig_hash);
 				}
@@ -65,6 +65,18 @@ class UpdraftPlus_BackupModule_email extends UpdraftPlus_BackupModule {
 		return null;
 	}
 
+	/**
+	 * Acts as a WordPress options filter
+	 *
+	 * @param  Array $options - An array of options
+	 *
+	 * @return Array - the returned array can either be the set of updated settings or a WordPress error array
+	 */
+	public function options_filter($options) {
+		global $updraftplus;
+		return $updraftplus->just_one_email($options);
+	}
+	
 	public function config_print() {
 		?>
 		<tr class="updraftplusmethod email">

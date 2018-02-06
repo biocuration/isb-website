@@ -6,6 +6,7 @@
     "storage_key": "statistics",
     "tagline": "Summary of the main security actions taken by this plugin",
     "show_central": false,
+    "premium": false,
     "access_restricted": true
   },
   "sections": [
@@ -79,9 +80,11 @@
       "deleted_at"
     ],
     "reporting_table_name": "reporting",
+    "reporting_consolidation_cron_name": "reporting-consolidation",
     "reporting_table_columns": [
       "id",
       "stat_key",
+      "tally",
       "created_at",
       "deleted_at"
     ]

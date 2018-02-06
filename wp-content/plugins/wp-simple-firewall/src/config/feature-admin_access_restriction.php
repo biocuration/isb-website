@@ -5,10 +5,11 @@
     "name": "Security Admin",
     "show_feature_menu_item": true,
     "storage_key": "admin_access_restriction",
-    "tagline": "Protect your security plugin not just your WordPress site",
+    "tagline": "Protect your Security Plugin, not just your WordPress site",
     "menu_title": "Security Admin",
     "show_central": true,
     "access_restricted": true,
+    "premium": false,
     "order": 20
   },
   "admin_notices": {
@@ -206,7 +207,6 @@
   ],
   "definitions": {
     "help_video_id": "214855538",
-    "admin_access_key_cookie_name": "icwp_wpsf_aakcook",
     "admin_access_options_to_restrict": {
       "wpms_options": [
         "admin_email",

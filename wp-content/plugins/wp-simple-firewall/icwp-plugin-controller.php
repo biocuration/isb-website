@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017 iControlWP <support@icontrolwp.com>
+ * Copyright (c) 2018 iControlWP <support@icontrolwp.com>
  * All rights reserved.
  *
  * "Shield" (formerly WordPress Simple Firewall) is distributed under the GNU
@@ -94,6 +94,20 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @var boolean
 	 */
 	protected $bMeetsBasePermissions = false;
+	/**
+	 * @var string
+	 */
+	protected $sAdminNoticeError = '';
+
+	/**
+	 * @var ICWP_WPSF_FeatureHandler_Plugin
+	 */
+	protected $oFeatureHandlerPlugin;
+
+	/**
+	 * @var ICWP_WPSF_FeatureHandler_Base[]
+	 */
+	protected $aModules;
 
 	/**
 	 * @param $sRootFile
@@ -101,12 +115,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	public static function GetInstance( $sRootFile ) {
 		if ( !isset( self::$oInstance ) ) {
-			try {
-				self::$oInstance = new self( $sRootFile );
-			}
-			catch ( Exception $oE ) {
-				return null;
-			}
+			self::$oInstance = new self( $sRootFile );
 		}
 		return self::$oInstance;
 	}
@@ -118,9 +127,10 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	private function __construct( $sRootFile ) {
 		self::$sRootFile = $sRootFile;
 		$this->checkMinimumRequirements();
-		add_action( 'plugins_loaded', array( $this, 'onWpPluginsLoaded' ), 0 ); // this hook then registers everything
+		$this->doRegisterHooks();
 		$this->loadWpTrack();
 		$this->loadFactory(); // so we know it's loaded whenever we need it. Cuz we need it.
+		$this->doLoadTextDomain();
 	}
 
 	/**
@@ -129,7 +139,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	private function readPluginSpecification() {
 		$aSpec = array();
-		$sContents = $this->loadDataProcessor()->readFileContentsUsingInclude( $this->getPathPluginSpec() );
+		$sContents = $this->loadDP()->readFileContentsUsingInclude( $this->getPathPluginSpec() );
 		if ( !empty( $sContents ) ) {
 			$aSpec = json_decode( $sContents, true );
 			if ( empty( $aSpec ) ) {
@@ -161,7 +171,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 
 		$sMinimumWp = $this->getPluginSpec_Requirement( 'wordpress' );
 		if ( !empty( $sMinimumWp ) ) {
-			$sWpVersion = $this->loadWpFunctions()->getWordpressVersion();
+			$sWpVersion = $this->loadWp()->getVersion();
 			if ( version_compare( $sWpVersion, $sMinimumWp, '<' ) ) {
 				$aRequirementsMessages[] = sprintf( 'WordPress does not meet minimum version. Your version: %s.  Required Version: %s.', $sWpVersion, $sMinimumWp );
 				$bMeetsRequirements = false;
@@ -200,6 +210,21 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 */
+	public function adminNoticePluginFailedToLoad() {
+		$aDisplayData = array(
+			'strings' => array(
+				'summary_title'    => 'Perhaps due to a failed upgrade, the Shield plugin failed to load certain component(s) - you should remove the plugin and reinstall.',
+				'more_information' => $this->sAdminNoticeError
+			)
+		);
+		$this->loadRenderer( $this->getPath_Templates() )
+			 ->setTemplate( 'notices/plugin-failed-to-load' )
+			 ->setRenderVars( $aDisplayData )
+			 ->display();
+	}
+
+	/**
 	 * @return array
 	 */
 	protected function getRequirementsMessages() {
@@ -234,17 +259,10 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 
 	/**
 	 */
-	public function onWpPluginsLoaded() {
-		$this->doLoadTextDomain();
-		$this->doRegisterHooks();
-	}
-
-	/**
-	 */
 	protected function doRegisterHooks() {
 		$this->registerActivationHooks();
 
-		add_action( 'init', array( $this, 'onWpInit' ) );
+		add_action( 'init', array( $this, 'onWpInit' ), 0 );
 		add_action( 'admin_init', array( $this, 'onWpAdminInit' ) );
 		add_action( 'wp_loaded', array( $this, 'onWpLoaded' ) );
 
@@ -338,7 +356,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @return boolean
 	 */
 	public function getMeetsBasePermissions() {
-		return $this->bMeetsBasePermissions;
+		return (bool)$this->bMeetsBasePermissions;
 	}
 
 	/**
@@ -358,8 +376,8 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 				$oDp->downloadStringAsFile(
 					wp_json_encode( $aExportOptions ),
 					'shield_options_export-'
-					. $this->loadWpFunctions()->getHomeUrl( true )
-					. '-' . date( 'ymdHis' ) . '.txt'
+					. $this->loadWp()->getHomeUrl( true )
+					. '-' . date( 'y-m-d__H-i-s' ) . '.txt'
 				);
 			}
 		}
@@ -635,7 +653,8 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 		if ( !empty( $oPluginUpdateData ) && !empty( $oPluginUpdateData->response )
 			&& isset( $oPluginUpdateData->response[ $this->getPluginBaseFile() ] ) ) {
 			// i.e. there's an update available
-			$sNewVersion = $this->loadWpFunctions()->getPluginUpdateNewVersion( $this->getPluginBaseFile() );
+
+			$sNewVersion = $this->loadWpPlugins()->getUpdateNewVersion( $this->getPluginBaseFile() );
 			if ( !empty( $sNewVersion ) ) {
 				$oConOptions = $this->getPluginControllerOptions();
 				if ( !isset( $oConOptions->update_first_detected ) || ( count( $oConOptions->update_first_detected ) > 3 ) ) {
@@ -665,12 +684,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @return boolean
 	 */
 	public function onWpAutoUpdate( $bDoAutoUpdate, $mItem ) {
-		$oWp = $this->loadWpFunctions();
+		$oWp = $this->loadWp();
+		$oWpPlugins = $this->loadWpPlugins();
 
-		$sItemFile = $oWp->getFileFromAutomaticUpdateItem( $mItem );
+		$sFile = $oWp->getFileFromAutomaticUpdateItem( $mItem );
 
 		// The item in question is this plugin...
-		if ( $sItemFile === $this->getPluginBaseFile() ) {
+		if ( $sFile === $this->getPluginBaseFile() ) {
 			$sAutoupdateSpec = $this->getPluginSpec_Property( 'autoupdate' );
 
 			$oConOptions = $this->getPluginControllerOptions();
@@ -691,17 +711,18 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 
 				case 'confidence' :
 					$bDoAutoUpdate = false;
-					$sNewVersion = $oWp->getPluginUpdateNewVersion( $this->getPluginBaseFile() );
+					$nAutoupdateDays = $this->getPluginSpec_Property( 'autoupdate_days' );
+					$sNewVersion = $oWpPlugins->getUpdateNewVersion( $sFile );
 					if ( !empty( $sNewVersion ) ) {
 						$nFirstDetected = isset( $oConOptions->update_first_detected[ $sNewVersion ] ) ? $oConOptions->update_first_detected[ $sNewVersion ] : 0;
 						$nTimeUpdateAvailable = $this->loadDataProcessor()->time() - $nFirstDetected;
-						$bDoAutoUpdate = ( $nFirstDetected > 0 && ( $nTimeUpdateAvailable > WEEK_IN_SECONDS ) );
+						$bDoAutoUpdate = ( $nFirstDetected > 0 && ( $nTimeUpdateAvailable > DAY_IN_SECONDS * $nAutoupdateDays ) );
 					}
 					break;
 
 				case 'pass' :
 					// Add block to version 6.0 if PHP < 5.3
-					$sNewVersion = $oWp->getPluginUpdateNewVersion( $this->getPluginBaseFile() );
+					$sNewVersion = $oWpPlugins->getUpdateNewVersion( $sFile );
 					if ( version_compare( $sNewVersion, '6.0.0', '>=' ) && !$this->loadDataProcessor()
 																				 ->getPhpVersionIsAtLeast( '5.3.0' ) ) {
 						$bDoAutoUpdate = false;
@@ -804,7 +825,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	public function filter_hidePluginUpdatesFromUI( $oPlugins ) {
 
-		if ( $this->loadWpFunctions()->getIsCron() ) {
+		if ( $this->loadWp()->isCron() ) {
 			return $oPlugins;
 		}
 		if ( !apply_filters( $this->doPluginPrefix( 'hide_plugin_updates' ), false ) ) {
@@ -838,7 +859,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 		do_action( $this->doPluginPrefix( 'form_submit' ) );
 
 		if ( $this->getIsPage_PluginAdmin() ) {
-			$oWp = $this->loadWpFunctions();
+			$oWp = $this->loadWp();
 			$oWp->doRedirect( $oWp->getUrl_CurrentAdminPage() );
 		}
 		return true;
@@ -959,20 +980,20 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
-	 * @param bool $bCheckUserPermissions
+	 * @param bool $bCheckUserPerms - do we check the logged-in user permissions
 	 * @return bool
 	 */
-	public function getIsValidAdminArea( $bCheckUserPermissions = true ) {
-		if ( $bCheckUserPermissions && $this->loadWpTrack()
-											->getWpActionHasFired( 'init' ) && !current_user_can( $this->getBasePermissions() ) ) {
+	public function getIsValidAdminArea( $bCheckUserPerms = true ) {
+		if ( $bCheckUserPerms && $this->loadWpTrack()->getWpActionHasFired( 'init' )
+			 && !$this->getMeetsBasePermissions() ) {
 			return false;
 		}
 
-		$oWp = $this->loadWpFunctions();
+		$oWp = $this->loadWp();
 		if ( !$oWp->isMultisite() && is_admin() ) {
 			return true;
 		}
-		else if ( $oWp->isMultisite() && $this->getIsWpmsNetworkAdminOnly() && is_network_admin() ) {
+		else if ( $oWp->isMultisite() && $this->getIsWpmsNetworkAdminOnly() && ( is_network_admin() || $oWp->isAjax() ) ) {
 			return true;
 		}
 		return false;
@@ -1014,28 +1035,25 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @return bool
 	 */
 	public function getIsPage_PluginAdmin() {
-		return ( strpos( $this->loadWpFunctions()->getCurrentWpAdminPage(), $this->getPluginPrefix() ) === 0 );
+		return ( strpos( $this->loadWp()->getCurrentWpAdminPage(), $this->getPluginPrefix() ) === 0 );
 	}
 
 	/**
 	 * @return bool
 	 */
 	public function getIsPage_PluginMainDashboard() {
-		return ( $this->loadWpFunctions()->getCurrentWpAdminPage() == $this->getPluginPrefix() );
+		return ( $this->loadWp()->getCurrentWpAdminPage() == $this->getPluginPrefix() );
 	}
 
 	/**
 	 * @return bool
 	 */
 	protected function getIsPluginFormSubmit() {
-		if ( empty( $_POST ) && empty( $_GET ) ) {
+		if ( $this->loadWp()->isAjax() || ( empty( $_POST ) && empty( $_GET ) ) ) {
 			return false;
 		}
 
-		$aFormSubmitOptions = array(
-			$this->doPluginOptionPrefix( 'plugin_form_submit' ),
-			'icwp_link_action'
-		);
+		$aFormSubmitOptions = array( 'plugin_form_submit', 'icwp_link_action' );
 
 		$oDp = $this->loadDataProcessor();
 		foreach ( $aFormSubmitOptions as $sOption ) {
@@ -1134,10 +1152,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	public function getPluginUrl_Asset( $sAsset ) {
-		if ( $this->loadFS()->exists( $this->getPath_Assets( $sAsset ) ) ) {
-			return $this->getPluginUrl( $this->getPluginSpec_Path( 'assets' ) . '/' . $sAsset );
+		$sUrl = '';
+		$sAssetPath = $this->getPath_Assets( $sAsset );
+		if ( $this->loadFS()->exists( $sAssetPath ) ) {
+			$sUrl = $this->getPluginUrl( $this->getPluginSpec_Path( 'assets' ) . '/' . $sAsset );
+			return $this->loadWpIncludes()->addIncludeModifiedParam( $sUrl, $sAssetPath );
 		}
-		return '';
+		return $sUrl;
 	}
 
 	/**
@@ -1168,7 +1189,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	public function getPluginUrl_AdminMainPage() {
-		return $this->loadCorePluginFeatureHandler()->getFeatureAdminPageUrl();
+		return $this->loadCorePluginFeatureHandler()->getUrl_AdminPage();
 	}
 
 	/**
@@ -1222,6 +1243,21 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	public function getPath_AssetImage( $sAsset = '' ) {
 		return $this->getPath_Assets( 'images' . DIRECTORY_SEPARATOR . $sAsset );
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getPath_Config() {
+		return $this->getPath_Source().'config/';
+	}
+
+	/**
+	 * @param string $sSlug
+	 * @return string
+	 */
+	public function getPath_ConfigFile( $sSlug ) {
+		return $this->getPath_Config().sprintf( 'feature-%s.php', $sSlug );
 	}
 
 	/**
@@ -1299,6 +1335,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * @return int
+	 */
+	public function getReleaseTimestamp() {
+		return $this->getPluginSpec_Property( 'release_timestamp' );
+	}
+
+	/**
 	 * @return string
 	 */
 	public function getTextDomain() {
@@ -1318,7 +1361,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	protected function getPluginControllerOptions() {
 		if ( !isset( self::$oControllerOptions ) ) {
 
-			self::$oControllerOptions = $this->loadWpFunctions()->getOption( $this->getPluginControllerOptionsKey() );
+			self::$oControllerOptions = $this->loadWp()->getOption( $this->getPluginControllerOptionsKey() );
 			if ( !is_object( self::$oControllerOptions ) ) {
 				self::$oControllerOptions = new stdClass();
 			}
@@ -1343,12 +1386,19 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * @return bool
+	 */
+	public function isPremiumExtensionsEnabled() {
+		return (bool)$this->getPluginSpec_Property( 'enable_premium' );
+	}
+
+	/**
 	 */
 	protected function saveCurrentPluginControllerOptions() {
 		$oOptions = $this->getPluginControllerOptions();
 		if ( $this->sConfigOptionsHashWhenLoaded != md5( serialize( $oOptions ) ) ) {
 			add_filter( $this->doPluginPrefix( 'bypass_permission_to_manage' ), '__return_true' );
-			$this->loadWpFunctions()->updateOption( $this->getPluginControllerOptionsKey(), $oOptions );
+			$this->loadWp()->updateOption( $this->getPluginControllerOptionsKey(), $oOptions );
 			remove_filter( $this->doPluginPrefix( 'bypass_permission_to_manage' ), '__return_true' );
 		}
 	}
@@ -1389,14 +1439,14 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	/**
 	 */
 	public function clearSession() {
-		$this->loadDataProcessor()->setDeleteCookie( $this->getPluginPrefix() );
+		$this->loadDP()->setDeleteCookie( $this->getPluginPrefix() );
 		self::$sSessionId = null;
 	}
 
 	/**
 	 * Returns true if you're overriding OFF.  We don't do override ON any more (as of 3.5.1)
 	 */
-	public function getIfOverrideOff() {
+	public function getIfForceOffActive() {
 		if ( !isset( $this->bForceOffState ) ) {
 			$this->bForceOffState = $this->loadFS()->fileExistsInDir( 'forceOff', $this->getRootDir(), false );
 		}
@@ -1409,7 +1459,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	public function getSessionId( $bSetIfNeeded = true ) {
 		if ( empty( self::$sSessionId ) ) {
-			self::$sSessionId = $this->loadDataProcessor()->FetchCookie( $this->getPluginPrefix(), '' );
+			self::$sSessionId = $this->loadDP()->FetchCookie( $this->getPluginPrefix(), '' );
 			if ( empty( self::$sSessionId ) && $bSetIfNeeded ) {
 				self::$sSessionId = md5( uniqid( $this->getPluginPrefix() ) );
 				$this->setSessionCookie();
@@ -1419,12 +1469,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * @param bool $bSetSessionIfNeeded
 	 * @return string
 	 */
-	public function getUniqueRequestId() {
+	public function getUniqueRequestId( $bSetSessionIfNeeded = true ) {
 		if ( !isset( self::$sRequestId ) ) {
 			$oDp = $this->loadDataProcessor();
-			self::$sRequestId = md5( $this->getSessionId( false ) . $oDp->getVisitorIpAddress() . $oDp->time() );
+			self::$sRequestId = md5( $this->getSessionId( $bSetSessionIfNeeded ).$oDp->loadIpService()->getRequestIp().$oDp->time() );
 		}
 		return self::$sRequestId;
 	}
@@ -1440,7 +1491,7 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	/**
 	 */
 	protected function setSessionCookie() {
-		$oWp = $this->loadWpFunctions();
+		$oWp = $this->loadWp();
 		$this->loadDataProcessor()->setCookie(
 			$this->getPluginPrefix(),
 			$this->getSessionId(),
@@ -1452,7 +1503,9 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * We let the exception from the core plugin feature to bubble up because it's fairly critical.
 	 * @return ICWP_WPSF_FeatureHandler_Plugin
+	 * @throws Exception from loadFeatureHandler()
 	 */
 	public function &loadCorePluginFeatureHandler() {
 		if ( !isset( $this->oFeatureHandlerPlugin ) ) {
@@ -1473,20 +1526,41 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 	 */
 	public function loadAllFeatures( $bRecreate = false, $bFullBuild = false ) {
 
-		$oMainPluginFeature = $this->loadCorePluginFeatureHandler();
-		$aPluginFeatures = $oMainPluginFeature->getActivePluginFeatures();
+		$oCoreModule = $this->loadCorePluginFeatureHandler();
 
 		$bSuccess = true;
-		foreach ( $aPluginFeatures as $sSlug => $aFeatureProperties ) {
+		foreach ( $oCoreModule->getActivePluginFeatures() as $sSlug => $aFeatureProperties ) {
 			try {
 				$this->loadFeatureHandler( $aFeatureProperties, $bRecreate, $bFullBuild );
 				$bSuccess = true;
 			}
 			catch ( Exception $oE ) {
-				$this->loadWpFunctions()->wpDie( $oE->getMessage() );
+				if ( $this->getIsValidAdminArea() ) {
+					$this->sAdminNoticeError = $oE->getMessage();
+					add_action( 'admin_menu', array( $this, 'adminNoticePluginFailedToLoad' ) );
+					add_action( 'network_admin_notices', array( $this, 'adminNoticePluginFailedToLoad' ) );
+				}
 			}
 		}
+
+		do_action( $this->doPluginPrefix( 'run_processors' ) );
+
 		return $bSuccess;
+	}
+
+	/**
+	 * @param string $sSlug
+	 * @return ICWP_WPSF_FeatureHandler_Base|null
+	 */
+	public function getModule( $sSlug ) {
+		if ( !is_array( $this->aModules ) ) {
+			$this->aModules = array();
+		}
+		$oModule = isset( $this->aModules[ $sSlug ] ) ? $this->aModules[ $sSlug ] : null;
+		if ( !is_null( $oModule ) && !( $oModule instanceof ICWP_WPSF_FeatureHandler_Base ) ) {
+			$oModule = null;
+		}
+		return $oModule;
 	}
 
 	/**
@@ -1500,12 +1574,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 
 		$sFeatureSlug = $aFeatureProperties[ 'slug' ];
 
+		$oHandler = $this->getModule( $sFeatureSlug );
+		if ( !empty( $oHandler ) ) {
+			return $oHandler;
+		}
+
 		$sFeatureName = str_replace( ' ', '', ucwords( str_replace( '_', ' ', $sFeatureSlug ) ) );
 		$sOptionsVarName = sprintf( 'oFeatureHandler%s', $sFeatureName ); // e.g. oFeatureHandlerPlugin
-
-		if ( isset( $this->{$sOptionsVarName} ) ) {
-			return $this->{$sOptionsVarName};
-		}
 
 		$sSourceFile = $this->getPath_SourceFile(
 			sprintf(
@@ -1520,8 +1595,10 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 			$sFeatureName
 		); // e.g. ICWP_WPSF_FeatureHandler_Plugin
 
-		require_once( $sSourceFile );
-		if ( class_exists( $sClassName, false ) ) {
+		// All this to prevent fatal errors if the plugin doesn't install/upgrade correctly
+		$bIncluded = @include_once( $sSourceFile );
+		$bClassExists = class_exists( $sClassName, false );
+		if ( $bClassExists ) {
 			if ( !isset( $this->{$sOptionsVarName} ) || $bRecreate ) {
 				$this->{$sOptionsVarName} = new $sClassName( $this, $aFeatureProperties );
 			}
@@ -1529,6 +1606,13 @@ class ICWP_WPSF_Plugin_Controller extends ICWP_WPSF_Foundation {
 				$this->{$sOptionsVarName}->buildOptions();
 			}
 		}
+		else {
+			$sMessage = sprintf( 'Source file for feature %s %s. ', $sFeatureSlug, $bIncluded ? 'exists' : 'missing' );
+			$sMessage .= sprintf( 'Class "%s" %s', $sClassName, $bClassExists ? 'exists' : 'missing' );
+			throw new Exception( $sMessage );
+		}
+
+		$this->aModules[ $sFeatureSlug ] = $this->{$sOptionsVarName};
 		return $this->{$sOptionsVarName};
 	}
 }

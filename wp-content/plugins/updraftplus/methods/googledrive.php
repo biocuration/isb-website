@@ -8,8 +8,6 @@ if (!class_exists('UpdraftPlus_BackupModule')) require_once(UPDRAFTPLUS_DIR.'/me
 
 class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
-	private $service;
-
 	private $client;
 
 	private $ids_from_paths;
@@ -25,7 +23,11 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 	public function action_auth() {
 		if (isset($_GET['state'])) {
-			if ('success' == $_GET['state']) {
+
+			$parts = explode(':', $_GET['state']);
+			$state = $parts[0];
+
+			if ('success' == $state) {
 				// If these are set then this is a request from our master app and the auth server has returned these to be saved.
 				if (isset($_GET['user_id']) && isset($_GET['access_token'])) {
 					$opts = $this->get_options();
@@ -38,17 +40,16 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 				add_action('all_admin_notices', array($this, 'show_authed_admin_success'));
 
-			} elseif ('token' == $_GET['state']) {
+			} elseif ('token' == $state) {
 				$this->gdrive_auth_token();
-			} elseif ('revoke' == $_GET['state']) {
+			} elseif ('revoke' == $state) {
 				$this->gdrive_auth_revoke();
 			}
-		} elseif (isset($_GET['updraftplus_googleauth'])) {
-			if ('doit' == $_GET['updraftplus_googleauth']) {
-				$this->gdrive_auth_request();
-			} elseif ('deauth' == $_GET['updraftplus_googleauth'] && !empty($_GET['nonce']) && !empty($_GET['instance_id']) && wp_verify_nonce($_GET['nonce'], 'googledrive_deauth_nonce')) {
-				$opts = $this->get_default_options();
-				$this->set_options($opts, true, $_GET['instance_id']);
+		} elseif (isset($_GET['updraftplus_googledriveauth'])) {
+			if ('doit' == $_GET['updraftplus_googledriveauth']) {
+				$this->action_authenticate_storage();
+			} elseif ('deauth' == $_GET['updraftplus_googledriveauth']) {
+				$this->action_deauthenticate_storage();
 			}
 		}
 	}
@@ -60,7 +61,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	 */
 	public function get_supported_features() {
 		// This options format is handled via only accessing options via $this->get_options()
-		return array('multi_options');
+		return array('multi_options', 'config_templates', 'multi_storage');
 	}
 
 	public function get_default_options() {
@@ -73,12 +74,17 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	}
 
 	private function root_id() {
-		if (empty($this->root_id)) $this->root_id = $this->service->about->get()->getRootFolderId();
+		
+		$storage = $this->get_storage();
+
+		if (empty($this->root_id)) $this->root_id = $storage->about->get()->getRootFolderId();
 		return $this->root_id;
 	}
 
 	public function id_from_path($path, $retry = true) {
 		global $updraftplus;
+
+		$storage = $this->get_storage();
 
 		try {
 			while ('/' == substr($path, 0, 1)) {
@@ -117,7 +123,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 						$dir->setParents(array($ref));
 						$dir->setTitle($element);
 						$updraftplus->log("Google Drive: creating path: ".$current_path.$element);
-						$dir = $this->service->files->insert(
+						$dir = $storage->files->insert(
 							$dir,
 							array('mimeType' => 'application/vnd.google-apps.folder')
 						);
@@ -148,7 +154,10 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	}
 
 	private function get_parent_id($opts) {
-		$filtered = apply_filters('updraftplus_googledrive_parent_id', false, $opts, $this->service, $this);
+
+		$storage = $this->get_storage();
+
+		$filtered = apply_filters('updraftplus_googledrive_parent_id', false, $opts, $storage, $this);
 		if (!empty($filtered)) return $filtered;
 		if (isset($opts['parentid'])) {
 			if (empty($opts['parentid'])) {
@@ -174,8 +183,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 			if (empty($opts['user_id']) || empty($opts['tmp_access_token'])) return new WP_Error('no_settings', sprintf(__('No %s settings were found', 'updraftplus'), __('Google Drive', 'updraftplus')));
 		}
 
-		$service = $this->bootstrap();
-		if (is_wp_error($service) || false == $service) return $service;
+		$storage = $this->bootstrap();
+		if (is_wp_error($storage) || false == $storage) return $storage;
 
 		global $updraftplus;
 
@@ -257,7 +266,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	/**
 	 * This method will return a redirect URL depending on the parameter passed. It will either return the redirect for the user's site or the auth server.
 	 *
-	 * @param  Boolean $master - a Bool value to indicate if we want the master redirect URL
+	 * @param  Boolean $master - indicate whether we want the master redirect URL
 	 * @return String          - a redirect URL
 	 */
 	private function redirect_uri($master = false) {
@@ -269,24 +278,28 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	}
 
 	/**
-	 * Acquire single-use authorization code from Google OAuth 2.0
+	 * Acquire single-use authorization code from Google via OAuth 2.0
+	 *
+	 * @param  String $instance_id - the instance id of the settings we want to authenticate
 	 */
-	public function gdrive_auth_request() {
+	public function do_authenticate_storage($instance_id) {
 		$opts = $this->get_options();
 
 		$use_master = $this->use_master($opts);
 
 		// First, revoke any existing token, since Google doesn't appear to like issuing new ones
 		if (!empty($opts['token']) && !$use_master) $this->gdrive_auth_revoke();
+
+		$prefixed_instance_id = ':' . $instance_id;
 		
 		// We use 'force' here for the approval_prompt, not 'auto', as that deals better with messy situations where the user authenticated, then changed settings
 
 		if ($use_master) {
 			$client_id = $this->client_id;
-			$token = 'token'.$this->redirect_uri();
+			$token = 'token'.$prefixed_instance_id.$this->redirect_uri();
 		} else {
 			$client_id = $opts['clientid'];
-			$token = 'token';
+			$token = 'token'.$prefixed_instance_id;
 		}
 		// We require access to all Google Drive files (not just ones created by this app - scope https://www.googleapis.com/auth/drive.file) - because we need to be able to re-scan storage for backups uploaded by other installs
 		$params = array(
@@ -324,7 +337,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	}
 
 	/**
-	 * Get a Google account refresh token using the code received from gdrive_auth_request
+	 * Get a Google account refresh token using the code received from do_authenticate_storage
 	 */
 	public function gdrive_auth_token() {
 		$opts = $this->get_options();
@@ -359,7 +372,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 						$opts['tmp_access_token'] = $json_values['access_token'];
 						$this->set_options($opts, true);
 						// We do this to clear the GET parameters, otherwise WordPress sticks them in the _wp_referer in the form and brings them back, leading to confusion + errors
-						header('Location: '.UpdraftPlus_Options::admin_page_url().'?action=updraftmethod-googledrive-auth&page=updraftplus&state=success');
+						header('Location: '.UpdraftPlus_Options::admin_page_url().'?action=updraftmethod-googledrive-auth&page=updraftplus&state=success:'.urlencode($this->get_instance_id()));
 					}
 
 				} else {
@@ -387,10 +400,10 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		$message = '';
 		try {
-			$service = $this->bootstrap($updraftplus_tmp_access_token);
-			if (false != $service && !is_wp_error($service)) {
+			$storage = $this->bootstrap($updraftplus_tmp_access_token);
+			if (false != $storage && !is_wp_error($storage)) {
 
-				$about = $service->about->get();
+				$about = $storage->about->get();
 				$quota_total = max($about->getQuotaBytesTotal(), 1);
 				$quota_used = $about->getQuotaBytesUsed();
 				$username = $about->getName();
@@ -441,8 +454,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		global $updraftplus, $updraftplus_backup;
 
-		$service = $this->bootstrap();
-		if (false == $service || is_wp_error($service)) return $service;
+		$storage = $this->bootstrap();
+		if (false == $storage || is_wp_error($storage)) return $storage;
 
 		$updraft_dir = trailingslashit($updraftplus->backups_dir_location());
 
@@ -461,7 +474,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 			$available_quota = -1;
 
 			try {
-				$about = $service->about->get();
+				$about = $storage->about->get();
 				$quota_total = max($about->getQuotaBytesTotal(), 1);
 				$quota_used = $about->getQuotaBytesUsed();
 				$available_quota = $quota_total - $quota_used;
@@ -518,8 +531,10 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	public function bootstrap($access_token = false) {
 
 		global $updraftplus;
+		
+		$storage = $this->get_storage();
 
-		if (!empty($this->service) && is_object($this->service) && is_a($this->service, 'Google_Service_Drive')) return $this->service;
+		if (!empty($storage) && is_object($storage) && is_a($storage, 'Google_Service_Drive')) return $storage;
 
 		$opts = $this->get_options();
 
@@ -529,7 +544,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 			if (empty($opts['token']) || empty($opts['clientid']) || empty($opts['secret'])) {
 				$updraftplus->log('Google Drive: this account is not authorised');
 				$updraftplus->log('Google Drive: '.__('Account is not authorized.', 'updraftplus'), 'error', 'googledrivenotauthed');
-				return new WP_Error('not_authorized', __('Account is not authorized.', 'updraftplus'));
+				return new WP_Error('not_authorized', __('Account is not authorized.', 'updraftplus').' (Google Drive)');
 			}
 
 			if (empty($access_token)) {
@@ -630,7 +645,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		$config = new Google_Config();
 		$config->setClassConfig('Google_IO_Abstract', 'request_timeout_seconds', 60);
-		// In our testing, $service->about->get() fails if gzip is not disabled when using the stream wrapper
+		// In our testing, $storage->about->get() fails if gzip is not disabled when using the stream wrapper
 		if (!function_exists('curl_version') || !function_exists('curl_exec') || (defined('UPDRAFTPLUS_GOOGLEDRIVE_DISABLEGZIP') && UPDRAFTPLUS_GOOGLEDRIVE_DISABLEGZIP)) {
 			$config->setClassConfig('Google_Http_Request', 'disable_gzip', true);
 		}
@@ -679,9 +694,9 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		$io->setOptions($setopts);
 
-		$service = new Google_Service_Drive($client);
+		$storage = new Google_Service_Drive($client);
 		$this->client = $client;
-		$this->service = $service;
+		$this->set_storage($storage);
 
 		try {
 			// Get the folder name, if not previously known (this is for the legacy situation where an id, not a name, was stored)
@@ -690,7 +705,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 				$title = '';
 				$parentid = is_array($opts['parentid']) ? $opts['parentid']['id'] : $opts['parentid'];
 				while ((!empty($parentid) && $parentid != $rootid)) {
-					$resource = $service->files->get($parentid);
+					$resource = $storage->files->get($parentid);
 					$title = ($title) ? $resource->getTitle().'/'.$title : $resource->getTitle();
 					$parents = $resource->getParents();
 					if (is_array($parents) && count($parents)>0) {
@@ -712,8 +727,66 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 			$updraftplus->log("Google Drive: failed to obtain name of parent folder: ".$e->getMessage().' (line: '.$e->getLine().', file: '.$e->getFile().')');
 		}
 
-		return $this->service;
+		return $storage;
 
+	}
+	
+	/**
+	 * Acts as a WordPress options filter
+	 *
+	 * @param  Array $google - An array of Google Drive options
+	 * @return Array - the returned array can either be the set of updated Google Drive settings or a WordPress error array
+	 */
+	public function options_filter($google) {
+
+		global $updraftplus;
+	
+		// Get the current options (and possibly update them to the new format)
+		$opts = $updraftplus->update_remote_storage_options_format('googledrive');
+		
+		if (is_wp_error($opts)) {
+			if ('recursion' !== $opts->get_error_code()) {
+				$msg = "Google Drive (".$opts->get_error_code()."): ".$opts->get_error_message();
+				$updraftplus->log($msg);
+				error_log("UpdraftPlus: $msg");
+			}
+			// The saved options had a problem; so, return the new ones
+			return $google;
+		}
+		// $opts = UpdraftPlus_Options::get_updraft_option('updraft_googledrive');
+		if (!is_array($google)) return $opts;
+
+		// Remove instances that no longer exist
+		foreach ($opts['settings'] as $instance_id => $storage_options) {
+			if (!isset($google['settings'][$instance_id])) unset($opts['settings'][$instance_id]);
+		}
+		
+		if (empty($google['settings'])) return $opts;
+
+		foreach ($google['settings'] as $instance_id => $storage_options) {
+			if (empty($opts['settings'][$instance_id]['user_id'])) {
+				$old_client_id = (empty($opts['settings'][$instance_id]['clientid'])) ? '' : $opts['settings'][$instance_id]['clientid'];
+				if (!empty($opts['settings'][$instance_id]['token']) && $old_client_id != $storage_options['clientid']) {
+					include_once(UPDRAFTPLUS_DIR.'/methods/googledrive.php');
+					$updraftplus->register_wp_http_option_hooks();
+					$googledrive = new UpdraftPlus_BackupModule_googledrive();
+					$googledrive->gdrive_auth_revoke(false);
+					$updraftplus->register_wp_http_option_hooks(false);
+					$opts['settings'][$instance_id]['token'] = '';
+					unset($opts['settings'][$instance_id]['ownername']);
+				}
+			}
+
+			foreach ($storage_options as $key => $value) {
+				// Trim spaces - I got support requests from users who didn't spot the spaces they introduced when copy/pasting
+				$opts['settings'][$instance_id][$key] = ('clientid' == $key || 'secret' == $key) ? trim($value) : $value;
+			}
+			if (isset($opts['settings'][$instance_id]['folder'])) {
+				$opts['settings'][$instance_id]['folder'] = apply_filters('updraftplus_options_googledrive_foldername', 'UpdraftPlus', $opts['settings'][$instance_id]['folder']);
+				unset($opts['settings'][$instance_id]['parentid']);
+			}
+		}
+		return $opts;
 	}
 
 	/**
@@ -736,6 +809,9 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	 * @return array
 	 */
 	private function get_subitems($parent_id, $type = 'any', $match = 'backup_') {
+
+		$storage = $this->get_storage();
+
 		$q = '"'.$parent_id.'" in parents and trashed = false';
 		if ('dir' == $type) {
 			$q .= ' and mimeType = "application/vnd.google-apps.folder"';
@@ -761,7 +837,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 				if ($page_token) {
 					$parameters['pageToken'] = $page_token;
 				}
-				$files = $this->service->files->listFiles($parameters);
+				$files = $storage->files->listFiles($parameters);
 
 				$result = array_merge($result, $files->getItems());
 				$page_token = $files->getNextPageToken();
@@ -779,8 +855,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		if (is_string($files)) $files = array($files);
 
-		$service = $this->bootstrap();
-		if (is_wp_error($service) || false == $service) return $service;
+		$storage = $this->bootstrap();
+		if (is_wp_error($storage) || false == $storage) return $storage;
 
 		$opts = $this->get_options();
 
@@ -801,7 +877,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 			try {
 				$title = $item->getTitle();
 				if (in_array($title, $files)) {
-					$service->files->delete($item->getId());
+					$storage->files->delete($item->getId());
 					$updraftplus->log("$title: Deletion successful");
 					if (($key = array_search($title, $files)) !== false) {
 						unset($files[$key]);
@@ -837,7 +913,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 		$opts = $this->get_options();
 		$basename = basename($file);
 
-		$service = $this->service;
+		$storage = $this->get_storage();
 		$client = $this->client;
 
 		// See: https://github.com/google/google-api-php-client/blob/master/examples/fileupload.php (at time of writing, only shows how to upload in chunks, not how to resume)
@@ -854,7 +930,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 		$gdfile->setParents(array($ref));
 
 		$size = 0;
-		$request = $service->files->insert($gdfile);
+		$request = $storage->files->insert($gdfile);
 
 		$chunk_bytes = 1048576;
 
@@ -970,15 +1046,15 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 
 		global $updraftplus;
 
-		$service = $this->bootstrap();
-		if (false == $service || is_wp_error($service)) return false;
+		$storage = $this->bootstrap();
+		if (false == $storage || is_wp_error($storage)) return false;
 
 		global $updraftplus;
 		$opts = $this->get_options();
 
 		try {
 			$parent_id = $this->get_parent_id($opts);
-			// $gdparent = $service->files->get($parent_id);
+			// $gdparent = $storage->files->get($parent_id);
 			$sub_items = $this->get_subitems($parent_id, 'file');
 		} catch (Exception $e) {
 			$updraftplus->log("Google Drive delete: failed to access parent folder: ".$e->getMessage().' (line: '.$e->getLine().', file: '.$e->getFile().')');
@@ -1062,111 +1138,159 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 		return true;
 	}
 
-	public function config_print() {
-		$opts = $this->get_options();
+	/**
+	 * Get the pre configuration template
+	 *
+	 * @return String - the template
+	 */
+	public function get_pre_configuration_template() {
 
-		$use_master = $this->use_master($opts);
+		global $updraftplus_admin;
 
-		$classes = $this->get_css_classes();
+		$classes = $this->get_css_classes(false);
+		
 		?>
-			<tr class="<?php echo $classes; ?>">
-				<td></td>
-				<td>
-				<img src="https://developers.google.com/drive/images/drive_logo.png" alt="<?php _e('Google Drive', 'updraftplus');?>">
-				<p><em><?php printf(__('%s is a great choice, because UpdraftPlus supports chunked uploads - no matter how big your site is, UpdraftPlus can upload it a little at a time, and not get thwarted by timeouts.', 'updraftplus'), 'Google Drive');?></em></p>
-				</td>
-			</tr>
-
-			<tr class="<?php echo $classes; ?>">
-			<th></th>
-			<td>
-			<?php
-				$admin_page_url = UpdraftPlus_Options::admin_page_url();
-				// This is advisory - so the fact it doesn't match IPv6 addresses isn't important
-				if (preg_match('#^(https?://(\d+)\.(\d+)\.(\d+)\.(\d+))/#', $admin_page_url, $matches) && !$use_master) {
-				echo '<p><strong>'.htmlspecialchars(sprintf(__("%s does not allow authorisation of sites hosted on direct IP addresses. You will need to change your site's address (%s) before you can use %s for storage.", 'updraftplus'), __('Google Drive', 'updraftplus'), $matches[1], __('Google Drive', 'updraftplus'))).'</strong></p>';
-				} else {
-					// If we are not using the master app then show them the instructions for Client ID and Secret
-					if (!$use_master) {
+			<tr class="<?php echo $classes . ' ' . 'googledrive_pre_config_container';?>">
+				<td colspan="2">
+					<img src="https://developers.google.com/drive/images/drive_logo.png" alt="<?php _e('Google Drive', 'updraftplus');?>">
+					{{#unless use_master}}
+					<br>
+					<?php
+					$admin_page_url = UpdraftPlus_Options::admin_page_url();
+					// This is advisory - so the fact it doesn't match IPv6 addresses isn't important
+					if (preg_match('#^(https?://(\d+)\.(\d+)\.(\d+)\.(\d+))/#i', $admin_page_url, $matches)) {
+						echo '<p><strong>'.htmlspecialchars(sprintf(__("%s does not allow authorisation of sites hosted on direct IP addresses. You will need to change your site's address (%s) before you can use %s for storage.", 'updraftplus'), __('Google Drive', 'updraftplus'), $matches[1], __('Google Drive', 'updraftplus'))).'</strong></p>';
+					} else {
+						// If we are not using the master app then show them the instructions for Client ID and Secret
 						?>
-
-						<p><a href="<?php echo apply_filters("updraftplus_com_link", "https://updraftplus.com/support/configuring-google-drive-api-access-in-updraftplus/");?>"><strong><?php _e('For longer help, including screenshots, follow this link. The description below is sufficient for more expert users.', 'updraftplus');?></strong></a></p>
+						<p><a href="<?php echo apply_filters('updraftplus_com_link', 'https://updraftplus.com/support/configuring-google-drive-api-access-in-updraftplus/');
+?>"><strong><?php _e('For longer help, including screenshots, follow this link. The description below is sufficient for more expert users.', 'updraftplus');?></strong></a></p>
 
 						<p><a href="https://console.developers.google.com"><?php _e('Follow this link to your Google API Console, and there activate the Drive API and create a Client ID in the API Access section.', 'updraftplus');?></a> <?php _e("Select 'Web Application' as the application type.", 'updraftplus');?></p><p><?php echo htmlspecialchars(__('You must add the following as the authorised redirect URI (under "More Options") when asked', 'updraftplus'));?>: <kbd><?php echo UpdraftPlus_Options::admin_page_url().'?action=updraftmethod-googledrive-auth'; ?></kbd> <?php _e('N.B. If you install UpdraftPlus on several WordPress sites, then you cannot re-use your project; you must create a new one from your Google API console for each site.', 'updraftplus');?>
 						</p>
 						<?php
 					}
-				}
-			?>
-			</td>
+					?>
+					{{/unless}}
+				</td>
 			</tr>
 
-			<?php
-			// If we are not using the master app then show them the fields for Client ID and Secret
-			if (!$use_master) {
+		<?php
+	}
 
-			?>
-			<tr class="<?php echo $classes; ?>">
-				<th><?php echo __('Google Drive', 'updraftplus').' '.__('Client ID', 'updraftplus'); ?>:</th>
-				<td><input type="text" autocomplete="off" style="width:442px" <?php $this->output_settings_field_name_and_id('clientid');?> value="<?php echo htmlspecialchars($opts['clientid']); ?>" /><br><em><?php _e('If Google later shows you the message "invalid_client", then you did not enter a valid client ID here.', 'updraftplus');?></em></td>
-			</tr>
-			<tr class="<?php echo $classes; ?>">
-				<th><?php echo __('Google Drive', 'updraftplus').' '.__('Client Secret', 'updraftplus'); ?>:</th>
-				<td><input type="<?php echo apply_filters('updraftplus_admin_secret_field_type', 'password'); ?>" style="width:442px" <?php $this->output_settings_field_name_and_id('secret');?> value="<?php echo htmlspecialchars($opts['secret']); ?>" /></td>
-			</tr>
-
-			<?php
-			}
-
-			// Legacy configuration
-			if (isset($opts['parentid'])) {
-				$parentid = (is_array($opts['parentid'])) ? $opts['parentid']['id'] : $opts['parentid'];
-				$showparent = (is_array($opts['parentid']) && !empty($opts['parentid']['name'])) ? $opts['parentid']['name'] : $parentid;
-				$folder_opts = '<tr class="'.$classes.'">
-				<th>'.__('Google Drive', 'updraftplus').' '.__('Folder', 'updraftplus').':</th>
-				<td><input type="hidden"' .$this->output_settings_field_name_and_id(array('parentid', 'id'), true). 'value="'.htmlspecialchars($parentid).'">
-				<input type="text" title="'.esc_attr($parentid).'" readonly="readonly" style="width:442px" value="'.htmlspecialchars($showparent).'">';
-				if (!empty($parentid) && (!is_array($opts['parentid']) || empty($opts['parentid']['name']))) {
-					$folder_opts .= '<em>'.__("<strong>This is NOT a folder name</strong>.", 'updraftplus').' '.__('It is an ID number internal to Google Drive', 'updraftplus').'</em>';
-				} else {
-					$folder_opts .= '<input type="hidden" ' .$this->output_settings_field_name_and_id(array('parentid', 'name'), true). ' value="'.htmlspecialchars($opts['parentid']['name']).'">';
-				}
-			} else {
-				$folder_opts = '<tr class="'.$classes.'">
-				<th>'.__('Google Drive', 'updraftplus').' '.__('Folder', 'updraftplus').':</th>
-				<td><input type="text" readonly="readonly" style="width:442px"'.$this->output_settings_field_name_and_id('folder', true).' value="UpdraftPlus" />';
-			}
-			$folder_opts .= '<br><em><a href="'.apply_filters("updraftplus_com_link", "https://updraftplus.com/shop/updraftplus-premium/").'">'.__('To be able to set a custom folder name, use UpdraftPlus Premium.', 'updraftplus').'</em></a>';
-			$folder_opts .= '</td></tr>';
-			echo apply_filters('updraftplus_options_googledrive_others', $folder_opts, $this);
-			?>
-
-			<tr class="<?php echo $classes; ?>">
-				<th><?php _e('Authenticate with Google');?>:</th>
-				<td><p>
-				<?php if (!empty($opts['token']) || !empty($opts['user_id'])) {
-					echo __("<strong>(You appear to be already authenticated,</strong> though you can authenticate again to refresh your access if you've had a problem).", 'updraftplus');
-					echo ' <a class="updraft_deauthlink" href="'.UpdraftPlus_Options::admin_page_url().'?action=updraftmethod-googledrive-auth&page=updraftplus&updraftplus_googleauth=deauth&nonce='.wp_create_nonce('googledrive_deauth_nonce').'&instance_id='.urlencode($this->get_instance_id()).'">'.sprintf(__("Follow this link to remove this site's settings for %s.", 'updraftplus'), __('Google Drive', 'updraftplus')).'</a>';
-					
-					if ($use_master) {
-						?>
-						<p><a target="_blank" href="https://myaccount.google.com/permissions"><?php _e('To de-authorize UpdraftPlus (all sites) from accessing your Google Drive, follow this link to your Google account settings.', 'updraftplus');?></a></p>
-						<?php
-					}
-				}
-				?>
-
+	/**
+	 * Get the configuration template
+	 *
+	 * @return String - the template, ready for substitutions to be carried out
+	 */
+	public function get_configuration_template() {
+		$classes = $this->get_css_classes();
+		ob_start();
+		?>
+			{{#unless use_master}}
+				<tr class="<?php echo $classes;?>">
+					<th><?php echo __('Google Drive', 'updraftplus').' '.__('Client ID', 'updraftplus'); ?>:</th>
+					<td><input type="text" autocomplete="off" style="width:442px" <?php $this->output_settings_field_name_and_id('clientid');?> value="{{clientid}}" /><br><em><?php _e('If Google later shows you the message "invalid_client", then you did not enter a valid client ID here.', 'updraftplus');?></em></td>
+				</tr>
+				<tr class="<?php echo $classes;?>">
+					<th><?php echo __('Google Drive', 'updraftplus').' '.__('Client Secret', 'updraftplus'); ?>:</th>
+					<td><input type="<?php echo apply_filters('updraftplus_admin_secret_field_type', 'password'); ?>" style="width:442px" <?php $this->output_settings_field_name_and_id('secret');?> value="{{secret}}" /></td>
+				</tr>
+			{{/unless}}
+			{{#if is_google_enhanced_addon}}
 				<?php
-				if ((!empty($opts['token']) || !empty($opts['user_id'])) && !empty($opts['ownername'])) {
-					echo '<br>'.sprintf(__("Account holder's name: %s.", 'updraftplus'), htmlspecialchars($opts['ownername'])).' ';
-				}
+				echo apply_filters('updraftplus_options_googledrive_others', '', $this);
 				?>
-				</p>
-				<p>
-				<a class="updraft_authlink" href="<?php echo UpdraftPlus_Options::admin_page_url();?>?action=updraftmethod-googledrive-auth&page=updraftplus&updraftplus_googleauth=doit"><?php print __('<strong>After</strong> you have saved your settings (by clicking \'Save Changes\' below), then come back here once and click this link to complete authentication with Google.', 'updraftplus');?></a>
-				</p>
+			{{else}}
+				{{#if parentid}}
+				<tr class="<?php echo $classes;?>">
+					<th><?php echo __('Google Drive', 'updraftplus').' '.__('Folder', 'updraftplus');?>:</th>
+					<td>
+						<input type="hidden" <?php $this->output_settings_field_name_and_id(array('parentid', 'id'));?> value="{{parentid_str}}">
+						<input type="text" title="{{parentid_str}}" readonly="readonly" style="width:442px" value="{{showparent}}">
+						{{#if is_id_number_instruction}}
+							<em><?php echo __("<strong>This is NOT a folder name</strong>.", 'updraftplus').' '.__('It is an ID number internal to Google Drive', 'updraftplus');?></em>
+						{{else}}
+							<input type="hidden" <?php $this->output_settings_field_name_and_id(array('parentid', 'name'));?> ' value="{{parentid.name}}">';
+						{{/if}}
+				{{else}}
+					<tr class="<?php echo $classes;?>">
+						<th><?php echo __('Google Drive', 'updraftplus').' '.__('Folder', 'updraftplus');?>:</th>
+						<td>
+							<input type="text" readonly="readonly" style="width:442px" <?php $this->output_settings_field_name_and_id('folder');?> value="UpdraftPlus" />
+				{{/if}}
+							<br>
+							<em>
+								<a href="<?php echo apply_filters("updraftplus_com_link", "https://updraftplus.com/shop/updraftplus-premium/");?>">
+									<?php echo __('To be able to set a custom folder name, use UpdraftPlus Premium.', 'updraftplus');?>
+								</a>
+							</em>
+						</td>
+					</tr>
+			{{/if}}
+			<tr class="<?php echo $classes;?>">
+				<th><?php _e('Authenticate with Google', 'updraftplus');?>:</th>
+				<td>
+					{{#if is_authenticate_with_google}}
+						<?php
+							echo '<p>';
+							echo __("<strong>(You appear to be already authenticated,</strong> though you can authenticate again to refresh your access if you've had a problem).", 'updraftplus');
+							$this->get_deauthentication_link();
+							echo '</p>';
+						?>
+						{{#if use_master}}
+							<p><a target="_blank" href="https://myaccount.google.com/permissions"><?php _e('To de-authorize UpdraftPlus (all sites) from accessing your Google Drive, follow this link to your Google account settings.', 'updraftplus');?></a></p>
+						{{/if}}
+					{{/if}}
+					{{#if is_ownername_display}}
+						<br>
+						<?php
+							echo sprintf(__("Account holder's name: %s.", 'updraftplus'), '{{ownername}}').' ';
+						?>
+					{{/if}}
+					<?php
+						echo '<p>';
+						$this->get_authentication_link();
+						echo '</p>';
+					?>
 				</td>
 			</tr>
 		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Modifies handerbar template options
+	 *
+	 * @param array $opts
+	 * @return array - Modified handerbar template options
+	 */
+	public function transform_options_for_template($opts) {
+		$opts['use_master'] = $this->use_master($opts);
+		$opts['is_google_enhanced_addon'] = class_exists('UpdraftPlus_Addon_Google_Enhanced') ? true : false;
+		if (isset($opts['parentid'])) {
+			$opts['parentid_str'] = (is_array($opts['parentid'])) ? $opts['parentid']['id'] : $opts['parentid'];
+			$opts['showparent'] = (is_array($opts['parentid']) && !empty($opts['parentid']['name'])) ? $opts['parentid']['name'] : $opts['parentid_str'];
+			$opts['is_id_number_instruction'] = (!empty($parentid) && (!is_array($opts['parentid']) || empty($opts['parentid']['name'])));
+		}
+		$opts['is_authenticate_with_google'] = (!empty($opts['token']) || !empty($opts['user_id']));
+		$opts['is_ownername_display'] = ((!empty($opts['token']) || !empty($opts['user_id'])) && !empty($opts['ownername']));
+		$opts = apply_filters('updraftplus_options_googledrive_options', $opts);
+		return $opts;
+	}
+	
+	/**
+	 * Gives settings keys which values should not passed to handlebarsjs context.
+	 * The settings stored in UD in the database sometimes also include internal information that it would be best not to send to the front-end (so that it can't be stolen by a man-in-the-middle attacker)
+	 *
+	 * @return array - Settings array keys which should be filtered
+	 */
+	public function filter_frontend_settings_keys() {
+		return array(
+			'expires_in',
+			'tmp_access_token',
+			'token',
+			'user_id',
+		);
 	}
 }

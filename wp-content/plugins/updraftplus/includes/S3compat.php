@@ -80,10 +80,13 @@ class UpdraftPlus_S3_Compat {
 
 	// SSL CURL SSL options - only needed if you are experiencing problems with your OpenSSL configuration
 	public $ssl_key = null;
-
+	
 	public $ssl_cert = null;
 
 	public $ssl_ca_cert = null;
+	
+	// Added at request of a user using a non-default port.
+	public static $port = false;
 
 	/**
 	 * Constructor - if you're not using the class statically
@@ -92,7 +95,7 @@ class UpdraftPlus_S3_Compat {
 	 * @param string         $secret_key  Secret key
 	 * @param boolean        $use_ssl     Enable SSL
 	 * @param string|boolean $ssl_ca_cert Certificate authority (true = bundled Guzzle version; false = no verify, 'system' = system version; otherwise, path)
-	 * @param string 		 $endpoint    Endpoint
+	 * @param Null|String	 $endpoint    Endpoint (if omitted, it will be set by the SDK using the region)
 	 * @return void
 	 */
 	public function __construct($access_key = null, $secret_key = null, $use_ssl = true, $ssl_ca_cert = true, $endpoint = null) {
@@ -106,14 +109,15 @@ class UpdraftPlus_S3_Compat {
 			'key' => $access_key,
 			'secret' => $secret_key,
 			'scheme' => ($use_ssl) ? 'https' : 'http',
-			// Using signature v4 requires a region
-// 'signature' => 'v4',
-// 'region' => $this->region
-// 'endpoint' => 'somethingorother.s3.amazonaws.com'
+			// Using signature v4 requires a region (but see the note below)
+			// 'signature' => 'v4',
+			// 'region' => $this->region
+			// 'endpoint' => 'somethingorother.s3.amazonaws.com'
 		);
 
 		if ($endpoint) {
 			// Can't specify signature v4, as that requires stating the region - which we don't necessarily yet know.
+			// Later comment: however, it looks to me like in current UD (Sep 2017), $endpoint is never used for Amazon S3/Vault, and there may be cases (e.g. DigitalOcean Spaces) where we might prefer v4 (DO support v2 too, currently) without knowing a region.
 			$this->endpoint = $endpoint;
 			$opts['endpoint'] = $endpoint;
 		} else {
@@ -158,8 +162,8 @@ class UpdraftPlus_S3_Compat {
 	public function setRegion($region) {
 		$this->region = $region;
 		if ('eu-central-1' == $region || 'cn-north-1' == $region) {
-// $this->config['signature'] =  new Aws\S3\S3SignatureV4('s3');
-// $this->client->setConfig($this->config);
+			// $this->config['signature'] =  new Aws\S3\S3SignatureV4('s3');
+			// $this->client->setConfig($this->config);
 		}
 		$this->client->setRegion($region);
 	}
@@ -176,6 +180,16 @@ class UpdraftPlus_S3_Compat {
 		$this->region = $region;
 		$this->config['endpoint_provider'] = $this->return_provider();
 		$this->client->setConfig($this->config);
+	}
+
+	/**
+	 * Set the service port
+	 *
+	 * @param Integer $port Port number
+	 */
+	public function setPort($port) {
+		// Not used with AWS (which is the only thing using this class)
+		self::$port = $port;
 	}
 
 	public function return_provider() {
@@ -244,6 +258,8 @@ class UpdraftPlus_S3_Compat {
 		} else {
 			if (!$ssl_ca_cert) {
 				$client = $this->client;
+				// "Static class properties and methods, as well as class constants, could not be accessed using a dynamic (variable) classname in PHP 5.2 or earlier." But the present file is not loaded in PHP 5.2.
+				// @codingStandardsIgnoreLine
 				$this->config[$client::SSL_CERT_AUTHORITY] = false;
 				$this->client->setConfig($this->config);
 			} else {

@@ -1,6 +1,7 @@
 {
   "properties": {
-    "version": "5.14.0",
+    "version": "6.2.2",
+    "release_timestamp": 1517572800,
     "slug_parent": "icwp",
     "slug_plugin": "wpsf",
     "human_name": "Shield",
@@ -11,7 +12,9 @@
     "logging_enabled": true,
     "show_dashboard_widget": true,
     "autoupdate": "confidence",
-    "options_encoding": "json"
+    "autoupdate_days": 3,
+    "options_encoding": "json",
+    "enable_premium": true
   },
   "requirements": {
     "php": "5.2.4",
@@ -31,6 +34,7 @@
         "featherlight"
       ],
       "js": [
+        "global-plugin",
         "featherlight"
       ]
     },
@@ -41,8 +45,7 @@
         "plugin"
       ],
       "js": [
-        "bootstrap.min",
-        "icwp-options"
+        "bootstrap.min"
       ]
     },
     "frontend": {

@@ -1,6 +1,8 @@
 <?php
 
-if ( !class_exists( 'ICWP_WPSF_Processor_LoginProtect_WpLogin', false ) ):
+if ( class_exists( 'ICWP_WPSF_Processor_LoginProtect_WpLogin', false ) ) {
+	return;
+}
 
 require_once( dirname(__FILE__).DIRECTORY_SEPARATOR.'base_wpsf.php' );
 
@@ -29,9 +31,10 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 		add_filter( 'site_url', array( $this, 'fCheckForLoginPhp' ), 20, 2 );
 		add_filter( 'network_site_url', array( $this, 'fCheckForLoginPhp' ), 20, 2 );
 		add_filter( 'wp_redirect', array( $this, 'fCheckForLoginPhp' ), 20, 2 );
+		add_filter( 'wp_redirect', array( $this, 'fProtectUnauthorizedLoginRedirect' ), 50, 2 );
 		add_filter( 'register_url', array( $this, 'blockRegisterUrlRedirect' ), 20, 1 );
 
-		add_filter( 'et_anticipate_exceptions', array( $this, 'fAddToEtMaintenanceExceptions' ) ) ;
+		add_filter( 'et_anticipate_exceptions', array( $this, 'fAddToEtMaintenanceExceptions' ) );
 	}
 
 	/**
@@ -44,7 +47,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 
 		$sCustomLoginPath = $this->getLoginPath();
 
-		$oWp = $this->loadWpFunctions();
+		$oWp = $this->loadWp();
 		if ( $oWp->isMultisite() ) {
 			$sMessage = _wpsf__( 'Your login URL is unchanged because the Rename WP Login feature is not currently supported on WPMS.' );
 			$bConflicted = true;
@@ -101,7 +104,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	public function doBlockPossibleWpLoginLoad() {
 
 		// To begin, we block if it's an access to the admin area and the user isn't logged in (and it's not ajax)
-		$bDoBlock = ( is_admin() && !is_user_logged_in() && !defined( 'DOING_AJAX' ) );
+		$bDoBlock = ( is_admin() && !$this->loadWp()->isAjax() && !$this->loadWpUsers()->isUserLoggedIn() );
 
 		// Next block option is where it's a direct attempt to access the old login URL
 		if ( !$bDoBlock ) {
@@ -136,22 +139,41 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	}
 
 	/**
-	 * @param string $sUrl
-	 * @param string $sPath
+	 * @param string $sLocation
+	 * @param string $mStatus
 	 * @return string
 	 */
-	public function fCheckForLoginPhp( $sUrl, $sPath ) {
-		if ( strpos( $sUrl, 'wp-login.php' ) !== false ) {
+	public function fCheckForLoginPhp( $sLocation, $mStatus ) {
+
+		$sRedirectPath = parse_url( $sLocation, PHP_URL_PATH );
+		if ( strpos( $sRedirectPath, 'wp-login.php' ) !== false ) {
 
 			$sLoginUrl = home_url( $this->getLoginPath() );
-			$aQueryArgs = explode( '?', $sUrl );
+			$aQueryArgs = explode( '?', $sLocation );
 			if ( !empty( $aQueryArgs[1] ) ) {
 				parse_str( $aQueryArgs[1], $aNewQueryArgs );
 				$sLoginUrl = add_query_arg( $aNewQueryArgs, $sLoginUrl );
 			}
 			return $sLoginUrl;
 		}
-		return $sUrl;
+		return $sLocation;
+	}
+
+	/**
+	 * @param string $sLocation
+	 * @param string $mStatus
+	 * @return string
+	 */
+	public function fProtectUnauthorizedLoginRedirect( $sLocation, $mStatus ) {
+
+		if ( !$this->loadWp()->isRequestLoginUrl() ) {
+			$sRedirectPath = trim( parse_url( $sLocation, PHP_URL_PATH ), '/' );
+			$bRedirectIsHiddenUrl = ( $sRedirectPath == $this->getLoginPath() );
+			if ( $bRedirectIsHiddenUrl && !$this->loadWpUsers()->isUserLoggedIn() ) {
+				$this->doWpLoginFailedRedirect404();
+			}
+		}
+		return $sLocation;
 	}
 
 	/**
@@ -171,14 +193,14 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 	 * @return string|void
 	 */
 	public function aLoadWpLogin() {
-		if ( $this->loadWpFunctions()->getIsLoginUrl() ) {
+		if ( $this->loadWp()->isRequestLoginUrl() ) {
 			@require_once( ABSPATH . 'wp-login.php' );
 			die();
 		}
 	}
 
 	public function aLoginFormAction() {
-		if ( !$this->loadWpFunctions()->getIsLoginUrl() ) {
+		if ( !$this->loadWp()->isRequestLoginUrl() ) {
 			// We now black mark this IP
 //			add_filter( $this->getFeature()->prefix( 'ip_black_mark' ), '__return_true' );
 			$this->doWpLoginFailedRedirect404();
@@ -208,7 +230,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 		if ( !empty( $sRedirectUrl ) ) {
 			$sRedirectUrl = esc_url( $sRedirectUrl );
 			if ( @parse_url( $sRedirectUrl ) !== false ) {
-				$this->loadWpFunctions()->doRedirect( $sRedirectUrl, array(), false );
+				$this->loadWp()->doRedirect( $sRedirectUrl, array(), false );
 			}
 		}
 
@@ -216,9 +238,7 @@ class ICWP_WPSF_Processor_LoginProtect_WpLogin extends ICWP_WPSF_Processor_BaseW
 		$sRequestUrl = $oDp->FetchServer( 'REQUEST_URI' );
 		$oDp->doSendApache404(
 			$sRequestUrl,
-			$this->loadWpFunctions()->getHomeUrl()
+			$this->loadWp()->getHomeUrl()
 		);
 	}
-
 }
-endif;

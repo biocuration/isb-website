@@ -19,8 +19,10 @@ $pmpro_reports['memberships'] = __('Membership Stats', 'paid-memberships-pro' );
 
 //queue Google Visualization JS on report page
 function pmpro_report_memberships_init() {
-	if(is_admin() && isset($_REQUEST['report']) && $_REQUEST['report'] == "memberships" && isset($_REQUEST['page']) && $_REQUEST['page'] == "pmpro-reports")
-		wp_enqueue_script("jsapi", "https://www.google.com/jsapi");
+	if(is_admin() && isset($_REQUEST['report']) && $_REQUEST['report'] == "memberships" && isset($_REQUEST['page']) && $_REQUEST['page'] == "pmpro-reports") {
+		wp_enqueue_script( 'jsapi', plugins_url( 'js/jsapi.js',  plugin_dir_path( __DIR__ ) ) );
+		
+	}
 }
 add_action( 'init', 'pmpro_report_memberships_init' );
 
@@ -30,7 +32,27 @@ function pmpro_report_memberships_widget() {
 	global $wpdb;
 	
 	//get levels to show stats on first 3
-	$levels = pmpro_getAllLevels(true, true);
+	$pmpro_levels = pmpro_getAllLevels(true, true);
+	
+	$pmpro_level_order = pmpro_getOption('level_order');
+
+	if(!empty($pmpro_level_order))
+	{
+		$order = explode(',',$pmpro_level_order);
+
+		//reorder array
+		$reordered_levels = array();
+		foreach($order as $level_id) {
+			foreach($pmpro_levels as $key=>$level) {
+				if($level_id == $level->id)
+					$reordered_levels[$key] = $pmpro_levels[$key];
+			}
+		}
+
+		$pmpro_levels = $reordered_levels;
+	}
+	
+	$pmpro_levels = apply_filters( 'pmpro_report_levels', $pmpro_levels );
 ?>
 <span id="pmpro_report_memberships">	
 	<table class="wp-list-table widefat fixed striped">
@@ -60,8 +82,10 @@ function pmpro_report_memberships_widget() {
 			<?php
 				//level stats
 				$count = 0;
-				foreach($levels as $level) { 
-					if($count++ > 2) break;
+				$max_level_count = apply_filters( 'pmpro_admin_reports_included_levels', 3 );
+			
+				foreach($pmpro_levels as $level) { 
+					if($count++ >= $max_level_count) break;
 			?>
 				<tr class="pmpro_report_tr_sub" style="display: none;">
 					<th scope="row">- <?php echo $level->name;?></th>
@@ -247,11 +271,11 @@ function pmpro_report_memberships_page()
 		$sqlQuery = "SELECT $date_function(mu1.modified) as date, COUNT(DISTINCT mu1.user_id) as cancellations
 		FROM $wpdb->pmpro_memberships_users mu1 ";
 		if ( $type === "signup_v_cancel")
-			$sqlQuery .= "WHERE mu1.status IN('inactive','cancelled','cancelled_admin') ";
+			$sqlQuery .= "WHERE mu1.status IN('inactive','cancelled','admin_cancelled') ";
 		elseif($type === "signup_v_expiration")
 			$sqlQuery .= "WHERE mu1.status IN('expired') ";
 		else
-			$sqlQuery .= "WHERE mu1.status IN('inactive','expired','cancelled','cancelled_admin') ";
+			$sqlQuery .= "WHERE mu1.status IN('inactive','expired','cancelled','admin_cancelled') ";
 			
 		$sqlQuery .= "AND mu1.startdate >= '" . $startdate . "' 
 		AND mu1.startdate < '" . $enddate . "' ";
@@ -548,7 +572,7 @@ function pmpro_getCancellations($period = null, $levels = 'all', $status = array
 		
 	/*
 		build query.
-		cancellations are marked in the memberships users table with status 'inactive', 'expired', 'cancelled', 'cancelled_admin'
+		cancellations are marked in the memberships users table with status 'inactive', 'expired', 'cancelled', 'admin_cancelled'
 		we try to ignore cancellations when the user gets a new level with 24 hours (probably an upgrade or downgrade)
 	*/
 	global $wpdb;

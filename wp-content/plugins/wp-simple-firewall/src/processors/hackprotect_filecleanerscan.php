@@ -4,7 +4,7 @@ if ( class_exists( 'ICWP_WPSF_Processor_HackProtect_FileCleanerScan', false ) ) 
 	return;
 }
 
-require_once( dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'base_wpsf.php' );
+require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'base_wpsf.php' );
 
 class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processor_BaseWpsf {
 
@@ -19,36 +19,39 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		$this->setupChecksumCron();
 
 		if ( $this->loadWpUsers()->isUserAdmin() ) {
-			$oDp = $this->loadDataProcessor();
+			$oDp = $this->loadDP();
 
-			if ( $oDp->FetchGet( 'force_filecleanscan' ) == 1 ) {
+			if ( $oDp->query( 'force_filecleanscan' ) == 1 ) {
 				$this->runScan();
 			}
 			else {
-				$sAction = $oDp->FetchGet( 'shield_action' );
+				$sAction = $oDp->query( 'shield_action' );
 				switch ( $sAction ) {
-
 					case 'delete_unrecognised_file':
-						$sPath = '/' . trim( $oDp->FetchGet( 'repair_file_path' ) ); // "/" prevents esc_url() from prepending http.
+						$sPath = '/'.trim( $oDp->FetchGet( 'repair_file_path' ) ); // "/" prevents esc_url() from prepending http.
 				}
 			}
 		}
 	}
 
 	protected function setupChecksumCron() {
+		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
+		$oFO = $this->getFeature();
 		$this->loadWpCronProcessor()
-			 ->setRecurrence( 'daily' )
+			 ->setRecurrence( $this->prefix( sprintf( 'per-day-%s', $oFO->getScanFrequency() ) ) )
 			 ->createCronJob(
-				 $this->getCronName(),
+				 $oFO->getUfcCronName(),
 				 array( $this, 'cron_dailyFileCleanerScan' )
 			 );
-		add_action( $this->getFeature()->prefix( 'delete_plugin' ), array( $this, 'deleteCron' ) );
+		add_action( $oFO->prefix( 'delete_plugin' ), array( $this, 'deleteCron' ) );
 	}
 
 	/**
 	 */
 	public function deleteCron() {
-		$this->loadWpCronProcessor()->deleteCronJob( $this->getCronName() );
+		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
+		$oFO = $this->getFeature();
+		$this->loadWpCronProcessor()->deleteCronJob( $oFO->getUfcCronName() );
 	}
 
 	/**
@@ -71,12 +74,12 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 	protected function scanUploads() {
 		$aOddFiles = array();
 
-		$sUploadsDir = $this->loadWpFunctions()->getDirUploads();
+		$sUploadsDir = $this->loadWp()->getDirUploads();
 		if ( !empty( $sUploadsDir ) ) {
 			$oFilter = new CleanerRecursiveFilterIterator( new RecursiveDirectoryIterator( $sUploadsDir ) );
 			$oRecursiveIterator = new RecursiveIteratorIterator( $oFilter );
 
-			$sBadExtensionsReg = '#^' . implode( '|', array( 'js', 'php', 'php5' ) ) . '$#i';
+			$sBadExtensionsReg = '#^'.implode( '|', array( 'js', 'php', 'php5' ) ).'$#i';
 			foreach ( $oRecursiveIterator as $oFsItem ) {
 				/** @var SplFileInfo $oFsItem */
 
@@ -127,16 +130,8 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 	 */
 	protected function isCoreFile( $oFsItem ) {
 		// We rtrim the '/' to prevent mixup with windows and deal only in SYSTEM-generated paths first.
-		$sFilePathNoAbs = ltrim( str_replace( rtrim( ABSPATH, '/' ), '', $oFsItem->getPathname() ), "\/" );
-		return in_array( $this->normalizeFilePathDS( $sFilePathNoAbs ), $this->getCoreFiles() );
-	}
-
-	/**
-	 * @param string $sPath
-	 * @return string
-	 */
-	protected function normalizeFilePathDS( $sPath ) {
-		return ( DIRECTORY_SEPARATOR == '/' ) ? $sPath : str_replace( '\\', '/', $sPath );
+		$sPathNoAbs = ltrim( str_replace( rtrim( ABSPATH, '/' ), '', $oFsItem->getPathname() ), "\/" );
+		return in_array( $this->loadFS()->normalizeFilePathDS( $sPathNoAbs ), $this->getCoreFiles() );
 	}
 
 	/**
@@ -146,7 +141,31 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 	protected function isExcluded( $oFile ) {
 		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
 		$oFO = $this->getFeature();
-		return in_array( $oFile->getFilename(), $oFO->getUfcFileExclusions() );
+		$oFS = $this->loadFS();
+
+		$sFileName = $oFile->getFilename();
+		$sFilePath = $oFS->normalizeFilePathDS( $oFile->getPathname() );
+
+		$bExcluded = false;
+
+		foreach ( $oFO->getUfcFileExclusions() as $sExclusion ) {
+			$sExclusion = $oFS->normalizeFilePathDS( $sExclusion );
+
+			if ( preg_match( '/^#(.+)#$/', $sExclusion, $aMatches ) ) { // it's regex
+				$bExcluded = @preg_match( stripslashes( $sExclusion ), $sFilePath );
+			}
+			else if ( strpos( $sExclusion, '/' ) === false ) { // filename only
+				$bExcluded = ( $sFileName == $sExclusion );
+			}
+			else {
+				$bExcluded = strpos( $sFilePath, $sExclusion );
+			}
+
+			if ( $bExcluded ) {
+				break;
+			}
+		}
+		return $bExcluded;
 	}
 
 	public function cron_dailyFileCleanerScan() {
@@ -155,7 +174,7 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		}
 		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
 		$oFO = $this->getFeature();
-		if ( $oFO->isUfsEnabled() ) {
+		if ( $oFO->isUfcEnabled() ) {
 			try {
 				$this->runScan(); // The file scanning part can exception with permission & exists
 			}
@@ -166,9 +185,25 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 	}
 
 	/**
-	 * @throws Exception
 	 */
 	public function runScan() {
+		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
+		$oFO = $this->getFeature();
+		$aDiscoveredFiles = $this->discoverFiles();
+		if ( !empty( $aDiscoveredFiles ) ) {
+			if ( $oFO->isUfcDeleteFiles() ) {
+				$this->deleteFiles( $aDiscoveredFiles );
+			}
+			if ( $oFO->isUfsSendReport() ) {
+				$this->sendEmailNotification( $aDiscoveredFiles );
+			}
+		}
+	}
+
+	/**
+	 * @return array
+	 */
+	public function discoverFiles() {
 		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
 		$oFO = $this->getFeature();
 
@@ -176,15 +211,7 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		if ( $oFO->isUfsScanUploads() ) {
 			$aDiscoveredFiles = array_merge( $aDiscoveredFiles, $this->scanUploads() );
 		}
-
-		if ( !empty( $aDiscoveredFiles ) ) {
-			if ( $oFO->isUfsDeleteFiles() ) {
-				$this->deleteFiles( $aDiscoveredFiles );
-			}
-			if ( $oFO->isUfsSendReport() ) {
-				$this->sendEmailNotification( $aDiscoveredFiles );
-			}
-		}
+		return $aDiscoveredFiles;
 	}
 
 	/**
@@ -197,14 +224,12 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		}
 		/** @var ICWP_WPSF_FeatureHandler_HackProtect $oFO */
 		$oFO = $this->getFeature();
-
-		$oWp = $this->loadWpFunctions();
-		$sHomeUrl = $oWp->getHomeUrl();
+		$sHomeUrl = $this->loadWp()->getHomeUrl();
 		$aContent = array(
 			sprintf( _wpsf__( '%s detected files on your site which are not recognised.' ), $this->getController()
 																								 ->getHumanName() ),
 			_wpsf__( 'This is part of the Hack Protection module for the WordPress Unrecognised File Scanner.' )
-			. ' [<a href="http://icwp.io/shieldmoreinfounrecognised">' . _wpsf__( 'More Info' ) . ']</a>',
+			.' [<a href="http://icwp.io/shieldmoreinfounrecognised">'._wpsf__( 'More Info' ).']</a>',
 			'',
 			sprintf( _wpsf__( 'Site Home URL - %s' ), sprintf( '<a href="%s" target="_blank">%s</a>', $sHomeUrl, $sHomeUrl ) ),
 			_wpsf__( 'The following files are considered "unrecognised" and should be examined:' ),
@@ -212,19 +237,28 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		);
 
 		foreach ( $aFiles as $sFile ) {
-			$aContent[] = ' - ' . $sFile;
+			$aContent[] = ' - '.$sFile;
 		}
 
 		$aContent[] = '';
-		if ( $oFO->isUfsDeleteFiles() ) {
+		if ( $oFO->canRunWizards() ) {
+			$aContent[] = sprintf( '<a href="%s" target="_blank" style="%s">%s →</a>',
+				$oFO->getUrl_Wizard( 'ufc' ),
+				'border:1px solid;padding:20px;line-height:19px;margin:10px 20px;display:inline-block;text-align:center;width:290px;font-size:18px;',
+				_wpsf__( 'Run the scanner manually' )
+			);
+			$aContent[] = '';
+		}
+
+		if ( $oFO->isUfcDeleteFiles() ) {
 			$aContent[] = _wpsf__( 'We have already attempted to delete these files based on your current settings.' )
-				. ' ' . _wpsf__( 'But, you should always check these files to ensure everything is as you expect.' );
+						  .' '._wpsf__( 'But, you should always check these files to ensure everything is as you expect.' );
 		}
 		else {
 			$aContent[] = _wpsf__( 'You should review these files and remove them if required.' );
 			$aContent[] = _wpsf__( 'You can now add these file names to your exclusion list to no longer be warned about them.' );
 			$aContent[] = _wpsf__( 'Alternatively you can have the plugin attempt to delete these files automatically.' )
-				. ' [<a href="http://icwp.io/shieldmoreinfounrecognised">' . _wpsf__( 'More Info' ) . ']</a>';
+						  .' [<a href="http://icwp.io/shieldmoreinfounrecognised">'._wpsf__( 'More Info' ).']</a>';
 		}
 
 		$sRecipient = $this->getPluginDefaultRecipientAddress();
@@ -237,7 +271,6 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 		else {
 			$this->addToAuditEntry( sprintf( _wpsf__( 'Failed to send Unrecognised File Scan notification email alert to: %s' ), $sRecipient ) );
 		}
-
 		return $bSendSuccess;
 	}
 
@@ -246,7 +279,7 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 	 */
 	protected function getCoreFiles() {
 		if ( empty( $this->aCoreFiles ) ) {
-			$this->aCoreFiles = array_keys( $this->loadWpFunctions()->getCoreChecksums() );
+			$this->aCoreFiles = array_keys( $this->loadWp()->getCoreChecksums() );
 		}
 		return $this->aCoreFiles;
 	}
@@ -263,25 +296,17 @@ class ICWP_WPSF_Processor_HackProtect_FileCleanerScan extends ICWP_WPSF_Processo
 					'shield_action'    => 'repair_file',
 					'repair_file_path' => urlencode( $sFile )
 				),
-				$this->loadWpFunctions()->getUrl_WpAdmin()
+				$this->loadWp()->getUrl_WpAdmin()
 			),
 			_wpsf__( 'Repair file now' ),
-			$this->getFeature()->getDefinition( 'url_wordress_core_svn' ) . 'tags/' . $this->loadWpFunctions()
-																						   ->getWordpressVersion() . '/' . $sFile,
+			$this->getFeature()->getDefinition( 'url_wordress_core_svn' ).'tags/'.$this->loadWp()
+																					   ->getVersion().'/'.$sFile,
 			_wpsf__( 'WordPress.org source file' )
 		);
 	}
-
-	/**
-	 * @return string
-	 */
-	protected function getCronName() {
-		$oFO = $this->getFeature();
-		return $oFO->prefixOptionKey( $oFO->getDefinition( 'unrecognisedscan_cron_name' ) );
-	}
 }
 
-class CleanerRecursiveFilterIterator extends \RecursiveFilterIterator {
+class CleanerRecursiveFilterIterator extends RecursiveFilterIterator {
 
 	public function accept() {
 		/** @var SplFileInfo $oCurrent */

@@ -2,9 +2,8 @@
 /**
  * Plugin Name:		WP Dashboard Notes
  * Plugin URI:		https://wordpress.org/plugins/wp-dashboard-notes/
- * Donate link:		http://jeroensormani.com/donate/
  * Description:		Working in a team? Want to make notes? You can do just that with WP Dashboard Notes. Create beautiful notes with a nice user experience.
- * Version:			1.0.8.2
+ * Version:			1.0.9
  * Author:			Jeroen Sormani
  * Author URI:		http://jeroensormani.com/
  * Text Domain:		wp-dashboard-notes
@@ -31,7 +30,7 @@ class WP_Dashboard_Notes {
 	 * @since 1.0.3
 	 * @var string $version Plugin version number.
 	 */
-	public $version = '1.0.8.2';
+	public $version = '1.0.9';
 
 
 	/**
@@ -59,12 +58,13 @@ class WP_Dashboard_Notes {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
+		global $pagenow;
 
-		// Init plugin parts
-		$this->init();
-
-		$this->hooks();
-
+		// Only load on index
+		if ( $pagenow === 'index.php' || defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$this->init();
+			$this->hooks();
+		}
 	}
 
 

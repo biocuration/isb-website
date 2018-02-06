@@ -1,5 +1,145 @@
 {
   "versions": {
+	"5.19.0": {
+	  "version": {
+		"series": "5.19.0",
+		"major": 5,
+		"minor": 19,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1511778686",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.18.0": {
+	  "version": {
+		"series": "5.18.0",
+		"major": 5,
+		"minor": 18,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1511778686",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.17.0": {
+	  "version": {
+		"series": "5.17.0",
+		"major": 5,
+		"minor": 17,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1511452239",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
+	"5.16.4": {
+	  "version": {
+		"series": "5.16.0",
+		"major": 5,
+		"minor": 16,
+		"patch": 4
+	  },
+	  "attributes": {
+		"timestamp": "1509627037",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.16.3": {
+	  "version": {
+		"series": "5.16.0",
+		"major": 5,
+		"minor": 16,
+		"patch": 3
+	  },
+	  "attributes": {
+		"timestamp": "1508933689",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.16.2": {
+	  "version": {
+		"series": "5.16.0",
+		"major": 5,
+		"minor": 16,
+		"patch": 2
+	  },
+	  "attributes": {
+		"timestamp": "1508156591",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.16.1": {
+	  "version": {
+		"series": "5.16.0",
+		"major": 5,
+		"minor": 16,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1508156591",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.16.0": {
+	  "version": {
+		"series": "5.16.0",
+		"major": 5,
+		"minor": 16,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1508155200",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": true
+	  }
+	},
+	"5.15.1": {
+	  "version": {
+		"series": "5.15.0",
+		"major": 5,
+		"minor": 15,
+		"patch": 1
+	  },
+	  "attributes": {
+		"timestamp": "1506073375",
+		"is_patch": true,
+		"options_added": false,
+		"options_removed": false
+	  }
+	},
+	"5.15.0": {
+	  "version": {
+		"series": "5.15.0",
+		"major": 5,
+		"minor": 15,
+		"patch": 0
+	  },
+	  "attributes": {
+		"timestamp": "1505986648",
+		"is_patch": false,
+		"options_added": true,
+		"options_removed": false
+	  }
+	},
 	"5.14.0": {
 	  "version": {
 		"series": "5.14.0",
@@ -9,7 +149,7 @@
 	  },
 	  "attributes": {
 		"timestamp": "1504618817",
-		"is_patch": true,
+		"is_patch": false,
 		"options_added": true,
 		"options_removed": false
 	  }
@@ -228,6 +368,170 @@
 	}
   },
   "changelog": [
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Automated WordPress plugins vulnerability scanner with auto updates email notifications.",
+	  "version": "5.19.0"
+	},
+	{
+	  "type": "added",
+	  "pro": false,
+	  "summary": "Added Google reCAPTCHA support for register/forget password pages.",
+	  "version": "5.19.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Support for Multi-Factor Authentication for WooCommerce and other 3rd party plugins.",
+	  "version": "5.19.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Bot-protection/Google reCAPTCHA support for BuddyPress register pages.",
+	  "version": "5.19.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Invisible Google reCAPTCHA option.",
+	  "version": "5.18.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Support for Google reCAPTCHA themes - light and dark.",
+	  "version": "5.18.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Google reCAPTCHA is more reliable and configurable.",
+	  "version": "5.18.0"
+	},
+	{
+	  "type": "added",
+	  "summary": "Shield Security goes Pro! Added new options and extras to premium clients.",
+	  "version": "5.17.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Fix and improvement to Google reCAPTCHA.",
+	  "version": "5.17.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Support for Woocommerce and Easy Digital Downloads login/registration form protection.",
+	  "version": "5.17.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Ability to customise most user-facing texts.",
+	  "version": "5.17.0"
+	},
+	{
+	  "type": "added",
+	  "pro": true,
+	  "summary": "Extra IP Transgression signal.",
+	  "version": "5.17.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Error with incorrect/unprefixed database table name used in SQL query.",
+	  "version": "5.16.4"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Plugin Badge will now stay closed when a visitor closes it.",
+	  "version": "5.16.3"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Tweak to the Visitor IP Auto-detection to better ensure CloudFlare IP addresses are ignored.",
+	  "version": "5.16.3"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Removed some namespace parsing that broke on sites with PHP 5.2.",
+	  "version": "5.16.2"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "404 page displayed for password reset request when Login URL is renamed.",
+	  "version": "5.16.1"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Much better auto-detection of valid request/visitor IP addresses.",
+	  "version": "5.16.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Clashing of reCAPTCHA options for Comments and Login Protection.",
+	  "version": "5.16.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Statistic Reporting database management and pruning.",
+	  "version": "5.16.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Various system fixes and improvements.",
+	  "version": "5.16.0"
+	},
+	{
+	  "type": "fixed",
+	  "summary": "Processing AJAX requests from the Network Admin side of WordPress.",
+	  "version": "5.15.1"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Better handling of file exclusions in the hack protection module.",
+	  "version": "5.15.1"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Better handling of fatal errors in loading Shield where some core files are missing.",
+	  "version": "5.15.1"
+	},
+	{
+	  "type": "added",
+	  "summary": "New HTTP Security Header: Referrer Policy.",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "added",
+	  "summary": "Support paths for file exclusions in the Unrecognised File Scanner.",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Better interception of unintentional redirects to the hidden Login URL (e.g. /wp-admin/customize.php).",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Better handling of email sending entries in the Audit Trail.",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Improved display of Audit Trail.",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Better generation & handling of the One Time Password for email-base two-factor authentication.",
+	  "version": "5.15.0"
+	},
+	{
+	  "type": "improved",
+	  "summary": "Some code clean up and refactoring.",
+	  "version": "5.15.0"
+	},
 	{
 	  "type": "added",
 	  "summary": "Option for administrators to manually override and set the source of the visitor IP address.",

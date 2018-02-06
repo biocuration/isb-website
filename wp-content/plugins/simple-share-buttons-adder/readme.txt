@@ -1,67 +1,90 @@
 === Simple Share Buttons Adder ===
-Contributors: DavidoffNeal
-Tags: share buttons, facebook, twitter, google+, share, share links, stumble upon, linkedin, pinterest, yummly, vk
-Requires at least: 3.9
-Tested up to: 4.7
-Stable tag: 6.3.6
-License: GPLv2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Contributors: sharethis, scottstorebloom, surlyrightclick, DavidoffNeal
+Tags: share buttons, social buttons, facebook, twitter, google+, share, share links, stumble upon, linkedin, pinterest, yummly, vk
+Requires at least: 4.5
+Tested up to: 4.8.2
+Stable tag: 7.3.10
+License: GPLv2 or later
 
 A simple plugin that enables you to add share buttons to all of your posts and/or pages.
 
 == Description ==
 
-The Simple Share Buttons Adder does exactly what it says on the tin – adds share buttons to all of your posts and pages, simply.
+The Simple Share Buttons Adder does exactly what it says – adds share buttons to all of your posts and pages, simply.
 
 This plugin has a dedicated website! Check out <a href="https://simplesharebuttons.com" target="_blank">simplesharebuttons.com</a>
 
-Looking for even more? <a href="https://simplesharebuttons.com/plus/" target="_blank">Checkout the Plus version</a>!
-
 You can even upload and use your own custom images if you wish!
 
-Visit <a href="http://make.simplesharebuttons.com" target="_blank">make.simplesharebuttons.com</a> to make your own custom-coloured share buttons!
-
-The Simple Share Buttons Adder utilises features that, as a WordPress user, you will be familiar with. A self-explanatory administration screen will have you showing your Share Buttons on your posts and pages in no time!
+The Simple Share Buttons Adder utilizes features that, as a WordPress user, you will be familiar with. A self-explanatory administration screen will have you showing your Share Buttons on your posts and pages in no time!
 
 By downloading and installing this plugin you are agreeing to the <a href="https://simplesharebuttons.com/privacy/" target="_blank">Privacy Policy</a> and <a href="https://simplesharebuttons.com/privacy/" target="_blank">Terms of Service</a>.
 
-
 == Installation ==
 
-For full configuration instructions<a href="http://simplesharebuttons.com/wordpress/wordpress-configuration/" target="_blank"> visit this page</a>
+= Automatic =
+* Click the ‘Plugins’ tab in WordPress admin view
+* Click the ‘Add New’ button
+* Search for ‘Simple Share’
+* Click ‘Install Now’
+* Activate the plugin
+* Navigate to ‘Installed Plugins’
+* Click ‘Settings’
+* Toggle On/Off Location Placement
+* Click the blue save icon
 
-Visit <a href="http://make.simplesharebuttons.com" target="_blank">make.simplesharebuttons.com</a> to make your own custom-coloured share buttons!
+= FTP =
+* Upload Simple Share Adder to the `/wp-content/plugins/` directory
+* Activate the plugin
+* Navigate to ‘Installed Plugins’
+* Click ‘Settings’
+* Toggle On/Off Location Placement
+* Click the blue save icon
 
-1. Upload the 'simple-share-buttons-adder' folder to the `/wp-content/plugins/` directory
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to the SSBA Admin Panel via ‘Plugins’ -> ‘Share Buttons’ to change the settings as desired.
-4. Follow the instructions on <a href="http://simplesharebuttons.com/wordpress/wordpress-configuration/" target="_blank">this page</a> to customise your buttons to your liking.
-5. Watch <a href="http://www.youtube.com/watch?v=p03B4C3QMzs" target="_blank">this video</a> to learn how to configure your buttons if you prefer.
-6. Watch <a href="https://www.youtube.com/watch?v=dkte9uu2o0M" target="_blank">this video</a> to see how you can upload and use your own custom images.
-
+= Upload =
+* Upload the downloaded zip file on the ‘Add New’ plugins screen (see the ‘Upload’ tab) in your WordPress admin view
+* Activate the plugin
+* Navigate to ‘Installed Plugins’
+* Click ‘Settings’
+* Toggle On/Off Location Placement
+* Click the blue save icon
 
 == Frequently Asked Questions ==
 
 This plugin has a dedicated website! Check out the <a href="http://simplesharebuttons.com/wordpress-faq/" target="_blank"> FAQs page</a>
 
-Visit <a href="http://make.simplesharebuttons.com" target="_blank">make.simplesharebuttons.com</a> to make your own custom-coloured share buttons!
-
-Please visit the <a href="http://simplesharebuttons.com/forums/forum/wordpress-forum/">WordPress Support Forum</a> for any assistance you may need.
-
-A step by step guide on how to configure this plugin can be found <a href="http://simplesharebuttons.com/wordpress/wordpress-configuration/">here</a>.
+Please visit the <a href="https://wordpress.org/support/plugin/simple-share-buttons-adder">WordPress Support Forum</a> for any assistance you may need.
 
 == Screenshots ==
 
-1. The core settings tab - where you can choose where you want your buttons and which networks to include
-2. The styling settings tab - where you can pick an image set and resize your buttons and share text
-3. The counters settings tab - where you can enable share counts
-4. The advanced settings tab - where you can apply more advanced features
-5. The additional CSS field - where you can add your own CSS
-6. The custom CSS field - where you can use your own CSS
-7. This is an example of a set of Share Buttons you can add using Simple Share Buttons Adder
-8. This is an example of a set of Share Buttons you can add using Simple Share Buttons Adder
+1. The top of the admin menu including the network selection tool.
+2. Some styling options for your button's share text and container.
+3. The button preview and additional accordions with more configuration options.
+4. An example of the buttons shown below page content using the "Ribbon" theme.
 
 == Changelog ==
+
+= 7.3.10 =
+* Fixed pinterest blank pop up.
+
+= 7.3.9 =
+* Fixed missing variable error.
+* Remove missing index errors.
+
+= 7.3.8 =
+* Add mobile specific message for whatsapp network.
+* Fix plugin confliction due to non specific function name.
+
+= 7.3.7 =
+* Fixed Window specific plugin location error.
+* Added missing custom email, diggit, buffer image fields.
+* Put old shortcode back in place.
+
+= 7.3.6 =
+* Major plugin code clean up and refactor.
+* Addition of Button Preview in admin.
+* New admin menu layout design.
+* Addition of Whatsapp and Xing buttons.
 
 = 6.3.6 =
 * minor bug fixes

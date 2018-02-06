@@ -1,7 +1,7 @@
 <div class="input-holder" id="AdminInputHolder-<?php echo $unique_render_id;?>">
 	<label>
 		<?php echo $admin_access_message; ?>:
-		<input type="password" name="icwp-wpsf-admin_access_key_request" data-nonce="<?php echo $sAjaxNonce; ?>" />
+		<input type="password" name="admin_access_key_request" data-nonce="<?php echo $sAjaxNonce; ?>" />
 		<button type="submit">Go!</button>
 	</label>
 </div>
@@ -26,9 +26,12 @@
 		$oInput.prop( 'disabled', true );
 
 		var requestData = {
-			'action': 'icwp_wpsf_AdminAccessLogin',
-			'icwp_wpsf_admin_access_key_request': $oInput.val(),
-			'_ajax_nonce': $oInput.data('nonce')
+			'action': '<?php echo $icwp_ajax_action; ?>',
+			'icwp_ajax_action': '<?php echo $icwp_ajax_action; ?>',
+			'icwp_nonce': '<?php echo $icwp_nonce; ?>',
+			'icwp_nonce_action': '<?php echo $icwp_nonce_action; ?>',
+			'icwp_action_module': '<?php echo $icwp_action_module; ?>',
+			'admin_access_key_request': $oInput.val()
 		};
 
 		jQuery.post(ajaxurl, requestData, function( oResponse ) {

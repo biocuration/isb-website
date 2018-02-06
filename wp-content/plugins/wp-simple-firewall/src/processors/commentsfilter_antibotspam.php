@@ -59,7 +59,7 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 
 		// 1st are comments enabled on this post?
 		$nPostId = $this->getRawCommentData( 'comment_post_ID' );
-		$oPost = $nPostId ? $this->loadWpFunctions()->getPostById( $nPostId ) : null;
+		$oPost = $nPostId ? $this->loadWp()->getPostById( $nPostId ) : null;
 		if ( $oPost ) {
 			$fIfDoCheck = $oWpComments->isCommentsOpen( $oPost );
 		}
@@ -141,7 +141,7 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 
 		// Now we check whether comment status is to completely reject and then we simply redirect to "home"
 		if ( $this->sCommentStatus == 'reject' ) {
-			$oWp = $this->loadWpFunctions();
+			$oWp = $this->loadWp();
 			$oWp->doRedirect( $oWp->getHomeUrl(), array(), true, false );
 		}
 
@@ -222,24 +222,22 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 	 * @return boolean
 	 */
 	protected function getIfDoGaspCheck() {
+		$bCheck = true;
 
 		if ( !$this->getIsOption( 'enable_comments_gasp_protection', 'Y' ) ) {
-			return false;
+			$bCheck = false;
 		}
-
-		if ( is_user_logged_in() ) {
-			return false;
+		else if ( $this->loadWpUsers()->isUserLoggedIn() ) {
+			$bCheck = false;
 		}
-		// Compatibility with shoutbox WP Wall Plugin
-		// http://wordpress.org/plugins/wp-wall/
-		if ( function_exists( 'WPWall_Init' ) ) {
-			$oDp = $this->loadDataProcessor();
-			if ( !is_null( $oDp->FetchPost( 'submit_wall_post' ) ) ) {
-				return false;
+		else if ( function_exists( 'WPWall_Init' ) ) {
+			// Compatibility with shoutbox WP Wall Plugin http://wordpress.org/plugins/wp-wall/
+			if ( !is_null( $this->loadDataProcessor()->FetchPost( 'submit_wall_post' ) ) ) {
+				$bCheck = false;
 			}
 		}
 
-		return true;
+		return $bCheck;
 	}
 
 	/**
@@ -277,18 +275,20 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 	}
 	
 	protected function getGaspCommentsHtml() {
+		/** @var ICWP_WPSF_FeatureHandler_CommentsFilter $oFO */
+		$oFO = $this->getFeature();
 
-		$sId			= $this->getUniqueFormId();
-		$sConfirm		= stripslashes( $this->getOption('custom_message_checkbox') );
-		$sAlert			= stripslashes( $this->getOption('custom_message_alert') );
-		$sCommentWait	= stripslashes( $this->getOption('custom_message_comment_wait') );
-		$nCooldown		= $this->getOption('comments_cooldown_interval');
-		$nExpire		= $this->getOption('comments_token_expire_interval');
+		$sId = $this->getUniqueFormId();
+		$sConfirm = stripslashes( $oFO->getTextOpt( 'custom_message_checkbox' ) );
+		$sAlert = stripslashes( $oFO->getTextOpt( 'custom_message_alert' ) );
+		$sCommentWait = stripslashes( $oFO->getTextOpt( 'custom_message_comment_wait' ) );
+		$sCommentReload = stripslashes( $oFO->getTextOpt( 'custom_message_comment_reload' ) );
+
+		$nCooldown = $this->getOption( 'comments_cooldown_interval' );
+		$nExpire = $this->getOption( 'comments_token_expire_interval' );
 
 		$sJsCommentWait = '"'.str_replace( '%s', '"+nRemaining+"', $sCommentWait ).'"';
-		$sCommentWait = str_replace( '%s', $nCooldown, $sCommentWait );
-
-		$sCommentReload = $this->getOption('custom_message_comment_reload');
+		$sCommentWait = str_replace( '%s', $nCooldown, $sCommentWait ); // don't use sprintf for errors.
 
 		$sReturn = "
 			<script type=\"text/javascript\">
@@ -318,7 +318,6 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 				}
 				
 				var $sId				= document.getElementById('$sId');
-
 				var cb$sId				= document.createElement('input');
 				cb$sId.type				= 'checkbox';
 				cb$sId.id				= 'checkbox$sId';
@@ -397,7 +396,7 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 			$this->getTableName(),
 			$sToken,
 			$sPostId,
-			$this->human_ip()
+			$this->ip()
 		);
 		$mResult = $this->selectCustom( $sQuery );
 
@@ -464,8 +463,8 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 	 */
 	protected function deleteOldPostCommentTokens( $sPostId = null ) {
 		$aWhere = array(
-			'ip'        => $this->human_ip(),
-			'post_id'   => empty( $sPostId ) ? $this->loadWpFunctions()->getCurrentPostId() : $sPostId
+			'ip'        => $this->ip(),
+			'post_id'   => empty( $sPostId ) ? $this->loadWp()->getCurrentPostId() : $sPostId
 		);
 		return $this->loadDbProcessor()->deleteRowsFromTableWhere( $this->getTableName(), $aWhere );
 	}
@@ -475,9 +474,9 @@ class ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam extends ICWP_WPSF_BaseDbPro
 	 */
 	protected function insertUniquePostCommentToken() {
 		$aData = array(
-			'post_id'       => $this->loadWpFunctions()->getCurrentPostId(),
+			'post_id'       => $this->loadWp()->getCurrentPostId(),
 			'unique_token'  => $this->getUniqueCommentToken(),
-			'ip'            => $this->human_ip(),
+			'ip'            => $this->ip(),
 			'created_at'    => $this->time()
 		);
 		return $this->insertData( $aData );

@@ -9,6 +9,7 @@
     "use_sessions": true,
     "show_central": true,
     "access_restricted": true,
+    "premium": false,
     "order": 50
   },
   "admin_notices": {
@@ -23,7 +24,7 @@
     {
       "slug": "section_enable_plugin_feature_spam_comments_protection_filter",
       "primary": true,
-      "title": "Enable Plugin Feature: SPAM Comments Protection Filter",
+      "title": "Enable Plugin Feature: Comments SPAM Protection",
       "title_short": "Enable / Disable",
       "summary":
       [
@@ -40,7 +41,16 @@
         "Purpose - Blocks 100% of all automated bot-generated comment SPAM.",
         "Recommendation - Use of this feature is highly recommend."
       ]
-
+    },
+    {
+      "slug": "section_recaptcha",
+      "title": "Google reCAPTCHA",
+      "title_short": "reCAPTCHA",
+      "summary": [
+        "Purpose - Adds Google reCAPTCHA to the Comment Forms.",
+        "Recommendation - Keep this turned on.",
+        "Note - You will need to register for Google reCAPTCHA keys and store them in the Shield 'Dashboard' settings."
+      ]
     },
     {
       "slug": "section_human_spam_filter",
@@ -53,13 +63,14 @@
       ]
     },
     {
-      "slug": "section_customize_messages_shown_to_user",
+      "slug": "section_user_messages",
       "title": "Customize Messages Shown To User",
       "title_short": "Visitor Messages",
       "summary":
       [
-        "Purpose - Customize the messages shown to visitors when they view and use comment forms.",
-        "Recommendation - Be sure to change the messages to suit your audience."
+        "Purpose - Customize the messages shown to visitors.",
+        "Recommendation - Be sure to change the messages to suit your audience.",
+        "Hint - To reset any message to its default, enter the text exactly: default"
       ]
     },
     {
@@ -76,8 +87,8 @@
       "link_info": "http://icwp.io/3z",
       "link_blog": "http://icwp.io/wpsf04",
       "name": "Enable SPAM Protection",
-      "summary": "Enable (or Disable) The SPAM Comments Protection Filter Feature",
-      "description": "Checking/Un-Checking this option will completely turn on/off the whole SPAM Comments Protection Filter feature"
+      "summary": "Enable (or Disable) The Comments SPAM Protection Feature",
+      "description": "Checking/Un-Checking this option will completely turn on/off the whole Comments SPAM Protection feature"
     },
     {
       "key": "enable_comments_human_spam_filter",
@@ -173,8 +184,8 @@
       "description": "Taking the lead from the original GASP plugin for WordPress, we have extended it to include advanced spam-bot protection."
     },
     {
-      "key": "enable_google_recaptcha",
-      "section": "section_bot_comment_spam_protection_filter",
+      "key": "enable_google_recaptcha_comments",
+      "section": "section_recaptcha",
       "default": "N",
       "type": "checkbox",
       "link_info": "http://icwp.io/shld5",
@@ -182,6 +193,40 @@
       "name": "Google reCAPTCHA",
       "summary": "Enable Google reCAPTCHA For Comments",
       "description": "Use Google reCAPTCHA on the comments form to prevent bot-spam comments."
+    },
+    {
+      "key": "google_recaptcha_style_comments",
+      "section": "section_recaptcha",
+      "premium": true,
+      "default": "default",
+      "type": "select",
+      "value_options": [
+        {
+          "value_key": "default",
+          "text": "Default"
+        },
+        {
+          "value_key": "light",
+          "text": "Light Theme"
+        },
+        {
+          "value_key": "light",
+          "text": "Light Theme"
+        },
+        {
+          "value_key": "dark",
+          "text": "Dark Theme"
+        },
+        {
+          "value_key": "invisible",
+          "text": "Invisible reCAPTCHA"
+        }
+      ],
+      "link_info": "",
+      "link_blog": "",
+      "name": "reCAPTCHA Style",
+      "summary": "How Google reCAPTCHA Will Be Displayed",
+      "description": "You can choose the reCAPTCHA display format that best suits your site, including the new Invisible Recaptcha."
     },
     {
       "key": "comments_default_action_spam_bot",
@@ -236,9 +281,9 @@
     },
     {
       "key": "custom_message_checkbox",
-      "section": "section_customize_messages_shown_to_user",
+      "section": "section_user_messages",
       "sensitive": true,
-      "default": "I'm not a spammer",
+      "default": "default",
       "type": "text",
       "link_info": "http://icwp.io/3p",
       "link_blog": "",
@@ -248,9 +293,9 @@
     },
     {
       "key": "custom_message_alert",
-      "section": "section_customize_messages_shown_to_user",
+      "section": "section_user_messages",
       "sensitive": true,
-      "default": "Please check the box to confirm you're not a spammer",
+      "default": "default",
       "type": "text",
       "link_info": "http://icwp.io/3p",
       "link_blog": "",
@@ -260,9 +305,9 @@
     },
     {
       "key": "custom_message_comment_wait",
-      "section": "section_customize_messages_shown_to_user",
+      "section": "section_user_messages",
       "sensitive": true,
-      "default": "Please wait %s seconds before posting your comment",
+      "default": "default",
       "type": "text",
       "link_info": "http://icwp.io/3p",
       "link_blog": "",
@@ -272,9 +317,9 @@
     },
     {
       "key": "custom_message_comment_reload",
-      "section": "section_customize_messages_shown_to_user",
+      "section": "section_user_messages",
       "sensitive": true,
-      "default": "Please reload this page to post a comment",
+      "default": "default",
       "type": "text",
       "link_info": "http://icwp.io/3p",
       "link_blog": "",

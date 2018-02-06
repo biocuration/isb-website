@@ -93,11 +93,16 @@ function pmpro_getOption($s, $force = false)
 		return "";
 }
 
-function pmpro_setOption($s, $v = NULL)
+function pmpro_setOption($s, $v = NULL, $sanitize_function = 'sanitize_text_field')
 {
 	//no value is given, set v to the p var
 	if($v === NULL && isset($_POST[$s]))
-		$v = $_POST[$s];
+	{	
+		if(is_array($_POST[$s]))
+			$v = array_map($sanitize_function, $_POST[$s]);
+		else
+			$v = call_user_func($sanitize_function, $_POST[$s]);
+	}
 
 	if(is_array($v))
 		$v = implode(",", $v);
@@ -151,11 +156,15 @@ function pmpro_url($page = NULL, $querystring = "", $scheme = NULL)
 	//figure out querystring
 	$querystring = str_replace("?", "", $querystring);
 	parse_str( $querystring, $query_args );
-	$url = esc_url_raw( add_query_arg( $query_args, $url ) );
+	
+	if(!empty($url)) {
+		
+		$url = esc_url_raw( add_query_arg( $query_args, $url ) );
 
-	//figure out scheme
-	if(is_ssl())
-		$url = str_replace("http:", "https:", $url);
+		//figure out scheme
+		if(is_ssl())
+			$url = str_replace("http:", "https:", $url);
+	}
 
 	return $url;
 }
@@ -1045,24 +1054,29 @@ function pmpro_changeMembershipLevel($level, $user_id = NULL, $old_level_status 
 	if(!empty($cancel_level)) {
 		$pmpro_cancel_previous_subscriptions = true;	//don't filter cause we're doing just the one
 		
-		$other_order_ids = $wpdb->get_col("SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' AND status = 'success' AND membership_id = '" . esc_sql($cancel_level) . "' ORDER BY id DESC");
+		$other_order_ids = $wpdb->get_col("SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' AND status = 'success' AND membership_id = '" . esc_sql($cancel_level) . "' ORDER BY id DESC LIMIT 1");
 	} else {
 		$pmpro_cancel_previous_subscriptions = true;
 		if(isset($_REQUEST['cancel_membership']) && $_REQUEST['cancel_membership'] == false)
 			$pmpro_cancel_previous_subscriptions = false;
 		$pmpro_cancel_previous_subscriptions = apply_filters("pmpro_cancel_previous_subscriptions", $pmpro_cancel_previous_subscriptions);
 		
-		$other_order_ids = $wpdb->get_col("SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' AND status = 'success' ORDER BY id DESC");
+		$other_order_ids = $wpdb->get_col("SELECT id, IF(subscription_transaction_id = '', CONCAT('UNIQUE_SUB_ID_', id), subscription_transaction_id) as unique_sub_id
+											FROM $wpdb->pmpro_membership_orders 
+											WHERE user_id = '" . $user_id . "' 
+												AND status = 'success' 
+											GROUP BY unique_sub_id  
+											ORDER BY id DESC");	
 	}
 	
 	$other_order_ids = apply_filters("pmpro_other_order_ids_to_cancel", $other_order_ids);
-	
+
 	//cancel any other subscriptions they have (updates pmpro_membership_orders table)
 	if($pmpro_cancel_previous_subscriptions && !empty($other_order_ids))
 	{		
 		foreach($other_order_ids as $order_id)
 		{
-			$c_order = new MemberOrder($order_id);
+			$c_order = new MemberOrder($order_id);			
 			$c_order->cancel();
 
 			if(!empty($c_order->error))
@@ -1868,7 +1882,8 @@ function pmpro_getMembershipLevelsForUser($user_id = NULL, $include_inactive = f
 								UNIX_TIMESTAMP(enddate) as enddate
 							FROM {$wpdb->pmpro_membership_levels} AS l
 							JOIN {$wpdb->pmpro_memberships_users} AS mu ON (l.id = mu.membership_id)
-							WHERE mu.user_id = $user_id".($include_inactive?"":" AND mu.status = 'active'"));
+							WHERE mu.user_id = $user_id".($include_inactive?"":" AND mu.status = 'active'
+							GROUP BY ID"));
 	/**
 	 * pmpro_get_membership_levels_for_user filter.
 	 *
@@ -1972,6 +1987,11 @@ function pmpro_getLevelAtCheckout($level_id = NULL, $discount_code = NULL) {
 		$level_id = intval($_REQUEST['level']);
 	}
 	
+	//no level, check for a default level in the custom fields for this post
+	if(empty($level_id) && !empty($post)) {
+		$level_id = get_post_meta( $post->ID, "pmpro_default_level", true );
+	}
+	
 	//default to discount code passed in
 	if(empty($discount_code) && !empty($_REQUEST['discount_code'])) {
 		$discount_code = preg_replace( "/[^A-Za-z0-9\-]/", "", $_REQUEST['discount_code'] );
@@ -1982,7 +2002,7 @@ function pmpro_getLevelAtCheckout($level_id = NULL, $discount_code = NULL) {
 		$discount_code_id = $wpdb->get_var( "SELECT id FROM $wpdb->pmpro_discount_codes WHERE code = '" . $discount_code . "' LIMIT 1" );
 
 		//check code
-		$code_check = pmpro_checkDiscountCode( $discount_code, $level_id, true );
+		$code_check = pmpro_checkDiscountCode( $discount_code, $level_id, true );		
 		if ( $code_check[0] != false ) {			
 			$sqlQuery    = "SELECT l.id, cl.*, l.name, l.description, l.allow_signups FROM $wpdb->pmpro_discount_codes_levels cl LEFT JOIN $wpdb->pmpro_membership_levels l ON cl.level_id = l.id LEFT JOIN $wpdb->pmpro_discount_codes dc ON dc.id = cl.code_id WHERE dc.code = '" . $discount_code . "' AND cl.level_id = '" . $level_id . "' LIMIT 1";
 			$pmpro_level = $wpdb->get_row( $sqlQuery );
@@ -2004,12 +2024,6 @@ function pmpro_getLevelAtCheckout($level_id = NULL, $discount_code = NULL) {
 	//what level are they purchasing? (no discount code)
 	if ( empty( $pmpro_level ) && ! empty( $level_id ) ) {
 		$pmpro_level = $wpdb->get_row( "SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . esc_sql( $level_id ) . "' AND allow_signups = 1 LIMIT 1" );
-	} elseif ( empty( $pmpro_level ) && !empty( $post ) ) {
-		//check if a level is defined in custom fields
-		$default_level = get_post_meta( $post->ID, "pmpro_default_level", true );
-		if ( ! empty( $default_level ) ) {
-			$pmpro_level = $wpdb->get_row( "SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . esc_sql( $default_level ) . "' AND allow_signups = 1 LIMIT 1" );
-		}
 	}
 
 	//filter the level (for upgrades, etc)
@@ -2032,24 +2046,28 @@ function pmpro_getCheckoutButton($level_id, $button_text = NULL, $classes = NULL
 	{
 		//get level
 		$level = pmpro_getLevel($level_id);
-
-		//replace vars
-		$replacements = array(
-			"!!id!!" => $level->id,
-			"!!name!!" => $level->name,
-			"!!description!!" => $level->description,
-			"!!confirmation!!" => $level->confirmation,
-			"!!initial_payment!!" => $level->initial_payment,
-			"!!billing_amount!!" => $level->billing_amount,
-			"!!cycle_number!!" => $level->cycle_number,
-			"!!cycle_period!!" => $level->cycle_period,
-			"!!billing_limit!!" => $level->billing_limit,
-			"!!trial_amount!!" => $level->trial_amount,
-			"!!trial_limit!!" => $level->trial_limit,
-			"!!expiration_number!!" => $level->expiration_number,
-			"!!expiration_period!!" => $level->expiration_period
-		);
-		$button_text = str_replace(array_keys($replacements), $replacements, $button_text);
+		
+		if(empty($level))
+			$r = sprintf(__("Level #%s not found.", 'paid-memberships-pro' ), $level_id);
+		else {		
+			//replace vars
+			$replacements = array(
+				"!!id!!" => $level->id,
+				"!!name!!" => $level->name,
+				"!!description!!" => $level->description,
+				"!!confirmation!!" => $level->confirmation,
+				"!!initial_payment!!" => $level->initial_payment,
+				"!!billing_amount!!" => $level->billing_amount,
+				"!!cycle_number!!" => $level->cycle_number,
+				"!!cycle_period!!" => $level->cycle_period,
+				"!!billing_limit!!" => $level->billing_limit,
+				"!!trial_amount!!" => $level->trial_amount,
+				"!!trial_limit!!" => $level->trial_limit,
+				"!!expiration_number!!" => $level->expiration_number,
+				"!!expiration_period!!" => $level->expiration_period
+			);
+			$button_text = str_replace(array_keys($replacements), $replacements, $button_text);
+		}
 
 		//button text
 		$r = "<a href=\"" . pmpro_url("checkout", "?level=" . $level_id) . "\" class=\"" . $classes . "\">" . $button_text . "</a>";
@@ -2238,22 +2256,22 @@ function pmpro_getClassForField($field)
 }
 
 //get a var from $_GET or $_POST
-function pmpro_getParam($index, $method = "REQUEST", $default = "")
+function pmpro_getParam($index, $method = "REQUEST", $default = "", $sanitize_function = 'sanitize_text_field')
 {
 	if($method == "REQUEST")
 	{
 		if(!empty($_REQUEST[$index]))
-			return $_REQUEST[$index];
+			return call_user_func($sanitize_function, $_REQUEST[$index]);
 	}
 	elseif($method == "POST")
 	{
 		if(!empty($_POST[$index]))
-			return $_POST[$index];
+			return call_user_func($sanitize_function, $_POST[$index]);
 	}
 	elseif($method == "GET")
 	{
 		if(!empty($_GET[$index]))
-			return $_GET[$index];
+			return call_user_func($sanitize_function, $_GET[$index]);
 	}
 
 	return $default;
@@ -2617,4 +2635,39 @@ function pmpro_getMemberOrdersByCheckoutID($checkout_id) {
 	}
 	
 	return $r;
+}
+
+/**
+ * Check that the test value is a member of a specific array for sanitization purposes.
+ *
+ * @param mixed $needle Value to be tested.
+ * @param array $safe Array of safelist values.
+ * @since 1.9.3
+ */
+function pmpro_sanitize_with_safelist($needle, $safelist) {
+	if(!in_array($needle, $safelist))
+		return false;
+	else
+		return $needle;
+}
+ 
+ /**
+  * Return an array of allowed order statuses
+  *
+  * @since 1.9.3
+  */
+function pmpro_getOrderStatuses($force = false) {
+	global $pmpro_order_statuses;
+	
+	if(!isset($pmpro_order_statuses) || $force) {
+		global $wpdb;
+		$statuses         = array();
+		$default_statuses = array( "", "success", "cancelled", "review", "token", "refunded" );
+		$used_statuses    = $wpdb->get_col( "SELECT DISTINCT(status) FROM $wpdb->pmpro_membership_orders" );
+		$statuses         = array_unique( array_merge( $default_statuses, $used_statuses ) );
+		asort( $statuses );
+		$statuses = apply_filters( "pmpro_order_statuses", $statuses );
+	}
+	
+	return $statuses;
 }

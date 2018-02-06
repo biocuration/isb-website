@@ -1,40 +1,99 @@
-jQuery(document).ready(function() {
+/**
+ * Main.
+ *
+ * @package SimpleShareButtonsAdder
+ */
 
-    // upon clicking a share button
-	jQuery('.ssba-wrap a').click(function(event){
+/* exported Main */
+var Main = ( function( $, FB ) {
+	'use strict';
 
-		// don't go the the href yet
-		event.preventDefault();
+	return {
+		/**
+		 * Holds data.
+		 */
+		data: {},
 
-        // if it's facebook mobile
-        if(jQuery(this).data('facebook') == 'mobile') {
-            FB.ui({
-                method: 'share',
-                mobile_iframe: true,
-                href: jQuery(this).data('href')
-            }, function(response){});
-        } else {
-            // these share options don't need to have a popup
-            if (jQuery(this).data('site') == 'email' || jQuery(this).data('site') == 'print' || jQuery(this).data('site') == 'pinterest') {
+		/**
+		 * Boot plugin.
+		 *
+		 * @param data
+		 */
+		boot: function( data ) {
+			this.data = data;
 
-                // just redirect
-                window.location.href = jQuery(this).attr("href");
-            } else {
+			$( document ).ready( function() {
+				this.init();
+			}.bind( this ) );
+		},
 
-                // prepare popup window
-                var width  = 575,
-                    height = 520,
-                    left   = (jQuery(window).width()  - width)  / 2,
-                    top    = (jQuery(window).height() - height) / 2,
-                    opts   = 'status=1' +
-                        ',width='  + width  +
-                        ',height=' + height +
-                        ',top='    + top    +
-                        ',left='   + left;
+		/**
+		 * Initialize plugin.
+		 */
+		init: function() {
+			this.listen();
+			this.removeP();
+		},
 
-                // open the share url in a smaller window
-                window.open(jQuery(this).attr("href"), 'share', opts);
-            }
-        }
-	});
-});
+		/**
+		 * Listener event.
+		 */
+		listen: function() {
+			var self = this;
+
+			// Upon clicking a share button.
+			$( 'body' ).on( 'click', '.ssba-wrap a', function( event ) {
+
+				// Don't go the the href yet.
+				event.preventDefault();
+				self.engageShareButton( this );
+			} );
+		},
+
+		/**
+		 * Share button popup
+		 *
+		 * @param event
+		 */
+		engageShareButton: function( event ) {
+
+			// If it's facebook mobile.
+			if ( 'mobile' === $( event ).data( 'facebook' ) ) {
+				FB.ui( {
+					method: 'share',
+					mobile_iframe: true,
+					href: $( event ).data( 'href' )
+				}, function( response ) {} );
+			} else {
+
+				// These share options don't need to have a popup.
+				if ( 'email' === $( event ).data( 'site' ) || 'print' === $( event ).data( 'site' ) || 'pinterest' === $( event ).data( 'site' ) ) {
+
+					// Just redirect.
+					window.location.href = $( event ).attr( 'href' );
+				} else {
+
+					// Prepare popup window.
+					var width  = 575,
+						height = 520,
+						left = ( $( window ).width() - width ) / 2,
+						top = ( $( window ).height() - height ) / 2,
+						opts = 'status=1' +
+						       ',width=' + width +
+						       ',height=' + height +
+						       ',top=' + top +
+						       ',left=' + left;
+
+					// Open the share url in a smaller window.
+					window.open( $( event ).attr( 'href' ), 'share', opts );
+				}
+			}
+		},
+
+		/**
+		 * Remove generated p tag from facebook save button.
+		 */
+		removeP: function() {
+		}
+	};
+} )( window.jQuery, window.FB );

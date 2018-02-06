@@ -1,10 +1,9 @@
 === WP Dashboard Notes ===
 Contributors: sormano
-Donate link: http://jeroensormani.com/donate/
-Tags: note, notes, dashboard notes, wordpress notes, admin note, private note, post it, notification, collaboration, workflow, to do list, note list, note widget
-Requires at least: 3.8
+Tags: note, notes, dashboard notes, wordpress notes, admin note, private note, notification, collaboration, workflow, to do list, note list, note widget
+Requires at least: 4.0
 Tested up to: 4.5
-Stable tag: 1.0.8.2
+Stable tag: 1.0.9
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -130,7 +129,7 @@ function wpdn_add_style() {
 
 1. Upload the folder `wp-dashboard-notes` to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Add your first note via the 'Add note' button in the 'Screen Options'.
+3. Add your first note via the 'Add note' button by clicking on the 'Add note' button in the top admin bar on your admin dashboard.
 
 == Screenshots ==
 
@@ -140,6 +139,9 @@ function wpdn_add_style() {
 
 == Changelog ==
 
+= 1.0.9 - 05/12/2017 =
+
+* Improvement - Make sure scripts are only loaded on the dashboard, not on any other page. Why wasn't this included before?!
 
 = 1.0.8.2 - 11/04/2016 =
 

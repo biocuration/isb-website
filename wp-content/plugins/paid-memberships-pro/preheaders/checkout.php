@@ -15,7 +15,7 @@ $pmpro_required_user_fields    = array();
 
 //was a gateway passed?
 if ( ! empty( $_REQUEST['gateway'] ) ) {
-	$gateway = $_REQUEST['gateway'];
+	$gateway = sanitize_text_field($_REQUEST['gateway']);
 } elseif ( ! empty( $_REQUEST['review'] ) ) {
 	$gateway = "paypalexpress";
 } else {
@@ -221,14 +221,14 @@ if ( isset( $_REQUEST['username'] ) ) {
 	$username = "";
 }
 if ( isset( $_REQUEST['password'] ) ) {
-	$password = $_REQUEST['password'];
+	$password = sanitize_text_field($_REQUEST['password']);
 } else {
 	$password = "";
 }
 if ( isset( $_REQUEST['password2_copy'] ) ) {
 	$password2 = $password;
 } elseif ( isset( $_REQUEST['password2'] ) ) {
-	$password2 = $_REQUEST['password2'];
+	$password2 = sanitize_text_field($_REQUEST['password2']);
 } else {
 	$password2 = "";
 }
@@ -240,10 +240,10 @@ if ( isset( $_REQUEST['tos'] ) ) {
 
 //_x stuff in case they clicked on the image button with their mouse
 if ( isset( $_REQUEST['submit-checkout'] ) ) {
-	$submit = $_REQUEST['submit-checkout'];
+	$submit = true;
 }
 if ( empty( $submit ) && isset( $_REQUEST['submit-checkout_x'] ) ) {
-	$submit = $_REQUEST['submit-checkout_x'];
+	$submit = true;
 }
 if ( isset( $submit ) && $submit === "0" ) {
 	$submit = true;
@@ -326,7 +326,7 @@ if ( $submit && $pmpro_msgt != "pmpro_error" ) {
 		$pmpro_error_fields[] = "password";
 		$pmpro_error_fields[] = "password2";
 	}
-	if ( ! empty( $bemail ) && $bemail != $bconfirmemail ) {
+	if ( strcasecmp($bemail, $bconfirmemail) !== 0 ) {
 		pmpro_setMessage( __( "Your email addresses do not match. Please try again.", 'paid-memberships-pro' ), "pmpro_error" );
 		$pmpro_error_fields[] = "bemail";
 		$pmpro_error_fields[] = "bconfirmemail";
@@ -370,7 +370,7 @@ if ( $submit && $pmpro_msgt != "pmpro_error" ) {
 		}
 
 		if ( ! empty( $oldemail ) ) {
-			pmpro_setMessage( __( "That email address is already taken. Please try another.", 'paid-memberships-pro' ), "pmpro_error" );
+			pmpro_setMessage( __( "That email address is already in use. Please log in, or use a different email address.", 'paid-memberships-pro' ), "pmpro_error" );
 			$pmpro_error_fields[] = "bemail";
 			$pmpro_error_fields[] = "bconfirmemail";
 		}

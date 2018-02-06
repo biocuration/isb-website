@@ -13,7 +13,7 @@ class ICWP_WPSF_Processor_CommentsFilter extends ICWP_WPSF_Processor_BaseWpsf {
 		$oFO = $this->getFeature();
 		add_filter( $oFO->prefix( 'if-do-comments-check' ), array( $this, 'getIfDoCommentsCheck' ) );
 
-		if ( $this->getIsOption( 'enable_comments_gasp_protection', 'Y' ) ) {
+		if ( $oFO->isEnabledGaspCheck() ) {
 			require_once( dirname(__FILE__).DIRECTORY_SEPARATOR.'commentsfilter_antibotspam.php' );
 			$oBotSpamProcessor = new ICWP_WPSF_Processor_CommentsFilter_AntiBotSpam( $oFO );
 			$oBotSpamProcessor->run();
@@ -53,19 +53,20 @@ class ICWP_WPSF_Processor_CommentsFilter extends ICWP_WPSF_Processor_BaseWpsf {
 
 		// We only warn when the human spam filter is running
 		if ( $this->getIsOption( 'enable_comments_human_spam_filter', 'Y' ) && $this->getController()->getIsValidAdminArea() ) {
-			$oWp = $this->loadWpFunctions();
 
-			$sActivePluginFile = $oWp->getIsPluginActive( 'Akismet' );
-			if ( $sActivePluginFile ) {
+			$oWpPlugins = $this->loadWpPlugins();
+			$sPluginFile = $oWpPlugins->findPluginBy( 'Akismet', 'Name' );
+			if ( !is_null( $sPluginFile ) && $oWpPlugins->isPluginActive( $sPluginFile ) ) {
 				$aRenderData = array(
 					'notice_attributes' => $aNoticeAttributes,
 					'strings' => array(
+						'title' => 'Akismet is Running',
 						'appears_running_akismet' => _wpsf__( 'It appears you have Akismet Anti-SPAM running alongside the our human Anti-SPAM filter.' ),
 						'not_recommended' => _wpsf__('This is not recommended and you should disable Akismet.'),
 						'click_to_deactivate' => _wpsf__('Click to deactivate Akismet now.'),
 					),
 					'hrefs' => array(
-						'deactivate' => $oWp->getPluginDeactivateLink( $sActivePluginFile )
+						'deactivate' => $oWpPlugins->getLinkPluginDeactivate( $sPluginFile )
 					)
 				);
 				$this->insertAdminNotice( $aRenderData );

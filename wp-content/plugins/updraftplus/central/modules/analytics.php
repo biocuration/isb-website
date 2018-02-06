@@ -1,6 +1,6 @@
 <?php
 
-if (!defined('UPDRAFTPLUS_DIR')) die('No access.');
+if (!defined('UPDRAFTCENTRAL_CLIENT_DIR')) die('No access.');
 
 /**
  * Handles Analytics Commands
@@ -61,31 +61,21 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 			// parse the needed information from the buffered content through
 			// the "wp_head" and "wp_footer" hooks.
 			if (false === $tracking_id) {
+				$info = $this->extract_tracking_id();
 
-				// Retrieve header content
-				ob_start();
-				do_action('wp_head');
-				$header_content = ob_get_clean();
-				
-				// Extract analytics information if available.
-				$output = $this->parse_content($header_content);
-				$installed = $output['installed'];
-				$tracking_id = $output['tracking_id'];
-				
-				// If it was not found, then now try the footer
-				if (empty($tracking_id)) {
-					// Retrieve footer content
-					ob_start();
-					do_action('wp_footer');
-					$footer_content = ob_get_clean();
-					$output = $this->parse_content($footer_content);
-					$installed = $output['installed'];
-					$tracking_id = $output['tracking_id'];
-				}
+				$installed = $info['installed'];
+				$tracking_id = $info['tracking_id'];
+			}
 
-				if (!empty($tracking_id)) {
-					set_site_transient($this->tracking_id_key, $tracking_id, $this->expiration);
-				}
+			// Get access token to be use to generate the report.
+			$access_token = $this->_get_token();
+
+			if (empty($access_token)) {
+				// If we don't get a valid access token then that would mean
+				// the access has been revoked by the user or UpdraftCentral was not authorized yet
+				// to access the user's analytics data, thus, we're clearing
+				// any previously stored user access so we're doing some housekeeping here.
+				$this->clear_user_access();
 			}
 
 			// Wrap and combined information for the requesting
@@ -96,7 +86,7 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 				'client_id' => $this->client_id,
 				'redirect_uri' => $this->auth_endpoint,
 				'scope' => $this->scope,
-				'access_token' => $this->_get_token(),
+				'access_token' => $access_token,
 				'endpoint' => $this->endpoint
 			);
 
@@ -105,6 +95,45 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 		}
 		
 		return $this->_response($result);
+	}
+
+	/**
+	 * Extracts Google Tracking ID from contents rendered through the "wp_head" and "wp_footer" action hooks
+	 *
+	 * @internal
+	 * @return array $result An array containing the result of the extraction.
+	 */
+	private function extract_tracking_id() {
+
+		// Define result array
+		$result = array();
+
+		// Retrieve header content
+		ob_start();
+		do_action('wp_head');
+		$header_content = ob_get_clean();
+		
+		// Extract analytics information if available.
+		$output = $this->parse_content($header_content);
+		$result['installed'] = $output['installed'];
+		$result['tracking_id'] = $output['tracking_id'];
+		
+		// If it was not found, then now try the footer
+		if (empty($tracking_id)) {
+			// Retrieve footer content
+			ob_start();
+			do_action('wp_footer');
+			$footer_content = ob_get_clean();
+			$output = $this->parse_content($footer_content);
+			$result['installed'] = $output['installed'];
+			$result['tracking_id'] = $output['tracking_id'];
+		}
+
+		if (!empty($tracking_id)) {
+			set_transient($this->tracking_id_key, $tracking_id, $this->expiration);
+		}
+
+		return $result;
 	}
 	
 	/**
@@ -137,6 +166,15 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 	}
 
 	/**
+	 * Clears any previously stored user access
+	 *
+	 * @return bool
+	 */
+	public function clear_user_access() {
+		return delete_option($this->access_key);
+	}
+
+	/**
 	 * Saves user is and access token received from the auth server
 	 *
 	 * @param array $query Parameter array containing the user id and access token from the auth server.
@@ -149,7 +187,7 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 			$token = get_option($this->access_key, false);
 			$result = array();
 
-			if (false === $token || empty($token['access_token'])) {
+			if (false === $token) {
 				$token = array(
 					'user_id' => base64_decode(urldecode($query['user_id'])),
 					'access_token' => base64_decode(urldecode($query['access_token']))
@@ -181,7 +219,7 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 			$saved = false;
 
 			if (!empty($tracking_id)) {
-				$saved = set_site_transient($this->tracking_id_key, $tracking_id, $this->expiration);
+				$saved = set_transient($this->tracking_id_key, $tracking_id, $this->expiration);
 			}
 
 			$result = array('saved' => $saved);
@@ -225,7 +263,7 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 							$body = json_decode($response['body'], true);
 							$token_response = array();
 
-							if (is_array($body)) {
+							if (is_array($body) && !isset($body['error'])) {
 								$token_response = json_decode(base64_decode($body[0]), true);
 							}
 
@@ -333,12 +371,70 @@ class UpdraftCentral_Analytics_Commands extends UpdraftCentral_Commands {
 	}
 
 	/**
-	 * Retrieves the "analytics_tracking_id" option
+	 * Retrieves the "analytics_tracking_id" transient
 	 *
 	 * @internal
-	 * @return mixed Returns the value of the saved option. Returns "false" if the option does not exist.
+	 * @return mixed Returns the value of the saved transient. Returns "false" if the transient does not exist.
 	 */
 	private function get_tracking_id() {
-		return get_site_transient($this->tracking_id_key);
+		return get_transient($this->tracking_id_key);
+	}
+
+
+	/**
+	 * Returns the current tracking id
+	 *
+	 * @return array $result An array containing the Google Tracking ID.
+	 */
+	public function get_current_tracking_id() {
+		try {
+
+			// Get current site transient stored for this key
+			$tracking_id = get_transient($this->tracking_id_key);
+
+			// Checks whether we have a valid token
+			$access_token = $this->_get_token();
+			if (empty($access_token)) {
+				$tracking_id = '';
+			}
+
+			if (false === $tracking_id) {
+				$result = $this->extract_tracking_id();
+			} else {
+				$result = array(
+					'installed' => true,
+					'tracking_id' => $tracking_id
+				);
+			}
+		
+		} catch (Exception $e) {
+			$result = array('error' => true, 'message' => 'generic_response_error', 'values' => array($e->getMessage()));
+		}
+		
+		return $this->_response($result);
+	}
+
+	/**
+	 * Clears user access from database
+	 *
+	 * @return array $result An array containing the "Remove" confirmation whether the action succeeded or not.
+	 */
+	public function remove_user_access() {
+		try {
+
+			// Clear user access
+			$is_cleared = $this->clear_user_access();
+			
+			if (false !== $is_cleared) {
+				$result = array('removed' => true);
+			} else {
+				$result = array('error' => true, 'message' => 'user_access_remove_failed', 'values' => array());
+			}
+		
+		} catch (Exception $e) {
+			$result = array('error' => true, 'message' => 'generic_response_error', 'values' => array($e->getMessage()));
+		}
+		
+		return $this->_response($result);
 	}
 }

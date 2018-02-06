@@ -10,9 +10,9 @@ These have been removed from admin.php as part of the process of removing them e
 
 global $updraftplus, $updraftplus_admin;
 
-if (isset($_POST['subaction']) && 'credentials_test' == $_POST['subaction']) {
+if (isset($_POST['subaction']) && 'credentials_test' === $_POST['subaction']) {
 
-	$updraftplus_admin->do_credentials_test($_POST);
+	$updraftplus_admin->do_credentials_test($updraftplus->wp_unslash($_POST));
 	
 } elseif ('poplog' == $_REQUEST['subaction']) {
 
@@ -25,8 +25,7 @@ if (isset($_POST['subaction']) && 'credentials_test' == $_POST['subaction']) {
 
 } elseif ('countbackups' == $_REQUEST['subaction']) {
 
-	$backup_history = UpdraftPlus_Options::get_updraft_option('updraft_backup_history');
-	$backup_history = is_array($backup_history) ? $backup_history : array();
+	$backup_history = UpdraftPlus_Backup_History::get_history();
 	echo __('Existing Backups', 'updraftplus').' ('.count($backup_history).')';
 	
 } elseif ('historystatus' == $subaction) {
@@ -42,7 +41,7 @@ if (isset($_POST['subaction']) && 'credentials_test' == $_POST['subaction']) {
 	// This can count either the size of the Updraft directory, or of the data to be backed up
 	echo $updraftplus_admin->get_disk_space_used($entity);
 } elseif ('callwpaction' == $subaction) {
-	$updraftplus_admin->call_wp_action($_REQUEST, true);
+	$updraftplus_admin->call_wp_action($updraftplus->wp_unslash($_REQUEST), true);
 } elseif ('lastbackup' == $subaction) {
 	echo $updraftplus_admin->last_backup_html();
 }

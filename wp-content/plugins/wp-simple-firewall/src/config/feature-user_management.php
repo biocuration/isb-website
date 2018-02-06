@@ -4,9 +4,11 @@
     "name": "User Management",
     "show_feature_menu_item": true,
     "storage_key": "user_management",
-    "tagline": "Get true user sessions and control account sharing, session duration and timeouts",
+    "tagline": "Control user sessions, duration, timeouts and account sharing",
     "show_central": true,
     "access_restricted": true,
+    "premium": false,
+    "has_custom_actions": true,
     "order": 40
   },
   "sections": [
@@ -27,15 +29,6 @@
       "summary": [
         "Purpose - Allows you to better control user sessions on your site and expire idle sessions and prevent account sharing.",
         "Recommendation - Use of this feature is highly recommend."
-      ]
-    },
-    {
-      "slug": "section_bypass_user_accounts_management",
-      "title": "By-Pass User Accounts Management",
-      "title_short": "By-Pass",
-      "summary": [
-        "Purpose - Compatibility with XML-RPC services such as the WordPress iPhone and Android Apps.",
-        "Recommendation - Keep this turned off unless you know you need it."
       ]
     },
     {
@@ -66,7 +59,7 @@
     },
     {
       "key": "enable_xmlrpc_compatibility",
-      "section": "section_bypass_user_accounts_management",
+      "section": "section_enable_plugin_feature_user_accounts_management",
       "default": "Y",
       "type": "checkbox",
       "link_info": "",
@@ -130,23 +123,13 @@
       "name": "Max Simultaneous Sessions",
       "summary": "Limit Simultaneous Sessions For The Same Username",
       "description": "The number provided here is the maximum number of simultaneous, distinct, sessions allowed for any given username. Use '0' for no limits."
+    },
+    {
+      "key":          "autoadd_sessions_started_at",
+      "transferable": false,
+      "section":      "section_non_ui"
     }
   ],
   "definitions": {
-    "user_sessions_table_name": "user_management",
-    "user_sessions_table_columns": [
-      "id",
-      "session_id",
-      "wp_username",
-      "ip",
-      "logged_in_at",
-      "last_activity_at",
-      "last_activity_uri",
-      "used_mfa",
-      "pending",
-      "login_attempts",
-      "created_at",
-      "deleted_at"
-    ]
   }
 }

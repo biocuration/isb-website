@@ -16,8 +16,7 @@ foreach ($default_options as $k => $v) {
 }
 
 // $backup_history is passed in
-if (false === $backup_history) $backup_history = UpdraftPlus_Options::get_updraft_option('updraft_backup_history');
-if (!is_array($backup_history)) $backup_history = array();
+if (false === $backup_history) $backup_history = UpdraftPlus_Backup_History::get_history();
 
 if (!empty($options['include_header'])) echo '<h2>'.__('Existing Backups', 'updraftplus').' ('.count($backup_history).')</h2>';
 
@@ -29,10 +28,10 @@ if (!empty($options['include_header'])) echo '<h2>'.__('Existing Backups', 'updr
 		</p>
 	<?php } ?>
 
-	<ul>
-		<li title="<?php esc_attr_e('This is a count of the contents of your Updraft directory', 'updraftplus');?>"><strong><?php _e('Web-server disk space in use by UpdraftPlus', 'updraftplus');?>:</strong> <span class="updraft_diskspaceused"><em><?php echo empty($options['will_immediately_calculate_disk_space']) ? '' : __('calculating...', 'updraftplus'); ?></em></span> <a class="updraft_diskspaceused_update" href="#"><?php echo empty($options['will_immediately_calculate_disk_space']) ? __('calculate', 'updraftplus') : __('refresh', 'updraftplus');?></a></li>
+	<ul class="updraft-disk-space-actions">
+		<li class="updraft-server-disk-space" title="<?php esc_attr_e('This is a count of the contents of your Updraft directory', 'updraftplus');?>"><strong><?php _e('Web-server disk space in use by UpdraftPlus', 'updraftplus');?>:</strong> <span class="updraft_diskspaceused"><em><?php echo empty($options['will_immediately_calculate_disk_space']) ? '' : __('calculating...', 'updraftplus'); ?></em></span> <a class="updraft_diskspaceused_update" href="#"><?php echo empty($options['will_immediately_calculate_disk_space']) ? __('calculate', 'updraftplus') : __('refresh', 'updraftplus');?></a></li>
 
-		<li>
+		<li class="updraft-server-scan">
 			<strong><?php _e('More tasks:', 'updraftplus');?></strong>
 			<?php
 				if (!empty($options['include_uploader'])) {
@@ -45,7 +44,7 @@ if (!empty($options['include_header'])) echo '<h2>'.__('Existing Backups', 'updr
 			| <a href="#" class="updraft_rescan_remote" title="<?php _e('Press here to look inside your remote storage methods for any existing backup sets (from any site, if they are stored in the same folder).', 'updraftplus'); ?>"><?php _e('Rescan remote storage', 'updraftplus');?></a>
 		</li>
 		<?php if (!empty($options['include_opera_warning'])) { ?>
-			<li><strong><?php _e('Opera web browser', 'updraftplus');?>:</strong> <?php _e('If you are using this, then turn Turbo/Road mode off.', 'updraftplus');?></li>
+			<li class="updraft-opera-warning"><strong><?php _e('Opera web browser', 'updraftplus');?>:</strong> <?php _e('If you are using this, then turn Turbo/Road mode off.', 'updraftplus');?></li>
 		<?php } ?>
 
 	</ul>
