@@ -83,7 +83,7 @@ git remote add staging git@git.wpengine.com:staging/biocuration.git
    - when complete (email notification), select backup, click "Download ZIP", choose "full backup"
    - locally, wget "<URL>"
 * unzip local 
-   - export DATE=`date +%F`
+   - export DATE=\`date +%F\`
    - /bin/rm -rf staging_$DATE; mkdir staging_$DATE
    - unzip -d staging_$DATE site-archive-biocuration-*.zip
    - rm site-archive-biocuration-*.zip
