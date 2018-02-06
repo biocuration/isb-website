@@ -87,7 +87,7 @@ git remote add staging git@git.wpengine.com:staging/biocuration.git
    - /bin/rm -rf staging_$DATE; mkdir staging_$DATE
    - unzip -d staging_$DATE site-archive-biocuration-*.zip
    - rm site-archive-biocuration-*.zip
-* overwrite git version with production snapshot version 
+* overwrite git version with staging snapshot version 
    - rm -rf isb-website/wp-content
    - cp -rf staging_$DATE/* isb-website/
 * do diff
