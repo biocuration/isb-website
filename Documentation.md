@@ -73,20 +73,21 @@ git remote add staging git@git.wpengine.com:staging/biocuration.git
    - git pull
 * Copy database from live to staging (couple minutes)
    - go to https://www.biocuration.org/wp-admin/admin.php?page=wpengine-staging
-* push from github to staging
+* push from local to staging
    - git push staging master
 * do updates on staging
+   - https://biocuration.staging.wpengine.com/wp-admin/
 * create and download backup from staging
    - https://my.wpengine.com/installs/biocuration/backup_points#staging
    - click "back it up now"
    - when complete (email notification), select backup, click "Download ZIP", choose "full backup"
    - locally, wget "<URL>"
 * unzip local 
-   - export DATE=`date +%F`
+   - export DATE=\`date +%F\`
    - /bin/rm -rf staging_$DATE; mkdir staging_$DATE
    - unzip -d staging_$DATE site-archive-biocuration-*.zip
    - rm site-archive-biocuration-*.zip
-* overwrite git version with production snapshot version 
+* overwrite git version with staging snapshot version 
    - rm -rf isb-website/wp-content
    - cp -rf staging_$DATE/* isb-website/
 * do diff
