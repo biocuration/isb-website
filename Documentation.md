@@ -71,8 +71,8 @@ git remote add staging git@git.wpengine.com:staging/biocuration.git
 * git clone or pull locally
    - git clone git@github.com:biocuration/isb-website.git
    - git pull
-* ~~Copy database from live to staging (couple minutes)
-   - go to https://www.biocuration.org/wp-admin/admin.php?page=wpengine-staging~~
+* ~~Copy database from live to staging (couple minutes)~~
+   - ~~go to https://www.biocuration.org/wp-admin/admin.php?page=wpengine-staging~~
    - be **very** wary of this step and only do as necessary. If the live database is copied over, then steps **must** be taken to disable the membership expiration warnings (see for example [issue #40](https://github.com/biocuration/isb-website/issues/40)).  A reasonable way of dealing with this is to delete all users in 'subscriber' group)
 * push from local to staging
    - git push staging master
