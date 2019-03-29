@@ -1,5 +1,8 @@
 # Using Git Push with wpengine
 
+**NOTE (2019-03-29)**: check out these updated workflows from wpengine: 
+* https://wpengine.com/support/development-workflow-best-practices/ 
+* https://wpengine.com/git/
 
 ## Setup SSH Public Key
 
