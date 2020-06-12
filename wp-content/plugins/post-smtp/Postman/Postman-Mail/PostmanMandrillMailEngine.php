@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 if ( ! class_exists( 'PostmanMandrillMailEngine' ) ) {
 
 	require_once 'mailchimp-mandrill-api-php-da3adc10042e/src/Mandrill.php';
@@ -22,8 +26,8 @@ if ( ! class_exists( 'PostmanMandrillMailEngine' ) ) {
 
 		/**
 		 *
-		 * @param unknown $senderEmail
-		 * @param unknown $accessToken
+		 * @param mixed $senderEmail
+		 * @param mixed $accessToken
 		 */
 		function __construct( $apiKey ) {
 			assert( ! empty( $apiKey ) );

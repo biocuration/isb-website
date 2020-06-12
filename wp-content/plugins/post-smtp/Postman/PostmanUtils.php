@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
 require_once 'PostmanLogger.php';
 require_once 'PostmanState.php';
 
@@ -32,10 +35,14 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @param unknown $slug
+	 * @param mixed $slug
 	 * @return string
 	 */
 	public static function getPageUrl( $slug ) {
+		if ( is_network_admin() ) {
+			return network_admin_url( 'admin.php?page=' . $slug );
+		}
+
 		return get_admin_url() . 'admin.php?page=' . $slug;
 	}
 
@@ -67,8 +74,8 @@ class PostmanUtils {
 	/**
 	 * from http://stackoverflow.com/questions/834303/startswith-and-endswith-functions-in-php
 	 *
-	 * @param unknown $haystack
-	 * @param unknown $needle
+	 * @param mixed $haystack
+	 * @param mixed $needle
 	 * @return boolean
 	 */
 	public static function startsWith( $haystack, $needle ) {
@@ -78,8 +85,8 @@ class PostmanUtils {
 	/**
 	 * from http://stackoverflow.com/questions/834303/startswith-and-endswith-functions-in-php
 	 *
-	 * @param unknown $haystack
-	 * @param unknown $needle
+	 * @param mixed $haystack
+	 * @param mixed $needle
 	 * @return boolean
 	 */
 	public static function endsWith( $haystack, $needle ) {
@@ -95,8 +102,8 @@ class PostmanUtils {
 	/**
 	 * Detect if the host is NOT a domain name
 	 *
-	 * @param unknown $ipAddress
-	 * @return number
+	 * @param mixed $ipAddress
+	 * @return bool
 	 */
 	public static function isHostAddressNotADomainName( $host ) {
 		// IPv4 / IPv6 test from http://stackoverflow.com/a/17871737/4368109
@@ -111,9 +118,9 @@ class PostmanUtils {
 	 * Inside WordPress we can use wp_remote_post().
 	 * Outside WordPress, not so much.
 	 *
-	 * @param unknown $url
-	 * @param unknown $args
-	 * @return the HTML body
+	 * @param mixed $url
+	 * @param mixed $args
+	 * @return string the HTML body
 	 */
 	static function remotePostGetBodyOnly( $url, $parameters, array $headers = array() ) {
 		$response = PostmanUtils::remotePost( $url, $parameters, $headers );
@@ -126,9 +133,9 @@ class PostmanUtils {
 	 * Inside WordPress we can use wp_remote_post().
 	 * Outside WordPress, not so much.
 	 *
-	 * @param unknown $url
-	 * @param unknown $args
-	 * @return the HTTP response
+	 * @param mixed $url
+	 * @param mixed $args
+	 * @return array|WP_Error the HTTP response
 	 */
 	static function remotePost( $url, $parameters = array(), array $headers = array() ) {
 		$args = array(
@@ -157,7 +164,7 @@ class PostmanUtils {
 	 * A facade function that handles redirects.
 	 * Inside WordPress we can use wp_redirect(). Outside WordPress, not so much. **Load it before postman-core.php**
 	 *
-	 * @param unknown $url
+	 * @param mixed $url
 	 */
 	static function redirect( $url ) {
 		// redirections back to THIS SITE should always be relative because of IIS bug
@@ -178,7 +185,7 @@ class PostmanUtils {
 	 * Rounds the bytes returned from memory_get_usage to smaller amounts used IEC binary prefixes
 	 * See http://en.wikipedia.org/wiki/Binary_prefix
 	 *
-	 * @param unknown $size
+	 * @param mixed $size
 	 * @return string
 	 */
 	static function roundBytes( $size ) {
@@ -257,7 +264,7 @@ class PostmanUtils {
 	/**
 	 * Creates the pathname of the lockfile
 	 *
-	 * @param unknown $tempDirectory
+	 * @param mixed $tempDirectory
 	 * @return string
 	 */
 	private static function calculateTemporaryLockPath( $tempDirectory ) {
@@ -286,7 +293,7 @@ class PostmanUtils {
 	/**
 	 * From http://stackoverflow.com/a/381275/4368109
 	 *
-	 * @param unknown $text
+	 * @param mixed $text
 	 * @return boolean
 	 */
 	public static function isEmpty( $text ) {
@@ -320,8 +327,8 @@ class PostmanUtils {
 	/**
 	 * Validate an e-mail address
 	 *
-	 * @param unknown $email
-	 * @return number
+	 * @param mixed $email
+	 * @return string|bool
 	 */
 	static function validateEmail( $email ) {
 		if ( PostmanOptions::getInstance()->isEmailValidationDisabled() ) {
@@ -338,13 +345,22 @@ class PostmanUtils {
 		if ( ! isset( PostmanUtils::$emailValidator ) ) {
 			PostmanUtils::$emailValidator = new Postman_Zend_Validate_EmailAddress();
 		}
+		if ( strpos( $email, ',' ) !== false ) {
+		    $emails = explode(',', $email);
+		    $result = [];
+		    foreach ( $emails as $email ) {
+		        $result[] = PostmanUtils::$emailValidator->isValid( $email );
+            }
+
+		    return ! in_array(false, $result );
+        }
 		return PostmanUtils::$emailValidator->isValid( $email );
 	}
 
 	/**
 	 * From http://stackoverflow.com/questions/13430120/str-getcsv-alternative-for-older-php-version-gives-me-an-empty-array-at-the-e
 	 *
-	 * @param unknown $string
+	 * @param mixed $string
 	 * @return multitype:
 	 */
 	static function postman_strgetcsv_impl( $string ) {
@@ -360,13 +376,13 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @return Ambigous <string, unknown>
+	 * @return string|mixed
 	 */
 	static function postmanGetServerName() {
 		if ( ! empty( $_SERVER ['SERVER_NAME'] ) ) {
-			$serverName = $_SERVER ['SERVER_NAME'];
+			$serverName = sanitize_text_field($_SERVER ['SERVER_NAME']);
 		} else if ( ! empty( $_SERVER ['HTTP_HOST'] ) ) {
-			$serverName = $_SERVER ['HTTP_HOST'];
+			$serverName = sanitize_text_field($_SERVER ['HTTP_HOST']);
 		} else {
 			$serverName = 'localhost.localdomain';
 		}
@@ -376,7 +392,7 @@ class PostmanUtils {
 	/**
 	 * Does this hostname belong to Google?
 	 *
-	 * @param unknown $hostname
+	 * @param mixed $hostname
 	 * @return boolean
 	 */
 	static function isGoogle( $hostname ) {
@@ -385,14 +401,15 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @param unknown $actionName
-	 * @param unknown $callbackName
+	 * @param mixed $actionName
+	 * @param mixed $callbackName
 	 */
 	public static function registerAdminMenu( $viewController, $callbackName ) {
 		$logger = PostmanUtils::$logger;
 		if ( $logger->isTrace() ) {
 			$logger->trace( 'Registering admin menu ' . $callbackName );
 		}
+		
 		add_action( 'admin_menu', array(
 				$viewController,
 				$callbackName,
@@ -401,10 +418,11 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @param unknown $actionName
-	 * @param unknown $callbackName
+	 * @param mixed $actionName
+	 * @param mixed $callbackName
 	 */
 	public static function registerAjaxHandler( $actionName, $class, $callbackName ) {
+
 		if ( is_admin() ) {
 			$fullname = 'wp_ajax_' . $actionName;
 			// $this->logger->debug ( 'Registering ' . 'wp_ajax_' . $fullname . ' Ajax handler' );
@@ -417,7 +435,7 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @param unknown $parameterName
+	 * @param mixed $parameterName
 	 * @return mixed
 	 */
 	public static function getBooleanRequestParameter( $parameterName ) {
@@ -426,8 +444,8 @@ class PostmanUtils {
 
 	/**
 	 *
-	 * @param unknown $parameterName
-	 * @return unknown
+	 * @param mixed $parameterName
+	 * @return mixed
 	 */
 	public static function getRequestParameter( $parameterName ) {
 		$logger = PostmanUtils::$logger;
@@ -442,7 +460,7 @@ class PostmanUtils {
 	}
 
 	public static function getServerName() {
-        $result = 'localhost.localdomain';
+        $host = 'localhost';
         
         if (isset($_SERVER) and array_key_exists('SERVER_NAME', $_SERVER)) {
             $host = $_SERVER['SERVER_NAME'];
@@ -450,13 +468,6 @@ class PostmanUtils {
             $host = gethostname();
         } elseif (php_uname('n') !== false) {
             $host = php_uname('n');
-        }
-
-        // as final option - if ip returned or hostname without extension (not valid dns name)
-        $extension = pathinfo( $host, PATHINFO_EXTENSION );
-		if ( filter_var( $result, FILTER_VALIDATE_IP ) || empty( $extension ) ) {
-            $siteurl = get_bloginfo('url');
-            $host = parse_url($siteurl, PHP_URL_HOST);
         }
 
         return str_replace('www.', '', $host );

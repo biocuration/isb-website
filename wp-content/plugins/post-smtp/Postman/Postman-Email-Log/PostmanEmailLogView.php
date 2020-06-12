@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+require_once dirname(__DIR__) . '/PostmanLogFields.php';
 
 /**
  * See http://wpengineer.com/2426/wp_list_table-a-step-by-step-guide/
@@ -92,25 +96,26 @@ class PostmanEmailLogView extends WP_List_Table {
 		$transcriptUrl = admin_url( sprintf( $iframeUri, 'transcript', $item ['ID'] ) );
 		$resendUrl = admin_url( sprintf( $iframeUri, 'resend', $item ['ID'] ) );
 
-		$meta_values = get_post_meta( $item ['ID'] );
+		$meta_values = PostmanLogFields::get_instance()->get( $item ['ID'] );
 
 		$actions = array(
-				'delete' => sprintf( '<a href="%s">%s</a>', $deleteUrl, _x( 'Delete', 'Delete an item from the email log', Postman::TEXT_DOMAIN ) ),
-				'view' => sprintf( '<a href="%s" class="thickbox">%s</a>', $viewUrl, _x( 'View', 'View an item from the email log', Postman::TEXT_DOMAIN ) ),
+				'delete' => sprintf( '<a href="%s">%s</a>', $deleteUrl, _x( 'Delete', 'Delete an item from the email log', 'post-smtp' ) ),
+				'view' => sprintf( '<a href="%s" class="thickbox">%s</a>', $viewUrl, _x( 'View', 'View an item from the email log', 'post-smtp' ) ),
 		);
 
 		if ( ! empty( $meta_values ['session_transcript'] [0] ) ) {
-			$actions ['transcript'] = sprintf( '<a href="%1$s" class="thickbox">%2$s</a>', $transcriptUrl, __( 'Session Transcript', Postman::TEXT_DOMAIN ) );
+			$actions ['transcript'] = sprintf( '<a href="%1$s" class="thickbox">%2$s</a>', $transcriptUrl, __( 'Session Transcript', 'post-smtp' ) );
 		} else {
-			$actions ['transcript'] = sprintf( '%2$s', $transcriptUrl, __( 'Session Transcript', Postman::TEXT_DOMAIN ) );
+			$actions ['transcript'] = sprintf( '%2$s', $transcriptUrl, __( 'Session Transcript', 'post-smtp' ) );
 		}
 		if ( ! (empty( $meta_values ['original_to'] [0] ) && empty( $meta_values ['originalHeaders'] [0] )) ) {
-			// $actions ['resend'] = sprintf ( '<a href="%s">%s</a>', $resendUrl, __ ( 'Resend', Postman::TEXT_DOMAIN ) );
-			$emails = maybe_unserialize( $meta_values ['original_to'] [0] );
-			$to = is_array( $emails ) ? implode( ',', $emails ) : $emails;
-			$actions ['resend'] = sprintf( '<span id="%3$s"><a class="postman-open-resend" href="#">%2$s</a></span><div style="display:none;"><input type="hidden" name="security" value="%6$s"><input type="text" name="mail_to" class="regular-text ltr" data-id="%1$s" value="%4$s"><button class="postman-resend button button-primary">%2$s</button><i style="color: black;">%5$s</i></div>', $item ['ID'], __( 'Resend', Postman::TEXT_DOMAIN ), 'resend-' . $item ['ID'], esc_attr( $to ), __( 'comma-separated for multiple emails', Postman::TEXT_DOMAIN ), wp_create_nonce( 'resend' ) );
+			// $actions ['resend'] = sprintf ( '<a href="%s">%s</a>', $resendUrl, __ ( 'Resend', 'post-smtp' ) );
+			$emails = $meta_values ['original_to'] [0];
+            $to = is_array( $emails ) ? implode( ',', array_walk($emails, 'sanitize_email') ) : sanitize_email( $emails );
+
+            $actions ['resend'] = sprintf( '<span id="%3$s"><a class="postman-open-resend" href="#">%2$s</a></span><div style="display:none;"><input type="hidden" name="security" value="%6$s"><input type="text" name="mail_to" class="regular-text ltr" data-id="%1$s" value="%4$s"><button class="postman-resend button button-primary">%2$s</button><i style="color: black;">%5$s</i></div>', $item ['ID'], __( 'Resend', 'post-smtp' ), 'resend-' . $item ['ID'], esc_attr( $to ), __( 'comma-separated for multiple emails', 'post-smtp' ), wp_create_nonce( 'resend' ) );
 		} else {
-			$actions ['resend'] = sprintf( '%2$s', $resendUrl, __( 'Resend', Postman::TEXT_DOMAIN ) );
+			$actions ['resend'] = sprintf( '%2$s', $resendUrl, __( 'Resend', 'post-smtp' ) );
 		}
 
 		// Return the title contents
@@ -159,10 +164,10 @@ class PostmanEmailLogView extends WP_List_Table {
 	function get_columns() {
 		$columns = array(
 				'cb' => '<input type="checkbox" />', // Render a checkbox instead of text
-				'title' => _x( 'Subject', 'What is the subject of this message?', Postman::TEXT_DOMAIN ),
-				'sent_to' => __( 'Sent To', Postman::TEXT_DOMAIN ),
-				'status' => __( 'Status', Postman::TEXT_DOMAIN ),
-				'date' => _x( 'Delivery Time', 'When was this email sent?', Postman::TEXT_DOMAIN ),
+				'title' => _x( 'Subject', 'What is the subject of this message?', 'post-smtp' ),
+				'sent_to' => __( 'Sent To', 'post-smtp' ),
+				'status' => __( 'Status', 'post-smtp' ),
+				'date' => _x( 'Delivery Time', 'When was this email sent?', 'post-smtp' ),
 		);
 		return $columns;
 	}
@@ -222,7 +227,7 @@ class PostmanEmailLogView extends WP_List_Table {
 	 */
 	function get_bulk_actions() {
 		$actions = array(
-				'bulk_delete' => _x( 'Delete', 'Delete an item from the email log', Postman::TEXT_DOMAIN ),
+				'bulk_delete' => _x( 'Delete', 'Delete an item from the email log', 'post-smtp' ),
 		);
 		return $actions;
 	}
@@ -258,8 +263,10 @@ class PostmanEmailLogView extends WP_List_Table {
 	 *       ************************************************************************
 	 */
 	function prepare_items() {
+        if ( ! empty( $_POST ) && ! wp_verify_nonce( $_REQUEST['post-smtp-log'], 'post-smtp' ) )
+            die( 'Security check' );
 
-		/**
+            /**
 		 * First, lets decide how many records per page to show
 		 */
 		$per_page = isset( $_POST['postman_page_records'] ) ? absint( $_POST['postman_page_records'] ) : 10;
@@ -363,16 +370,16 @@ class PostmanEmailLogView extends WP_List_Table {
 			// if this PHP system support humanTime, than use it
 			if ( ! empty( $humanTime ) ) {
 				/* Translators: where %s indicates the relative time from now */
-				$date = sprintf( _x( '%s ago', 'A relative time as in "five days ago"', Postman::TEXT_DOMAIN ), $humanTime );
+				$date = sprintf( _x( '%s ago', 'A relative time as in "five days ago"', 'post-smtp' ), $humanTime );
 			}
-			$meta_values = get_post_meta( $post->ID );
-			$sent_to = array_map( 'sanitize_email', explode( ',' , $meta_values ['to_header'] [0] ) );
+			$meta_values = PostmanLogFields::get_instance()->get( $post->ID );
+			$sent_to = array_map( 'esc_html', explode( ',' , $meta_values ['to_header'] [0] ) );
 			$flattenedPost = array(
 					// the post title must be escaped as they are displayed in the HTML output
 					'sent_to' => implode( ', ', $sent_to ),
 					'title' => esc_html( $post->post_title ),
 					// the post status must be escaped as they are displayed in the HTML output
-					'status' => ($post->post_excerpt != null ? esc_html( $post->post_excerpt ) : __( 'Sent', Postman::TEXT_DOMAIN )),
+					'status' => ($post->post_excerpt != null ? esc_html( $post->post_excerpt ) : __( 'Sent', 'post-smtp' )),
 					'date' => date( "$date_format $time_format", strtotime( $post->post_date ) ),
 					'ID' => $post->ID,
 			);
@@ -388,8 +395,8 @@ class PostmanEmailLogView extends WP_List_Table {
 		 * sorting technique would be unnecessary.
 		 */
 		function usort_reorder( $a, $b ) {
-			$orderby = ( ! empty( $_REQUEST ['orderby'] )) ? $_REQUEST ['orderby'] : 'title'; // If no sort, default to title
-			$order = ( ! empty( $_REQUEST ['order'] )) ? $_REQUEST ['order'] : 'asc'; // If no order, default to asc
+			$orderby = ( ! empty( $_REQUEST ['orderby'] )) ? sanitize_text_field($_REQUEST ['orderby']) : 'title'; // If no sort, default to title
+			$order = ( ! empty( $_REQUEST ['order'] )) ? sanitize_text_field($_REQUEST ['order']) : 'asc'; // If no order, default to asc
 			$result = strcmp( $a [ $orderby ], $b [ $orderby ] ); // Determine sort order
 			return ($order === 'asc') ? $result : - $result; // Send final sort direction to usort
 		}

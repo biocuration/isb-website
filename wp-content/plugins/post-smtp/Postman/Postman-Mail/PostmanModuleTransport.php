@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 /**
  * Keep the interface_exists check here for Postman Gmail API Extension users!
  * 
@@ -43,6 +47,7 @@ interface PostmanModuleTransport extends PostmanTransport {
 	public function isReadyToSendMail();
 	public function getFromEmailAddress();
 	public function getFromName();
+	public function getHostname();
 	public function getProtocol();
 	public function isEmailValidationSupported();
 	public function getPort();
@@ -68,7 +73,7 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	/**
 	 * These internal variables are exposed for the subclasses to use
 	 *
-	 * @var unknown
+	 * @var mixed
 	 */
 	protected $logger;
 	protected $options;
@@ -77,7 +82,7 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	
 	/**
 	 */
-	public function __construct($rootPluginFilenameAndPath) {
+	public function __construct($rootPluginFilenameAndPath = null) {
 		$this->logger = new PostmanLogger ( get_class ( $this ) );
 		$this->options = PostmanOptions::getInstance ();
 		$this->rootPluginFilenameAndPath = $rootPluginFilenameAndPath;
@@ -124,7 +129,7 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	
 	/**
 	 *
-	 * @param unknown $data        	
+	 * @param mixed $data        	
 	 */
 	public function prepareOptionsForExport($data) {
 		// no-op
@@ -139,7 +144,7 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	
 	/**
 	 *
-	 * @param unknown $queryHostname        	
+	 * @param mixed $queryHostname        	
 	 */
 	protected function createScribe($hostname) {
 		$scribe = new PostmanNonOAuthScribe ( $hostname );
@@ -281,8 +286,8 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	
 	/**
 	 *
-	 * @param unknown $hostname        	
-	 * @param unknown $response        	
+	 * @param mixed $hostname        	
+	 * @param mixed $response        	
 	 */
 	public function populateConfiguration($hostname) {
 		$configuration = array ();
@@ -290,8 +295,8 @@ abstract class PostmanAbstractModuleTransport implements PostmanModuleTransport 
 	}
 	/**
 	 *
-	 * @param unknown $winningRecommendation        	
-	 * @param unknown $response        	
+	 * @param mixed $winningRecommendation        	
+	 * @param mixed $response        	
 	 */
 	public function populateConfigurationFromRecommendation($winningRecommendation) {
 		$configuration = array ();
@@ -421,7 +426,7 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 	
 	/**
 	 *
-	 * @param unknown $data        	
+	 * @param mixed $data        	
 	 */
 	public function prepareOptionsForExport($data) {
 		$data = parent::prepareOptionsForExport ( $data );
@@ -455,7 +460,7 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 	
 	/**
 	 *
-	 * @param unknown $queryHostname        	
+	 * @param mixed $queryHostname        	
 	 */
 	protected function createScribe($hostname) {
 		$scribe = null;
@@ -502,13 +507,18 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 		$deliveryDetails ['transport_name'] = $this->getTransportDescription ( $this->getSecurityType () );
 		$deliveryDetails ['host'] = $this->getHostname () . ':' . $this->getPort ();
 		$deliveryDetails ['auth_desc'] = $this->getAuthenticationDescription ( $this->getAuthenticationType () );
+
+		if ( $deliveryDetails ['host'] == 'localhost:25' ) {
+            $deliveryDetails ['transport_name'] = __( 'Sendmail (server defualt - not SMTP)', 'post-smtp');
+        }
+
 		/* translators: where (1) is the transport type, (2) is the host, and (3) is the Authentication Type (e.g. Postman will send mail via smtp.gmail.com:465 using OAuth 2.0 authentication.) */
-		return sprintf ( __ ( 'Postman will send mail via %1$s to %2$s using %3$s authentication.', Postman::TEXT_DOMAIN ), '<b>' . $deliveryDetails ['transport_name'] . '</b>', '<b>' . $deliveryDetails ['host'] . '</b>', '<b>' . $deliveryDetails ['auth_desc'] . '</b>' );
+		return sprintf ( __ ( 'Postman will send mail via %1$s to %2$s using %3$s authentication.', 'post-smtp' ), '<b>' . $deliveryDetails ['transport_name'] . '</b>', '<b>' . $deliveryDetails ['host'] . '</b>', '<b>' . $deliveryDetails ['auth_desc'] . '</b>' );
 	}
 	
 	/**
 	 *
-	 * @param unknown $encType        	
+	 * @param mixed $encType        	
 	 * @return string
 	 */
 	protected function getTransportDescription($encType) {
@@ -525,13 +535,13 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 	
 	/**
 	 *
-	 * @param unknown $authType        	
+	 * @param mixed $authType        	
 	 */
 	protected function getAuthenticationDescription($authType) {
 		if (PostmanOptions::AUTHENTICATION_TYPE_OAUTH2 == $authType) {
 			return 'OAuth 2.0';
 		} else if (PostmanOptions::AUTHENTICATION_TYPE_NONE == $authType) {
-			return _x ( 'no', 'as in "There is no Spoon"', Postman::TEXT_DOMAIN );
+			return _x ( 'no', 'as in "There is no Spoon"', 'post-smtp' );
 		} else {
 			switch ($authType) {
 				case PostmanOptions::AUTHENTICATION_TYPE_CRAMMD5 :
@@ -550,7 +560,7 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 					$authDescription = $authType;
 					break;
 			}
-			return sprintf ( '%s (%s)', __ ( 'Password', Postman::TEXT_DOMAIN ), $authDescription );
+			return sprintf ( '%s (%s)', __ ( 'Password', 'post-smtp' ), $authDescription );
 		}
 	}
 	
@@ -575,13 +585,13 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 		parent::validateTransportConfiguration ();
 		$messages = parent::validateTransportConfiguration ();
 		if (! $this->isSenderConfigured ()) {
-			array_push ( $messages, __ ( 'Message From Address can not be empty', Postman::TEXT_DOMAIN ) . '.' );
+			array_push ( $messages, __ ( 'Message From Address can not be empty', 'post-smtp' ) . '.' );
 			$this->setNotConfiguredAndReady ();
 		}
 		if ($this->getAuthenticationType () == PostmanOptions::AUTHENTICATION_TYPE_OAUTH2) {
 			if (! $this->isOAuth2ClientIdAndClientSecretConfigured ()) {
 				/* translators: %1$s is the Client ID label, and %2$s is the Client Secret label (e.g. Warning: OAuth 2.0 authentication requires an OAuth 2.0-capable Outgoing Mail Server, Sender Email Address, Client ID, and Client Secret.) */
-				array_push ( $messages, sprintf ( __ ( 'OAuth 2.0 authentication requires a %1$s and %2$s.', Postman::TEXT_DOMAIN ), $this->getScribe ()->getClientIdLabel (), $this->getScribe ()->getClientSecretLabel () ) );
+				array_push ( $messages, sprintf ( __ ( 'OAuth 2.0 authentication requires a %1$s and %2$s.', 'post-smtp' ), $this->getScribe ()->getClientIdLabel (), $this->getScribe ()->getClientSecretLabel () ) );
 				$this->setNotConfiguredAndReady ();
 			}
 		}
@@ -621,8 +631,8 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 	
 	/**
 	 *
-	 * @param unknown $hostname        	
-	 * @param unknown $response        	
+	 * @param mixed $hostname        	
+	 * @param mixed $response        	
 	 */
 	public function populateConfiguration($hostname) {
 		$response = parent::populateConfiguration ( $hostname );
@@ -650,8 +660,8 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 	/**
 	 * Populate the Ajax response for the Setup Wizard / Manual Configuration
 	 *
-	 * @param unknown $hostname        	
-	 * @param unknown $response        	
+	 * @param mixed $hostname        	
+	 * @param mixed $response        	
 	 */
 	public function populateConfigurationFromRecommendation($winningRecommendation) {
 		$response = parent::populateConfigurationFromRecommendation ( $winningRecommendation );
@@ -703,21 +713,21 @@ abstract class PostmanAbstractZendModuleTransport extends PostmanAbstractModuleT
 			if ($socket->auth_crammd5 || $socket->auth_login || $socket->authPlain) {
 				array_push ( $overrideAuthItems, array (
 						'selected' => $passwordMode,
-						'name' => __ ( 'Password (requires username and password)', Postman::TEXT_DOMAIN ),
+						'name' => __ ( 'Password (requires username and password)', 'post-smtp' ),
 						'value' => 'password' 
 				) );
 			}
 			if ($socket->auth_xoauth || $winningRecommendation ['auth'] == 'oauth2') {
 				array_push ( $overrideAuthItems, array (
 						'selected' => $oauth2Mode,
-						'name' => __ ( 'OAuth 2.0 (requires Client ID and Client Secret)', Postman::TEXT_DOMAIN ),
+						'name' => __ ( 'OAuth 2.0 (requires Client ID and Client Secret)', 'post-smtp' ),
 						'value' => 'oauth2' 
 				) );
 			}
 			if ($socket->auth_none) {
 				array_push ( $overrideAuthItems, array (
 						'selected' => $noAuthMode,
-						'name' => __ ( 'None', Postman::TEXT_DOMAIN ),
+						'name' => __ ( 'None', 'post-smtp' ),
 						'value' => 'none' 
 				) );
 			}

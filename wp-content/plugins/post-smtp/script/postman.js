@@ -1,12 +1,33 @@
 jQuery(document).ready(function($) {
 	$( ".email-log-date" ).datepicker();
 
+	$('.post-smtp-reset-options').on('submit', function(e) {
+		var result = confirm('Are you sure?');
+
+		if ( ! result ) {
+			e.preventDefault();
+			return false;
+		}
+	});
+
 	$('.notice-dismiss.postman-release-message').on('click', function() {
 		var $this = $(this);
 		var args = {
 			action: 'dismiss_version_notify',
 			security: $this.data('security'),
 			version: $this.data('version'),
+		};
+
+		$.post(ajaxurl, args, function() {
+			$this.parent().slideUp();
+		});
+	});
+
+	$('.post-smtp-donation .donation-dismiss').on('click', function() {
+		var $this = $(this);
+		var args = {
+			action: 'dismiss_donation_notify',
+			security: $this.data('security'),
 		};
 
 		$.post(ajaxurl, args, function() {

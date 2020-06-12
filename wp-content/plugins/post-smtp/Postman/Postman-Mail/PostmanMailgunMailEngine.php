@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 require_once 'mailgun/mailgun.php';
 
 use Mailgun\Mailgun;
@@ -27,8 +31,8 @@ if ( ! class_exists( 'PostmanMailgunMailEngine' ) ) {
 
 		/**
 		 *
-		 * @param unknown $senderEmail
-		 * @param unknown $accessToken
+		 * @param mixed $senderEmail
+		 * @param mixed $accessToken
 		 */
 		function __construct( $apiKey, $domainName ) {
 			assert( ! empty( $apiKey ) );

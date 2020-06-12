@@ -1,16 +1,22 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
 /*
  * Plugin Name: Post SMTP
  * Plugin URI: https://wordpress.org/plugins/post-smtp/
  * Description: Email not reliable? Post SMTP is the first and only WordPress SMTP plugin to implement OAuth 2.0 for Gmail, Hotmail and Yahoo Mail. Setup is a breeze with the Configuration Wizard and integrated Port Tester. Enjoy worry-free delivery even if your password changes!
- * Version: 1.9.6
- * Author: Jason Hendriks, Yehuda Hassine
+ * Version: 2.0.12
+ * Author: Yehuda Hassine
  * Text Domain: post-smtp
  * Author URI: https://postmansmtp.com
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  */
 
+/*
+ * Post SMTP (aka Postman SMTP) was originally developed by Jason Hendriks
+ */
 // The Postman Mail API
 //
 // filter postman_test_email: before calling wp_mail, implement this filter and return true to disable the success/fail counters
@@ -20,22 +26,19 @@
 // filter print_postman_status: apply this filter to print the human-readable plugin state
 // filter postman_module: implement this filter and return the instance of the module
 // filter postman_register_modules: apply this filter to register the module
-// TODO v1.7
-// -- Postmark API http://plugins.svn.wordpress.org/postmark-approved-wordpress-plugin/trunk/postmark.php
-// -- Amazon SES API http://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-api.html
-// TODO v2.0
-// -- PHP7 compatibility
-// -- class autoloading
-// -- Add dismiss option for "unconfigured message" .. for multisites
-// -- customize sent-mail icon WordPress dashboard
-// -- multisite support for site-wide email configuration. allow network admin to choose whether subdomains may override with their own settings. subdomains may override with their own settings.
-// -- multiple mailbox support
+
+
 /**
  * DO some check and Start Postman
  */
 
-define( 'POST_BASE', __FILE__ );
-define( 'POST_PATH', __DIR__ );
+define( 'POST_SMTP_BASE', __FILE__ );
+define( 'POST_SMTP_PATH', __DIR__ );
+define( 'POST_SMTP_URL', plugins_url('', POST_SMTP_BASE ) );
+define( 'POST_SMTP_VER', '2.0.12' );
+define( 'POST_SMTP_SHOW_RELEASE_MESSAGE', true );
+define( 'POST_SMTP_RELEASE_MESSAGE', "I have released a new Google Analytics AIO plugin, if you liked it please leave a review." );
+define( 'POST_SMTP_RELEASE_URL', 'https://wordpress.org/plugins/metrics-query/' );
 
 $postman_smtp_exist = in_array( 'postman-smtp/postman-smtp.php', (array) get_option( 'active_plugins', array() ) );
 $required_php_version = version_compare( PHP_VERSION, '5.6.0', '<' );
@@ -51,7 +54,7 @@ if ( $postman_smtp_exist || $required_php_version ) {
 		add_action( 'admin_notices', 'post_smtp_plugin_admin_notice_version' );
 	}
 } else {
-	post_start( memory_get_usage() );
+	post_smtp_start( memory_get_usage() );
 }
 
 
@@ -107,12 +110,17 @@ function post_dismiss_not_configured() {
 }
 add_action( 'admin_footer', 'post_dismiss_not_configured' );
 
+function post_smtp_general_scripts() {
+    wp_enqueue_script( 'post-smtp-hooks', POST_SMTP_URL . '/script/post-smtp-hooks.js', [], false );
+}
+add_action( 'admin_enqueue_scripts', 'post_smtp_general_scripts', 8 );
+
 /**
  * Create the main Postman class to start Postman
  *
- * @param unknown $startingMemory
+ * @param mixed $startingMemory
  */
-function post_start( $startingMemory ) {
+function post_smtp_start( $startingMemory ) {
 	post_setupPostman();
 	PostmanUtils::logMemoryUse( $startingMemory, 'Postman' );
 }
@@ -122,5 +130,7 @@ function post_start( $startingMemory ) {
  */
 function post_setupPostman() {
 	require_once 'Postman/Postman.php';
-	$kevinCostner = new Postman( __FILE__, '1.9.6' );
+	$kevinCostner = new Postman( __FILE__, POST_SMTP_VER );
+	do_action( 'post_smtp_init');
 }
+

@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 require_once( 'PostmanRegisterConfigurationSettings.php' );
 class PostmanConfigurationController {
 	const CONFIGURATION_SLUG = 'postman/configuration';
@@ -12,10 +16,12 @@ class PostmanConfigurationController {
 	// Holds the values to be used in the fields callbacks
 	private $rootPluginFilenameAndPath;
 
+	private $importableConfiguration;
+
 	/**
 	 * Constructor
 	 *
-	 * @param unknown $rootPluginFilenameAndPath
+	 * @param mixed $rootPluginFilenameAndPath
 	 */
 	public function __construct( $rootPluginFilenameAndPath ) {
 		assert( ! empty( $rootPluginFilenameAndPath ) );
@@ -94,11 +100,11 @@ class PostmanConfigurationController {
 	/**
 	 */
 	private function addLocalizeScriptsToPage() {
-		$warning = __( 'Warning', Postman::TEXT_DOMAIN );
+		$warning = __( 'Warning', 'post-smtp' );
 		/* translators: where %s is the name of the SMTP server */
-		wp_localize_script( 'postman_wizard_script', 'postman_smtp_mitm', sprintf( '%s: %s', $warning, __( 'connected to %1$s instead of %2$s.', Postman::TEXT_DOMAIN ) ) );
+		wp_localize_script( 'postman_wizard_script', 'postman_smtp_mitm', sprintf( '%s: %s', $warning, __( 'connected to %1$s instead of %2$s.', 'post-smtp' ) ) );
 		/* translators: where %d is a port number */
-		wp_localize_script( 'postman_wizard_script', 'postman_wizard_bad_redirect_url', __( 'You are about to configure OAuth 2.0 with an IP address instead of a domain name. This is not permitted. Either assign a real domain name to your site or add a fake one in your local host file.', Postman::TEXT_DOMAIN ) );
+		wp_localize_script( 'postman_wizard_script', 'postman_wizard_bad_redirect_url', __( 'You are about to configure OAuth 2.0 with an IP address instead of a domain name. This is not permitted. Either assign a real domain name to your site or add a fake one in your local host file.', 'post-smtp' ) );
 
 		// user input
 		wp_localize_script( PostmanViewController::POSTMAN_SCRIPT, 'postman_input_sender_email', '#input_' . PostmanOptions::MESSAGE_SENDER_EMAIL );
@@ -131,7 +137,7 @@ class PostmanConfigurationController {
 	 * Register the Configuration screen
 	 */
 	public function addConfigurationSubmenu() {
-		$page = add_submenu_page( null, sprintf( __( '%s Setup', Postman::TEXT_DOMAIN ), __( 'Postman SMTP', Postman::TEXT_DOMAIN ) ), __( 'Postman SMTP', Postman::TEXT_DOMAIN ), Postman::MANAGE_POSTMAN_CAPABILITY_NAME, PostmanConfigurationController::CONFIGURATION_SLUG, array(
+		$page = add_submenu_page( null, sprintf( __( '%s Setup', 'post-smtp' ), __( 'Postman SMTP', 'post-smtp' ) ), __( 'Postman SMTP', 'post-smtp' ), Postman::MANAGE_POSTMAN_CAPABILITY_NAME, PostmanConfigurationController::CONFIGURATION_SLUG, array(
 				$this,
 				'outputManualConfigurationContent',
 		) );
@@ -155,7 +161,7 @@ class PostmanConfigurationController {
 	 * Register the Setup Wizard screen
 	 */
 	public function addSetupWizardSubmenu() {
-		$page = add_submenu_page( null, sprintf( __( '%s Setup', Postman::TEXT_DOMAIN ), __( 'Postman SMTP', Postman::TEXT_DOMAIN ) ), __( 'Postman SMTP', Postman::TEXT_DOMAIN ), Postman::MANAGE_POSTMAN_CAPABILITY_NAME, PostmanConfigurationController::CONFIGURATION_WIZARD_SLUG, array(
+		$page = add_submenu_page( null, sprintf( __( '%s Setup', 'post-smtp' ), __( 'Postman SMTP', 'post-smtp' ) ), __( 'Postman SMTP', 'post-smtp' ), Postman::MANAGE_POSTMAN_CAPABILITY_NAME, PostmanConfigurationController::CONFIGURATION_WIZARD_SLUG, array(
 				$this,
 				'outputWizardContent',
 		) );
@@ -194,17 +200,32 @@ class PostmanConfigurationController {
 	public function outputManualConfigurationContent() {
 		print '<div class="wrap">';
 
-		PostmanViewController::outputChildPageHeader( __( 'Settings', Postman::TEXT_DOMAIN ), 'advanced_config' );
+		PostmanViewController::outputChildPageHeader( __( 'Settings', 'post-smtp' ), 'advanced_config' );
+
+		$config_tabs = apply_filters( 'post_smtp_admin_tabs', array(
+		    'account_config' => __( 'Account', 'post-smtp' ),
+		    'fallback' => __( 'Fallback', 'post-smtp' ),
+		    'message_config' => __( 'Message', 'post-smtp' ),
+		    'logging_config' => __( 'Logging', 'post-smtp' ),
+		    'advanced_options_config' => __( 'Advanced', 'post-smtp' ),
+        ) );
+
 		print '<div id="config_tabs"><ul>';
-		print sprintf( '<li><a href="#account_config">%s</a></li>', __( 'Account', Postman::TEXT_DOMAIN ) );
-		print sprintf( '<li><a href="#message_config">%s</a></li>', __( 'Message', Postman::TEXT_DOMAIN ) );
-		print sprintf( '<li><a href="#logging_config">%s</a></li>', __( 'Logging', Postman::TEXT_DOMAIN ) );
-		print sprintf( '<li><a href="#advanced_options_config">%s</a></li>', __( 'Advanced', Postman::TEXT_DOMAIN ) );
-		print sprintf( '<li><a href="#notifications">%s</a></li>', __( 'Notifications', Postman::TEXT_DOMAIN ) );
+
+		foreach ( $config_tabs as $slug => $tab ) :
+            printf( '<li><a href="#%s">%s</a></li>', $slug, $tab );
+        endforeach;
+
 		print '</ul>';
+
 		print '<form method="post" action="options.php">';
+
+		wp_nonce_field('post-smtp', 'security');
+
 		// This prints out all hidden setting fields
 		settings_fields( PostmanAdminController::SETTINGS_GROUP_NAME );
+
+		// account_config
 		print '<section id="account_config">';
 		if ( sizeof( PostmanTransportRegistry::getInstance()->getTransports() ) > 1 ) {
 			do_settings_sections( 'transport_options' );
@@ -229,7 +250,131 @@ class PostmanConfigurationController {
 		print '<div id="mailgun_settings" class="authentication_setting non-basic non-oauth2">';
 		do_settings_sections( PostmanMailgunTransport::MAILGUN_AUTH_OPTIONS );
 		print '</div>';
+
+		do_action( 'post_smtp_settings_sections' );
+
 		print '</section>';
+        // end account config
+		?>
+
+        <!-- Fallback Start -->
+        <section id="fallback">
+            <h2><?php esc_html_e( 'Failed emails fallback', 'post-smtp' ); ?></h2>
+            <p><?php esc_html_e( 'By enable this option, if your email is fail to send Post SMTP will try to use the SMTP service you define here.', 'post-smtp' ); ?></p>
+            <table class="form-table">
+                <tr valign="">
+                    <th scope="row"><?php _e( 'Use Fallback?', 'post-smtp' ); ?></th>
+                    <td>
+                        <label>
+                            <input name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_ENABLED; ?>]" type="radio"
+                                   value="no"<?php echo checked( $this->options->getFallbackIsEnabled(), 'no' ); ?>>
+                            <?php _e( 'No', 'post-smtp' ); ?>
+                        </label>
+                        &nbsp;
+                        <label>
+                            <?php $checked = checked( $this->options->getFallbackIsEnabled(), 'yes', false ); ?>
+                            <input name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_ENABLED; ?>]" type="radio"
+                                   value="yes"<?php echo checked( $this->options->getFallbackIsEnabled(), 'yes' ); ?>>
+                            <?php _e( 'Yes', 'post-smtp' ); ?>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('Outgoing Mail Server', 'post-smtp' ); ?></th>
+                    <?php $host = $this->options->getFallbackHostname(); ?>
+                    <td>
+                        <input type="text" id="fallback-smtp-host" name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_HOSTNAME; ?>]"
+                               value="<?php echo $host; ?>" placeholder="Example: smtp.host.com">
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('Mail Server Port', 'post-smtp' ); ?></th>
+                    <?php $port = $this->options->getFallbackPort(); ?>
+                    <td>
+                        <input type="number" id="fallback-smtp-port" name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_PORT; ?>]"
+                               value="<?php echo $port; ?>" placeholder="Example: 587">
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('Security', 'post-smtp' ); ?></th>
+                    <?php
+                    $security_options = array(
+                        'none' => __( 'None', 'post-smtp' ),
+                        'ssl' => __( 'SSL', 'post-smtp' ),
+                        'tls' => __( 'TLS', 'post-smtp' ),
+                    );
+                    ?>
+                    <td>
+                        <select id="fallback-smtp-security" name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_SECURITY; ?>]">
+                            <?php
+                            foreach ( $security_options as $key => $label ) {
+                                $selected = selected( $this->options->getFallbackSecurity(), $key,false );
+                                ?>
+                                <option value="<?php echo $key; ?>"<?php echo $selected; ?>><?php echo $label; ?></option>
+                                <?php
+                            }
+                            ?>
+                        </select>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('From Email', 'post-smtp' ); ?></th>
+                    <td>
+                        <input type="email" id="fallback-smtp-from-email"
+                               value="<?php echo $this->options->getFallbackFromEmail(); ?>"
+                               name="postman_options[<?php echo PostmanOptions::FALLBACK_FROM_EMAIL; ?>]"
+                        >
+                        <br>
+                        <small><?php _e( "Use allowed email, for example: If you are using Gmail, type your Gmail adress.", 'post-smtp' ); ?></small>
+                    </td>
+                </tr>
+
+                <tr valign="">
+                    <th scope="row"><?php _e( 'Use SMTP Authentication?', 'post-smtp' ); ?></th>
+                    <td>
+                        <label>
+                            <input name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_USE_AUTH; ?>]"
+                                   type="radio" value="none"<?php checked( $this->options->getFallbackAuth(), 'none' ); ?>>
+                            <?php _e( 'No', 'post-smtp' ); ?>
+                        </label>
+                        &nbsp;
+                        <label>
+                            <input name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_USE_AUTH; ?>]"
+                                   type="radio" value="login"<?php checked( $this->options->getFallbackAuth(), 'login' ); ?>>
+                            <?php _e( 'Yes', 'post-smtp' ); ?>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('User name', 'post-smtp' ); ?></th>
+                    <td>
+                        <input type="text" id="fallback-smtp-username"
+                               value="<?php echo $this->options->getFallbackUsername(); ?>"
+                               name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_USERNAME; ?>]"
+                        >
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><?php _e('Password', 'post-smtp' ); ?></th>
+                    <td>
+                        <input type="password" id="fallback-smtp-password"
+                               value="<?php echo PostmanUtils::obfuscatePassword( $this->options->getFallbackPassword() ); ?>"
+                               name="postman_options[<?php echo PostmanOptions::FALLBACK_SMTP_PASSWORD; ?>]"
+                        >
+                    </td>
+                </tr>
+
+            </table>
+        </section>
+        <!-- Fallback End -->
+
+        <?php
 		print '<section id="message_config">';
 		do_settings_sections( PostmanAdminController::MESSAGE_SENDER_OPTIONS );
 		do_settings_sections( PostmanAdminController::MESSAGE_FROM_OPTIONS );
@@ -250,22 +395,7 @@ class PostmanConfigurationController {
 		do_settings_sections( PostmanAdminController::ADVANCED_OPTIONS );
 		print '</section>';
 
-		print '<section id="notifications">';
-		do_settings_sections( PostmanAdminController::NOTIFICATIONS_OPTIONS );
-
-			$currentKey = $this->options->getNotificationService();
-			$pushover = $currentKey == 'pushover' ? 'block' : 'none';
-			$slack = $currentKey == 'slack' ? 'block' : 'none';
-
-			echo '<div id="pushover_cred" style="display: ' . $pushover . ';">';
-			do_settings_sections( PostmanAdminController::NOTIFICATIONS_PUSHOVER_CRED );
-			echo '</div>';
-
-			echo '<div id="slack_cred" style="display: ' . $slack . ';">';
-			do_settings_sections( PostmanAdminController::NOTIFICATIONS_SLACK_CRED );
-			echo '</div>';
-
-		print '</section>';
+		do_action( 'post_smtp_settings_menu' );
 
 		submit_button();
 		print '</form>';
@@ -283,7 +413,7 @@ class PostmanConfigurationController {
 		// construct Wizard
 		print '<div class="wrap">';
 
-		PostmanViewController::outputChildPageHeader( __( 'Setup Wizard', Postman::TEXT_DOMAIN ) );
+		PostmanViewController::outputChildPageHeader( __( 'Setup Wizard', 'post-smtp' ) );
 
 		print '<form id="postman_wizard" method="post" action="options.php">';
 
@@ -311,16 +441,18 @@ class PostmanConfigurationController {
 		printf( '<input type="hidden" id="input_%2$s" name="%1$s[%2$s]" value="%3$s" />', PostmanOptions::POSTMAN_OPTIONS, PostmanOptions::STEALTH_MODE, $this->options->isStealthModeEnabled() );
 		printf( '<input type="hidden" id="input_%2$s" name="%1$s[%2$s]" value="%3$s" />', PostmanOptions::POSTMAN_OPTIONS, PostmanOptions::TEMPORARY_DIRECTORY, $this->options->getTempDirectory() );
 
+		wp_nonce_field('post-smtp', 'security' );
+
 		// display the setting text
 		settings_fields( PostmanAdminController::SETTINGS_GROUP_NAME );
 
 		// Wizard Step 0
-		printf( '<h5>%s</h5>', _x( 'Import Configuration', 'Wizard Step Title', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', _x( 'Import Configuration', 'Wizard Step Title', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', _x( 'Import configuration from another plugin?', 'Wizard Step Title', Postman::TEXT_DOMAIN ) );
-		printf( '<p>%s</p>', __( 'If you had a working configuration with another Plugin, the Setup Wizard can begin with those settings.', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', _x( 'Import configuration from another plugin?', 'Wizard Step Title', 'post-smtp' ) );
+		printf( '<p>%s</p>', __( 'If you had a working configuration with another Plugin, the Setup Wizard can begin with those settings.', 'post-smtp' ) );
 		print '<table class="input_auth_type">';
-		printf( '<tr><td><input type="radio" id="import_none" name="input_plugin" value="%s" checked="checked"></input></td><td><label> %s</label></td></tr>', 'none', __( 'None', Postman::TEXT_DOMAIN ) );
+		printf( '<tr><td><input type="radio" id="import_none" name="input_plugin" value="%s" checked="checked"></input></td><td><label> %s</label></td></tr>', 'none', __( 'None', 'post-smtp' ) );
 
 		if ( $this->importableConfiguration->isImportAvailable() ) {
 			foreach ( $this->importableConfiguration->getAvailableOptions() as $options ) {
@@ -331,20 +463,20 @@ class PostmanConfigurationController {
 		print '</fieldset>';
 
 		// Wizard Step 1
-		printf( '<h5>%s</h5>', _x( 'Sender Details', 'Wizard Step Title', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', _x( 'Sender Details', 'Wizard Step Title', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', _x( 'Who is the mail coming from?', 'Wizard Step Title', Postman::TEXT_DOMAIN ) );
-		printf( '<p>%s</p>', __( 'Enter the email address and name you\'d like to send mail as.', Postman::TEXT_DOMAIN ) );
-		printf( '<p>%s</p>', __( 'Please note that to prevent abuse, many email services will <em>not</em> let you send from an email address other than the one you authenticate with.', Postman::TEXT_DOMAIN ) );
-		printf( '<label for="postman_options[sender_email]">%s</label>', __( 'Email Address', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', _x( 'Who is the mail coming from?', 'Wizard Step Title', 'post-smtp' ) );
+		printf( '<p>%s</p>', __( 'Enter the email address and name you\'d like to send mail as.', 'post-smtp' ) );
+		printf( '<p>%s</p>', __( 'Please note that to prevent abuse, many email services will <em>not</em> let you send from an email address other than the one you authenticate with.', 'post-smtp' ) );
+		printf( '<label for="postman_options[sender_email]">%s</label>', __( 'Email Address', 'post-smtp' ) );
 		print $this->settingsRegistry->from_email_callback();
 		print '<br/>';
-		printf( '<label for="postman_options[sender_name]">%s</label>', __( 'Name', Postman::TEXT_DOMAIN ) );
+		printf( '<label for="postman_options[sender_name]">%s</label>', __( 'Name', 'post-smtp' ) );
 		print $this->settingsRegistry->sender_name_callback();
 		print '</fieldset>';
 
 		// Wizard Step 2
-		printf( '<h5>%s</h5>', __( 'Outgoing Mail Server Hostname', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', __( 'Outgoing Mail Server Hostname', 'post-smtp' ) );
 		print '<fieldset>';
 		foreach ( PostmanTransportRegistry::getInstance()->getTransports() as $transport ) {
 			$transport->printWizardMailServerHostnameStep();
@@ -352,11 +484,11 @@ class PostmanConfigurationController {
 		print '</fieldset>';
 
 		// Wizard Step 3
-		printf( '<h5>%s</h5>', __( 'Connectivity Test', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', __( 'Connectivity Test', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', __( 'How will the connection to the mail server be established?', Postman::TEXT_DOMAIN ) );
-		printf( '<p>%s</p>', __( 'Your connection settings depend on what your email service provider offers, and what your WordPress host allows.', Postman::TEXT_DOMAIN ) );
-		printf( '<p id="connectivity_test_status">%s: <span id="port_test_status">%s</span></p>', __( 'Connectivity Test', Postman::TEXT_DOMAIN ), _x( 'Ready', 'TCP Port Test Status', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', __( 'How will the connection to the mail server be established?', 'post-smtp' ) );
+		printf( '<p>%s</p>', __( 'Your connection settings depend on what your email service provider offers, and what your WordPress host allows.', 'post-smtp' ) );
+		printf( '<p id="connectivity_test_status">%s: <span id="port_test_status">%s</span></p>', __( 'Connectivity Test', 'post-smtp' ), _x( 'Ready', 'TCP Port Test Status', 'post-smtp' ) );
 		printf( '<p class="ajax-loader" style="display:none"><img src="%s"/></p>', plugins_url( 'post-smtp/style/ajax-loader.gif' ) );
 		printf( '<input type="hidden" id="input_%2$s" name="%1$s[%2$s]">', PostmanOptions::POSTMAN_OPTIONS, PostmanOptions::TRANSPORT_TYPE );
 		printf( '<input type="hidden" id="input_%2$s" name="%1$s[%2$s]">', PostmanOptions::POSTMAN_OPTIONS, PostmanOptions::PORT );
@@ -364,27 +496,27 @@ class PostmanConfigurationController {
 		printf( '<input type="hidden" id="input_%2$s" name="%1$s[%2$s]">', PostmanOptions::POSTMAN_OPTIONS, PostmanOptions::AUTHENTICATION_TYPE );
 		print '<p id="wizard_recommendation"></p>';
 		/* Translators: Where %1$s is the socket identifier and %2$s is the authentication type */
-		printf( '<p class="user_override" style="display:none"><label><span>%s:</span></label> <table id="user_socket_override" class="user_override"></table></p>', _x( 'Socket', 'A socket is the network term for host and port together', Postman::TEXT_DOMAIN ) );
-		printf( '<p class="user_override" style="display:none"><label><span>%s:</span></label> <table id="user_auth_override" class="user_override"></table></p>', __( 'Authentication', Postman::TEXT_DOMAIN ) );
+		printf( '<p class="user_override" style="display:none"><label><span>%s:</span></label> <table id="user_socket_override" class="user_override"></table></p>', _x( 'Socket', 'A socket is the network term for host and port together', 'post-smtp' ) );
+		printf( '<p class="user_override" style="display:none"><label><span>%s:</span></label> <table id="user_auth_override" class="user_override"></table></p>', __( 'Authentication', 'post-smtp' ) );
 		print ('<p><span id="smtp_mitm" style="display:none; background-color:yellow"></span></p>') ;
-		$warning = __( 'Warning', Postman::TEXT_DOMAIN );
-		$clearCredentialsWarning = __( 'This configuration option will send your authorization credentials in the clear.', Postman::TEXT_DOMAIN );
+		$warning = __( 'Warning', 'post-smtp' );
+		$clearCredentialsWarning = __( 'This configuration option will send your authorization credentials in the clear.', 'post-smtp' );
 		printf( '<p id="smtp_not_secure" style="display:none"><span style="background-color:yellow">%s: %s</span></p>', $warning, $clearCredentialsWarning );
 		print '</fieldset>';
 
 		// Wizard Step 4
-		printf( '<h5>%s</h5>', __( 'Authentication', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', __( 'Authentication', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', __( 'How will you prove your identity to the mail server?', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', __( 'How will you prove your identity to the mail server?', 'post-smtp' ) );
 		foreach ( PostmanTransportRegistry::getInstance()->getTransports() as $transport ) {
 			$transport->printWizardAuthenticationStep();
 		}
 		print '</fieldset>';
 
 		// Wizard Step 5 - Notificiations
-		printf( '<h5>%s</h5>', __( 'Notifications', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', __( 'Notifications', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', __( 'Select a notify service to notify you when an email is failed to delivered.', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', __( 'Select a notify service to notify you when an email is failed to delivered.', 'post-smtp' ) );
 
 		?>
 		<select id="input_notification_service" class="input_notification_service" name="postman_options[notification_service]">
@@ -393,17 +525,17 @@ class PostmanConfigurationController {
 			<option value="slack">Slack</option>
 		</select>
 		<div id="pushover_cred" style="display: none;">
-			<h2><?php _e( 'Pushover Credentials', Postman::TEXT_DOMAIN ); ?></h2>
+			<h2><?php _e( 'Pushover Credentials', 'post-smtp' ); ?></h2>
 			<table class="form-table">
 				<tbody>
 					<tr>
-						<th scope="row"><?php _e( 'Pushover User Key', Postman::TEXT_DOMAIN ); ?></th>
+						<th scope="row"><?php _e( 'Pushover User Key', 'post-smtp' ); ?></th>
 						<td>
 							<input type="password" id="pushover_user" name="postman_options[pushover_user]" value="">
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><?php _e( 'Pushover App Token', Postman::TEXT_DOMAIN ); ?></th>
+						<th scope="row"><?php _e( 'Pushover App Token', 'post-smtp' ); ?></th>
 						<td>
 							<input type="password" id="pushover_token" name="postman_options[pushover_token]" value="">
 						</td>
@@ -412,15 +544,15 @@ class PostmanConfigurationController {
 			</table>
 		</div>
 		<div id="slack_cred" style="display: none;">
-			<h2><?php _e( 'Slack Credentials', Postman::TEXT_DOMAIN ); ?></h2>
+			<h2><?php _e( 'Slack Credentials', 'post-smtp' ); ?></h2>
 			<table class="form-table">
 				<tbody>
 				<tr>
-					<th scope="row"><?php _e( 'Slack webhook', Postman::TEXT_DOMAIN ); ?></th>
+					<th scope="row"><?php _e( 'Slack webhook', 'post-smtp' ); ?></th>
 					<td>
 						<input type="password" id="slack_token" name="postman_options[slack_token]" value="">
 						<a target="_blank" class="" href="https://slack.postmansmtp.com/">
-							<?php _e( 'Get your webhook URL here.', Postman::TEXT_DOMAIN ); ?>
+							<?php _e( 'Get your webhook URL here.', 'post-smtp' ); ?>
 						</a>
 					</td>
 				</tr>
@@ -429,20 +561,20 @@ class PostmanConfigurationController {
 		</div>
 
         <div id="use-chrome-extension">
-            <h2><?php _e( 'Push To Chrome Extension', Postman::TEXT_DOMAIN ); ?></h2>
+            <h2><?php _e( 'Push To Chrome Extension', 'post-smtp' ); ?></h2>
             <table class="form-table">
                 <tbody>
                 <tr>
-                    <th scope="row"><?php _e( 'This is an extra notification to the selection above', Postman::TEXT_DOMAIN ); ?></th>
+                    <th scope="row"><?php _e( 'This is an extra notification to the selection above', 'post-smtp' ); ?></th>
                     <td>
                         <input type="checkbox" id="notification_use_chrome" name="postman_options[notification_use_chrome]">
                         <a target="_blank" class="" href="https://chrome.google.com/webstore/detail/npklmbkpbknkmbohdbpikeidiaekjoch">
-                            <?php _e( 'You can download the chrome extensiom here.', Postman::TEXT_DOMAIN ); ?>
+                            <?php _e( 'You can download the chrome extension here.', 'post-smtp' ); ?>
                         </a>
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php _e( 'Your UID as you see in the extension.', Postman::TEXT_DOMAIN ); ?></th>
+                    <th scope="row"><?php _e( 'Your UID as you see in the extension.', 'post-smtp' ); ?></th>
                     <td>
                         <input type="password" id="notification_chrome_uid" name="postman_options[notification_chrome_uid]" value="">
                     </td>
@@ -455,15 +587,22 @@ class PostmanConfigurationController {
 		print '</fieldset>';
 
 		// Wizard Step 6
-		printf( '<h5>%s</h5>', _x( 'Finish', 'The final step of the Wizard', Postman::TEXT_DOMAIN ) );
+		printf( '<h5>%s</h5>', _x( 'Finish', 'The final step of the Wizard', 'post-smtp' ) );
 		print '<fieldset>';
-		printf( '<legend>%s</legend>', _x( 'You\'re Done!', 'Wizard Step Title', Postman::TEXT_DOMAIN ) );
+		printf( '<legend>%s</legend>', _x( 'You\'re Done!', 'Wizard Step Title', 'post-smtp' ) );
 		print '<section>';
-		printf( '<p>%s</p>', __( 'Click Finish to save these settings, then:', Postman::TEXT_DOMAIN ) );
+		printf( '<p>%s</p>', __( 'Click Finish to save these settings, then:', 'post-smtp' ) );
 		print '<ul style="margin-left: 20px">';
-		printf( '<li class="wizard-auth-oauth2">%s</li>', __( 'Grant permission with the Email Provider for Postman to send email and', Postman::TEXT_DOMAIN ) );
-		printf( '<li>%s</li>', __( 'Send yourself a Test Email to make sure everything is working!', Postman::TEXT_DOMAIN ) );
+		printf( '<li class="wizard-auth-oauth2">%s</li>', __( 'Grant permission with the Email Provider for Postman to send email and', 'post-smtp' ) );
+		printf( '<li>%s</li>', __( 'Send yourself a Test Email to make sure everything is working!', 'post-smtp' ) );
 		print '</ul>';
+
+		// Get PHPmailer recommendation
+		Postman::getMailerTypeRecommend();
+
+		$in_wizard = true;
+		include_once POST_SMTP_PATH . '/Postman/extra/donation.php';
+
 		print '</section>';
 		print '</fieldset>';
 		print '</form>';
@@ -485,6 +624,9 @@ class PostmanGetHostnameByEmailAjaxController extends PostmanAbstractAjaxHandler
 	 * This Ajax function retrieves the smtp hostname for a give e-mail address
 	 */
 	function getAjaxHostnameByEmail() {
+
+	    check_admin_referer('post-smtp', 'security');
+
 		$goDaddyHostDetected = $this->getBooleanRequestParameter( 'go_daddy' );
 		$email = $this->getRequestParameter( 'email' );
 		$d = new PostmanSmtpDiscovery( $email );
@@ -519,6 +661,9 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 	 * @throws Exception
 	 */
 	function getManualConfigurationViaAjax() {
+
+	    check_admin_referer('post-smtp', 'security');
+
 		$queryTransportType = $this->getTransportTypeFromRequest();
 		$queryAuthType = $this->getAuthenticationTypeFromRequest();
 		$queryHostname = $this->getHostnameFromRequest();
@@ -549,6 +694,9 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 	 * The UI response is built so the user may choose a different socket with different options.
 	 */
 	function getWizardConfigurationViaAjax() {
+
+	    check_admin_referer('post-smtp', 'security');
+
 		$this->logger->debug( 'in getWizardConfiguration' );
 		$originalSmtpServer = $this->getRequestParameter( 'original_smtp_server' );
 		$queryHostData = $this->getHostDataFromRequest();
@@ -605,7 +753,7 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 			wp_send_json_success( $response );
 		} else {
 			/* translators: where %s is the URL to the Connectivity Test page */
-			$configuration ['message'] = sprintf( __( 'Postman can\'t find any way to send mail on your system. Run a <a href="%s">connectivity test</a>.', Postman::TEXT_DOMAIN ), PostmanViewController::getPageUrl( PostmanViewController::PORT_TEST_SLUG ) );
+			$configuration ['message'] = sprintf( __( 'Postman can\'t find any way to send mail on your system. Run a <a href="%s">connectivity test</a>.', 'post-smtp' ), PostmanViewController::getPageUrl( PostmanConnectivityTestController::PORT_TEST_SLUG ) );
 			$response ['configuration'] = $configuration;
 			if ( $this->logger->isTrace() ) {
 				$this->logger->trace( 'configuration:' );
@@ -620,8 +768,8 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 	 * // ask a transport if they support it, and if they do at what priority is it
 	 * // configure for the highest priority you find
 	 *
-	 * @param unknown $queryHostData
-	 * @return unknown
+	 * @param mixed $queryHostData
+	 * @return mixed
 	 */
 	private function getWinningRecommendation( $sockets, $userSocketOverride, $userAuthOverride, $originalSmtpServer ) {
 		foreach ( $sockets as $socket ) {
@@ -633,11 +781,11 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 
 	/**
 	 *
-	 * @param PostmanSocket $socket
-	 * @param unknown       $userSocketOverride
-	 * @param unknown       $userAuthOverride
-	 * @param unknown       $originalSmtpServer
-	 * @return Ambigous <NULL, unknown, string>
+	 * @param PostmanWizardSocket $socket
+	 * @param mixed       $userSocketOverride
+	 * @param mixed       $userAuthOverride
+	 * @param mixed       $originalSmtpServer
+	 * @return mixed
 	 */
 	private function getWin( PostmanWizardSocket $socket, $userSocketOverride, $userAuthOverride, $originalSmtpServer ) {
 		static $recommendationPriority = - 1;
@@ -665,7 +813,7 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 
 	/**
 	 *
-	 * @param unknown $queryHostData
+	 * @param mixed $queryHostData
 	 * @return multitype:
 	 */
 	private function createOverrideMenus( $sockets, $winningRecommendation, $userSocketOverride, $userAuthOverride ) {
@@ -690,9 +838,9 @@ class PostmanManageConfigurationAjaxHandler extends PostmanAbstractAjaxHandler {
 	/**
 	 *
 	 * @param PostmanWizardSocket $socket
-	 * @param unknown             $winningRecommendation
-	 * @param unknown             $userSocketOverride
-	 * @param unknown             $userAuthOverride
+	 * @param mixed             $winningRecommendation
+	 * @param mixed             $userSocketOverride
+	 * @param mixed             $userAuthOverride
 	 */
 	private function createOverrideMenu( PostmanWizardSocket $socket, $winningRecommendation, $userSocketOverride, $userAuthOverride ) {
 		if ( $socket->success ) {
@@ -758,6 +906,9 @@ class PostmanImportConfigurationAjaxController extends PostmanAbstractAjaxHandle
 	 * and pushes them into the Postman configuration screen.
 	 */
 	function getConfigurationFromExternalPluginViaAjax() {
+
+        check_admin_referer('post-smtp', 'security');
+
 		$importableConfiguration = new PostmanImportableConfiguration();
 		$plugin = $this->getRequestParameter( 'plugin' );
 		$this->logger->debug( 'Looking for config=' . $plugin );

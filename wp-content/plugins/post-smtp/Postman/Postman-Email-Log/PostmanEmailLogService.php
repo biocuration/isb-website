@@ -1,4 +1,11 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
+require_once dirname(__DIR__ ) . '/PostmanLogFields.php';
+require_once POST_SMTP_PATH . '/Postman/Extensions/Core/Notifications/PostmanNotify.php';
+
 if ( ! class_exists( 'PostmanEmailLog' ) ) {
 	class PostmanEmailLog {
 		public $sender;
@@ -16,6 +23,10 @@ if ( ! class_exists( 'PostmanEmailLog' ) ) {
 		public $originalSubject;
 		public $originalMessage;
 		public $originalHeaders;
+
+		public function setStatusMessage( $message ) {
+		    $this->statusMessage .= $message;
+        }
 	}
 }
 
@@ -46,6 +57,9 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 		 */
 		private function __construct() {
 			$this->logger = new PostmanLogger( get_class( $this ) );
+
+			add_action('post_smtp_on_success', array( $this, 'write_success_log' ), 10, 4 );
+			add_action('post_smtp_on_failed', array( $this, 'write_failed_log' ), 10, 5 );
 		}
 
 		/**
@@ -59,11 +73,25 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 			return $inst;
 		}
 
+		public function write_success_log($log, $message, $transcript, $transport) {
+		    $options = PostmanOptions::getInstance();
+            if ( $options->getRunMode() == PostmanOptions::RUN_MODE_PRODUCTION || $options->getRunMode() == PostmanOptions::RUN_MODE_LOG_ONLY ) {
+                $this->writeSuccessLog( $log, $message, $transcript, $transport );
+            }
+        }
+
+        public function write_failed_log($log, $message, $transcript, $transport, $statusMessage) {
+            $options = PostmanOptions::getInstance();
+            if ( $options->getRunMode() == PostmanOptions::RUN_MODE_PRODUCTION || $options->getRunMode() == PostmanOptions::RUN_MODE_LOG_ONLY ) {
+                $this->writeFailureLog( $log, $message, $transcript, $transport, $statusMessage );
+            }
+        }
+
 		/**
 		 * Logs successful email attempts
 		 *
 		 * @param PostmanMessage         $message
-		 * @param unknown                $transcript
+		 * @param mixed                $transcript
 		 * @param PostmanModuleTransport $transport
 		 */
 		public function writeSuccessLog( PostmanEmailLog $log, PostmanMessage $message, $transcript, PostmanModuleTransport $transport ) {
@@ -72,7 +100,7 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 				$status = true;
 				$subject = $message->getSubject();
 				if ( empty( $subject ) ) {
-					$statusMessage = sprintf( '%s: %s', __( 'Warning', Postman::TEXT_DOMAIN ), __( 'An empty subject line can result in delivery failure.', Postman::TEXT_DOMAIN ) );
+					$statusMessage = sprintf( '%s: %s', __( 'Warning', 'post-smtp' ), __( 'An empty subject line can result in delivery failure.', 'post-smtp' ) );
 					$status = 'WARN';
 				}
 				$this->createLog( $log, $message, $transcript, $statusMessage, $status, $transport );
@@ -84,18 +112,18 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 		 * Logs failed email attempts, requires more metadata so the email can be resent in the future
 		 *
 		 * @param PostmanMessage         $message
-		 * @param unknown                $transcript
+		 * @param mixed                $transcript
 		 * @param PostmanModuleTransport $transport
-		 * @param unknown                $statusMessage
-		 * @param unknown                $originalTo
-		 * @param unknown                $originalSubject
-		 * @param unknown                $originalMessage
-		 * @param unknown                $originalHeaders
+		 * @param mixed                $statusMessage
+		 * @param mixed                $originalTo
+		 * @param mixed                $originalSubject
+		 * @param mixed                $originalMessage
+		 * @param mixed                $originalHeaders
 		 */
 		public function writeFailureLog( PostmanEmailLog $log, PostmanMessage $message = null, $transcript, PostmanModuleTransport $transport, $statusMessage ) {
 			if ( PostmanOptions::getInstance()->isMailLoggingEnabled() ) {
 				$this->createLog( $log, $message, $transcript, $statusMessage, false, $transport );
-				$this->writeToEmailLog( $log );
+				$this->writeToEmailLog( $log,$message );
 			}
 		}
 
@@ -104,105 +132,89 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 		 *
 		 * From http://wordpress.stackexchange.com/questions/8569/wp-insert-post-php-function-and-custom-fields
 		 */
-		private function writeToEmailLog( PostmanEmailLog $log ) {
+		private function writeToEmailLog( PostmanEmailLog $log, PostmanMessage $message = null ) {
 
-			$this->checkForLogErrors( $log );
+		    $options = PostmanOptions::getInstance();
+
+            $new_status = $log->statusMessage;
+
+			if ( $options->is_fallback && empty( $log->statusMessage ) ) {
+                $new_status = 'Sent ( ** Fallback ** )';
+            }
+
+            if ( $options->is_fallback &&  ! empty( $log->statusMessage ) ) {
+                $new_status = '( ** Fallback ** ) ' . $log->statusMessage;
+            }
+
+            $new_status = apply_filters( 'post_smtp_log_status', $new_status, $log, $message );
+
 			// nothing here is sanitized as WordPress should take care of
 			// making database writes safe
 			$my_post = array(
 					'post_type' => PostmanEmailLogPostType::POSTMAN_CUSTOM_POST_TYPE_SLUG,
 					'post_title' => $log->subject,
 					'post_content' => $log->body,
-					'post_excerpt' => $log->statusMessage,
+					'post_excerpt' => $new_status,
 					'post_status' => PostmanEmailLogService::POSTMAN_CUSTOM_POST_STATUS_PRIVATE,
 			);
 
 			// Insert the post into the database (WordPress gives us the Post ID)
-			$post_id = wp_insert_post( $my_post );
+			$post_id = wp_insert_post( $my_post, true );
+
+			if ( is_wp_error( $post_id ) ) {
+			    add_action( 'admin_notices', function() use( $post_id ) {
+                    $class = 'notice notice-error';
+                    $message = $post_id->get_error_message();
+
+                    printf( '<div class="%1$s"><p>%2$s</p></div>', esc_attr( $class ), esc_html( $message ) );
+                });
+
+			    return;
+            }
+
 			$this->logger->debug( sprintf( 'Saved message #%s to the database', $post_id ) );
 			$this->logger->trace( $log );
 
 			// Write the meta data related to the email
-			update_post_meta( $post_id, 'success', $log->success );
-			update_post_meta( $post_id, 'from_header', $log->sender );
+			PostmanLogFields::get_instance()->update( $post_id, 'success', $log->success );
+			PostmanLogFields::get_instance()->update( $post_id, 'from_header', $log->sender );
 			if ( ! empty( $log->toRecipients ) ) {
-				update_post_meta( $post_id, 'to_header', $log->toRecipients );
+                PostmanLogFields::get_instance()->update( $post_id, 'to_header', $log->toRecipients );
 			}
 			if ( ! empty( $log->ccRecipients ) ) {
-				update_post_meta( $post_id, 'cc_header', $log->ccRecipients );
+                PostmanLogFields::get_instance()->update( $post_id, 'cc_header', $log->ccRecipients );
 			}
 			if ( ! empty( $log->bccRecipients ) ) {
-				update_post_meta( $post_id, 'bcc_header', $log->bccRecipients );
+                PostmanLogFields::get_instance()->update( $post_id, 'bcc_header', $log->bccRecipients );
 			}
 			if ( ! empty( $log->replyTo ) ) {
-				update_post_meta( $post_id, 'reply_to_header', $log->replyTo );
+                PostmanLogFields::get_instance()->update( $post_id, 'reply_to_header', $log->replyTo );
 			}
-			update_post_meta( $post_id, 'transport_uri', $log->transportUri );
+            PostmanLogFields::get_instance()->update( $post_id, 'transport_uri', $log->transportUri );
 
 			if ( ! $log->success || true ) {
 				// alwas add the meta data so we can re-send it
-				update_post_meta( $post_id, 'original_to', $log->originalTo );
-				update_post_meta( $post_id, 'original_subject', $log->originalSubject );
-				update_post_meta( $post_id, 'original_message', $log->originalMessage );
-				update_post_meta( $post_id, 'original_headers', $log->originalHeaders );
+                PostmanLogFields::get_instance()->update( $post_id, 'original_to', $log->originalTo );
+                PostmanLogFields::get_instance()->update( $post_id, 'original_subject', $log->originalSubject );
+                PostmanLogFields::get_instance()->update( $post_id, 'original_message', $log->originalMessage );
+                PostmanLogFields::get_instance()->update( $post_id, 'original_headers', $log->originalHeaders );
 			}
 
 			// we do not sanitize the session transcript - let the reader decide how to handle the data
-			update_post_meta( $post_id, 'session_transcript', $log->sessionTranscript );
+            PostmanLogFields::get_instance()->update( $post_id, 'session_transcript', $log->sessionTranscript );
 
 			// truncate the log (remove older entries)
 			$purger = new PostmanEmailLogPurger();
 			$purger->truncateLogItems( PostmanOptions::getInstance()->getMailLoggingMaxEntries() );
 		}
 
-		private function checkForLogErrors( PostmanEmailLog $log ) {
-			$message = __( 'You getting this message because an error detected while delivered your email.', Postman::TEXT_DOMAIN );
-			$message .= "\r\n" . sprintf( __( 'For the domain: %1$s',Postman::TEXT_DOMAIN ), get_bloginfo('url') );
-			$message .= "\r\n" . __( 'The log to paste when you open a support issue:', Postman::TEXT_DOMAIN ) . "\r\n";
-
-			if ( $log->statusMessage && ! empty( $log->statusMessage ) ) {
-				require_once POST_PATH . '/Postman/notifications/PostmanNotify.php';
-
-				$message = $message . $log->statusMessage;
-
-				$notification_service = PostmanOptions::getInstance()->getNotificationService();
-				switch ($notification_service) {
-					case 'default':
-						$notifyer = new PostmanMailNotify;
-						break;
-					case 'pushover':
-						$notifyer = new PostmanPushoverNotify;
-						break;
-					case 'slack':
-						$notifyer = new PostmanSlackNotify;
-						break;
-					default:
-						$notifyer = new PostmanMailNotify;
-				}
-
-				$notify = new PostmanNotify( $notifyer, $message );
-				$notify->send($message, $log);
-				$notify->push_to_chrome($log->statusMessage);
-			}
-
-			/**
-			 * @todo
-			 * After commented by me, check if it was needed.
-			 */
-			preg_match_all( '/(.*)From/s', $log->sessionTranscript, $matches );
-
-			if ( isset( $matches[1][0] ) && ! empty( $matches[1][0] ) && strpos( strtolower( $matches[1][0] ), 'error' ) !== false ) {
-				$message = $message . $log->sessionTranscript;
-			}
-		}
-
 		/**
 		 * Creates a Log object for use by writeToEmailLog()
 		 *
 		 * @param PostmanMessage         $message
-		 * @param unknown                $transcript
-		 * @param unknown                $statusMessage
-		 * @param unknown                $success
+		 * @param mixed                $transcript
+		 * @param mixed                $statusMessage
+		 * @param mixed                $success
 		 * @param PostmanModuleTransport $transport
 		 * @return PostmanEmailLog
 		 */
@@ -236,7 +248,7 @@ if ( ! class_exists( 'PostmanEmailLogService' ) ) {
 			$count = 0;
 			foreach ( $addresses as $address ) {
 				if ( $count >= 3 ) {
-					$flat .= sprintf( __( '.. +%d more', Postman::TEXT_DOMAIN ), sizeof( $addresses ) - $count );
+					$flat .= sprintf( __( '.. +%d more', 'post-smtp' ), sizeof( $addresses ) - $count );
 					break;
 				}
 				if ( $count > 0 ) {
@@ -257,7 +269,7 @@ if ( ! class_exists( 'PostmanEmailLogPurger' ) ) {
 
 		/**
 		 *
-		 * @return unknown
+		 * @return mixed
 		 */
 		function __construct( $args = array() ) {
 			$this->logger = new PostmanLogger( get_class( $this ) );
@@ -286,7 +298,7 @@ if ( ! class_exists( 'PostmanEmailLogPurger' ) ) {
 		/**
 		 *
 		 * @param array   $posts
-		 * @param unknown $postid
+		 * @param mixed $postid
 		 */
 		function verifyLogItemExistsAndRemove( $postid ) {
 			$force_delete = true;
@@ -309,7 +321,7 @@ if ( ! class_exists( 'PostmanEmailLogPurger' ) ) {
 
 		/**
 		 *
-		 * @param unknown $size
+		 * @param mixed $size
 		 */
 		function truncateLogItems( $size ) {
 			$index = count( $this->posts );
