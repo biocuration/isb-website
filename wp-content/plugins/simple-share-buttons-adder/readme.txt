@@ -1,9 +1,9 @@
 === Simple Share Buttons Adder ===
 Contributors: sharethis, scottstorebloom, surlyrightclick, DavidoffNeal
-Tags: share buttons, social buttons, facebook, twitter, google+, share, share links, stumble upon, linkedin, pinterest, yummly, vk
+Tags: share buttons, social buttons, facebook, twitter, google+, share, share links, stumble upon, linkedin, pinterest, yummly, vk, flattr
 Requires at least: 4.5
-Tested up to: 4.8.2
-Stable tag: 7.3.10
+Tested up to: 5.4.1
+Stable tag: 7.7.1
 License: GPLv2 or later
 
 A simple plugin that enables you to add share buttons to all of your posts and/or pages.
@@ -11,6 +11,8 @@ A simple plugin that enables you to add share buttons to all of your posts and/o
 == Description ==
 
 The Simple Share Buttons Adder does exactly what it says – adds share buttons to all of your posts and pages, simply.
+
+The new “Modern Share Buttons” tab are CSS-based settings which allow you more flexibility when it comes to customizing your Share Buttons, Icon and Icon Hover colors! You have the option to use our predefined CSS themes or your own custom CSS.
 
 This plugin has a dedicated website! Check out <a href="https://simplesharebuttons.com" target="_blank">simplesharebuttons.com</a>
 
@@ -63,6 +65,73 @@ Please visit the <a href="https://wordpress.org/support/plugin/simple-share-butt
 4. An example of the buttons shown below page content using the "Ribbon" theme.
 
 == Changelog ==
+
+= 7.7.1 =
+* Add: Add new button images.
+
+= 7.7.0 =
+* Add: Add Line, Weibo, and Skype buttons.
+* Fix: Update DB data structure away from JSON.
+* Add: Review us dismissible popup.
+
+= 7.6.21 =
+* Security: Added esc_url to incoming shortcode URLs to avoid nafarious share links.
+
+= 7.6.20 =
+* Add: Added new block for Gutenberg users.
+
+= 7.6.19 =
+* Add: remove sharecount.com opions.
+* Add: Add page omit by title options for all buttons.
+* Fix: Flattr button.
+* Fix: Email custom text.
+* Fix: Twitter custom text.
+* Fix: Verify 5+ compatibility with gutenberg.
+
+= 7.5.19 =
+* Fix: double class issue.
+* Add: remove gloogle plus from button options.
+
+= 7.5.18 =
+* Fix: Make sure all custom/advanced css fields work properly and separately.
+* Add: Style to avoid decoration to the buttons.
+* Fix: Major conflict with classic and modern buttons if no networks selected.
+* Add: change wrapper id to a class.
+
+= 7.4.18 =
+* Fix: Mobile disable option for Share Bar.
+* Add: Ignore plugin Facebook SDK option.
+
+= 7.4.17 =
+* Fix: Missing buttons on category pages.
+* Fix: Styling issue causing background colors to break.
+
+= 7.4.16 =
+* Fix: Sharedcount.com settings save issue.
+* Fix: sharedcount missing index error fix.
+* Fix: Remove deprecated create_function and replace with new widget registering method.
+
+= 7.4.15 =
+* Revert: Revert wpautop removal.
+
+= 7.4.14 =
+* Fix: Remove wpautop filter when using buttons
+* Fix share count and count style features.
+* Also fix placement styling.
+
+= 7.4.13 =
+* Fix: missing index issue and share bar view switches.
+
+= 7.4.12 =
+* Fix: Saving issue.
+
+= 7.4.11 =
+* Fix: Missing variables and indexes.
+
+= 7.4.10 =
+* Feature: Add share bar buttons
+* Feature: Add “Modern Share Buttons”, which allows for more advanced customization ability using CSS-based settings.
+* Add new admin menu link with logo.
 
 = 7.3.10 =
 * Fixed pinterest blank pop up.

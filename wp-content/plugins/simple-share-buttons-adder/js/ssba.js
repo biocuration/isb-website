@@ -42,7 +42,7 @@ var Main = ( function( $, FB ) {
 			var self = this;
 
 			// Upon clicking a share button.
-			$( 'body' ).on( 'click', '.ssba-wrap a', function( event ) {
+			$( 'body' ).on( 'click', '.ssbp-wrap a', function( event ) {
 
 				// Don't go the the href yet.
 				event.preventDefault();
@@ -79,10 +79,10 @@ var Main = ( function( $, FB ) {
 						left = ( $( window ).width() - width ) / 2,
 						top = ( $( window ).height() - height ) / 2,
 						opts = 'status=1' +
-						       ',width=' + width +
-						       ',height=' + height +
-						       ',top=' + top +
-						       ',left=' + left;
+								 ',width=' + width +
+								 ',height=' + height +
+								 ',top=' + top +
+								 ',left=' + left;
 
 					// Open the share url in a smaller window.
 					window.open( $( event ).attr( 'href' ), 'share', opts );

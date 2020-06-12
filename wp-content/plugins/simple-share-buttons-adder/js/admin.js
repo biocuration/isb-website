@@ -39,6 +39,12 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			this.dragSort();
 			this.extractIncludeList();
 			this.listen();
+
+			// Create admin style to fill.
+			$( 'body.wp-admin' ).siblings( 'head' ).append( '<style type="text/css" id="simple-share-buttons-adder-styles-inline-css"></style>' );
+
+			// Fill it.
+			this.updateInlineStyle();
 		},
 
 		/**
@@ -46,6 +52,30 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 */
 		listen: function() {
 			var self = this;
+
+            // Close review us.
+            $('body').on('click', '#close-review-us', function() {
+                wp.ajax.post( 'ssba_ajax_hide_review', {
+                    nonce: self.data.nonce
+                } ).always( function( results ) {
+                    $('.ssba-review-us').fadeOut();
+                });
+            });
+
+			// If selecting a tab.
+			$( 'body' ).on( 'click', '.ssba-classic-tab, .ssba-modern-tab, .ssba-bar-tab', function() {
+				var selection = 'classic';
+
+				if ( $( this ).hasClass( 'ssba-modern-tab') ) {
+					selection = 'modern';
+				}
+
+				if ( $( this ).hasClass( 'ssba-bar-tab') ) {
+					selection = 'bar';
+				}
+
+				$( '#ssba_selected_tab' ).val( selection );
+			} );
 
 			// When changing image sets.
 			$( 'body' ).on( 'change', '#ssba_image_set', function() {
@@ -70,12 +100,12 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			} );
 
 			// Select preview.
-			$( 'body' ).on( 'change', '#ssba_share_button_style, #ssba_share_bar_style', function() {
+			$( 'body' ).on( 'change', '#ssba_plus_button_style, #ssba_bar_style', function() {
 				var selectId = '#' + $( this ).attr( 'id' ),
 					selection = $( selectId + ' option:selected' ).val(),
 					target = '#ssba-preview-2';
 
-				if ( '#ssba_share_button_style' === selectId ) {
+				if ( '#ssba_plus_button_style' === selectId ) {
 					target = '#ssba-preview';
 				}
 
@@ -83,8 +113,8 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			} );
 
 			// Share bar preview position.
-			$( 'body' ).on( 'change', '#ssba_share_bar_position', function() {
-				var position = $( '#ssba_share_bar_position option:selected' ).val();
+			$( 'body' ).on( 'change', '#ssba_bar_position', function() {
+				var position = $( '#ssba_bar_position option:selected' ).val();
 
 				self.barPosition( position );
 			} );
@@ -130,24 +160,24 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 				self.classicPreview( selection, type, '', find );
 			} );
 
-			this.$shareContainer.on( 'change', '#ssba_share_height, #ssba_share_width, #ssba_share_icon_size, #ssba_share_margin', function() {
+			this.$shareContainer.on( 'change', '#ssba_bar_height, #ssba_bar_width, #ssba_bar_icon_size, #ssba_bar_margin', function() {
 				var id = $( this ).attr( 'id' ),
 					selection = $( this ).val(),
 					type;
 
-				if ( 'ssba_share_height' === id ) {
+				if ( 'ssba_bar_height' === id ) {
 					type = 'height';
 					find = 'a';
 
 					self.updateInlineStyle();
 				}
 
-				if ( 'ssba_share_width' === id ) {
+				if ( 'ssba_bar_width' === id ) {
 					type = 'width';
 					find = 'a';
 				}
 
-				if ( 'ssba_share_icon_size' === id ) {
+				if ( 'ssba_bar_icon_size' === id ) {
 					type = 'font-size';
 					find = 'a:before';
 					selection = selection + 'px';
@@ -155,7 +185,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 					self.updateInlineStyle();
 				}
 
-				if ( 'ssba_share_margin' === id ) {
+				if ( 'ssba_bar_margin' === id ) {
 					type = 'margin';
 					find = '';
 					selection = selection + 'px';
@@ -183,6 +213,16 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 				self.classicCss( type, value, target, '-1' );
 			} );
 
+			$( 'body' ).on( 'keydown keyup', '#ssba_padding', function( e ){
+				if ( $( this ).val() > 50
+				    && e.keyCode !== 46 // delete
+				    && e.keyCode !== 8 // backspace
+				) {
+					e.preventDefault();
+					$( this ).val(50);
+				}
+			});
+
 			// Plus button css preview.
 			this.$plusContainer.on( 'change', '#ssba_plus_align', function() {
 				var value = $( this ).val(),
@@ -203,7 +243,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 				self.updateInlineStyle();
 			} );
 
-			// Class button share text css preview.
+			// Class button bar text css preview.
 			$( 'body' ).on( 'change', '.share-text-prev input, .share-text-prev select', function() {
 				var value = $( this ).val(),
 					id = $( this ).attr( 'id' ),
@@ -257,7 +297,13 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 
 				if ( 'ssba_div_padding' === id ) {
 					type = 'padding';
-					value = value + 'px';
+
+					if ( 50 <= parseInt( value ) ) {
+						value = value + 'px';
+					} else {
+						value = '50px';
+					}
+
 					target = '#ssba-preview-1';
 				}
 
@@ -321,7 +367,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			} );
 
 			// Share share bar count switch.
-			$( 'body' ).on( 'switchChange.bootstrapSwitch', '#ssba_share_show_share_count', function( event, state ) {
+			$( 'body' ).on( 'switchChange.bootstrapSwitch', '#ssba_bar_show_share_count', function( event, state ) {
 				if ( state ) {
 					$( '#ssba-preview-2 .ssbp-list li' ).each( function() {
 						$( this ).find( 'span' ).css( 'display', 'block' );
@@ -334,8 +380,8 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			} );
 
 			// Share count style.
-			$( 'body' ).on( 'change', '#ssba_share_count_style', function() {
-				var type = $( '#ssba_share_count_style option:selected' ).val();
+			$( 'body' ).on( 'change', '#ssba_bar_count_style', function() {
+				var type = $( '#ssba_bar_count_style option:selected' ).val();
 
 				$( '#ssba-preview-1 .ssbp-list li' ).each( function() {
 					$( this ).find( 'span' ).removeClass( 'ssba_default' ).removeClass( 'ssba_white' ).removeClass( 'ssba_blue' ).addClass( 'ssba_' + type );
@@ -356,12 +402,19 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 
 			// Add class to preview when scrolled to.
 			$( window ).on( 'scroll', function(){
-				var stickyTop = $( '#ssba-preview-title' ).offset().top;
+				var stickyTop = $( '#ssba-preview-title' ).offset().top,
+					stickyPlusTop = $( '#ssba-preview-title-2' ).offset().top;
 
 				if ( $( window ).scrollTop() >= stickyTop ) {
 					$( '.master-ssba-prev-wrap, #ssba-preview-1' ).addClass( 'ssba-sticky' );
 				} else {
 					$( '.master-ssba-prev-wrap, #ssba-preview-1' ).removeClass( 'ssba-sticky' );
+				}
+
+				if ( $( window ).scrollTop() >= stickyPlusTop ) {
+					$( '.master-ssba-prev-wrap2, #ssba-preview' ).addClass( 'ssba-sticky' );
+				} else {
+					$( '.master-ssba-prev-wrap2, #ssba-preview' ).removeClass( 'ssba-sticky' );
 				}
 			} );
 
@@ -374,7 +427,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 
 			// Network share selection change.
 			$( 'body' ).on( 'mouseout', '#ssbasort4, #ssbasort3', function() {
-				var list = $( '#ssba_selected_share_buttons' ).val().split( ',' );
+				var list = $( '#ssba_selected_bar_buttons' ).val().split( ',' );
 
 				self.updateNetworkPreview( list, '-2', 'div.ssbp-text' );
 			} );
@@ -462,7 +515,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 				} ).get() );
 			} );
 
-			$( '#ssba_selected_share_buttons' ).val( $( '#ssbasort4 li' ).map( function() {
+			$( '#ssba_selected_bar_buttons' ).val( $( '#ssbasort4 li' ).map( function() {
 
 				// For each <li> in the list, return its inner text and let .map() build an array of those values.
 				return $( this ).attr( 'id' );
@@ -470,7 +523,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 
 			// After a change, extract and add include list to hidden field.
 			$( '.ssbp-wrap' ).mouseout( function() {
-				$( '#ssba_selected_share_buttons' ).val( $( '#ssbasort4 li' ).map( function() {
+				$( '#ssba_selected_bar_buttons' ).val( $( '#ssbasort4 li' ).map( function() {
 
 					// For each <li> in the list, return its inner text and let .map()
 					// build an array of those values.
@@ -515,12 +568,12 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 */
 		imageUploads: function( field ) {
 			var custom_uploader = wp.media.frames.file_frame = wp.media({
-					title: 'Add Image',
-					button: {
-						text: 'Add Image'
-					},
-					multiple: false
-				} ),
+				title: 'Add Image',
+				button: {
+					text: 'Add Image'
+				},
+				multiple: false
+			} ),
 				button,
 				buttonClass;
 
@@ -543,7 +596,8 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 * @param event
 		 */
 		adminForm: function( event, submit ) {
-			var ssbaData = $( '#ssba-admin-form' ).serialize();
+			var ssbaData = $( '#ssba-admin-form' ).serialize(),
+				ssba_selected_tab = $( '#ssba_selected_tab' ).val();
 
 			// Show spinner to show save in progress.
 			$( 'button.ssba-btn-save' ).html( '<i class="fa fa-spinner fa-spin"></i>' );
@@ -555,7 +609,8 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 			$.post(
 				$( submit ).prop( 'action' ),
 				{
-					ssbaData: ssbaData
+					ssbaData: ssbaData,
+					ssba_selected_tab: ssba_selected_tab,
 				},
 				function() {
 
@@ -567,7 +622,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 					$( '.ssba-admin-wrap input:checkbox' ).bootstrapSwitch( 'disabled', false );
 					$( 'button.ssba-btn-save' ).html( '<i class="fa fa-floppy-o"></i>' );
 				}
-			).always( function() {
+			).always( function( response ) {
 
 				// Refresh page.
 				location.reload();
@@ -581,8 +636,14 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 * @param target
 		 */
 		preview: function( selection, target ) {
-			var position = $( '#ssba_share_bar_position option:selected' ).val(),
-				newClass = 'ssbp-wrap ssbp--theme-' + selection + ' ' + position;
+			var position = $( '#ssba_bar_position option:selected' ).val(),
+				newClass;
+
+			if ( '#ssba-preview' === target ) {
+				position = $( '#ssba_plus_align option:selected' ).val();
+			}
+
+			newClass = 'ssbp-wrap ssbp--theme-' + selection + ' ' + position;
 
 			$( target ).attr( 'class', newClass );
 		},
@@ -609,9 +670,9 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 */
 		swapButtons: function( value ) {
 			if ( value ) {
-				$( '#classic-share-buttons blockquote.yellow' ).show();
+				$( '#classic-share-buttons blockquote.yellow:first-of-type' ).show();
 			} else {
-				$( '#classic-share-buttons blockquote.yellow' ).hide();
+				$( '#classic-share-buttons blockquote.yellow:first-of-type' ).hide();
 			}
 		},
 
@@ -815,12 +876,12 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 				iconColor = $( '#ssba_plus_icon_color' ).val(),
 				iconColorHover = $( '#ssba_plus_icon_hover_color' ).val(),
 				buttonColorHover = $( '#ssba_plus_button_hover_color' ).val(),
-				iconSizeBar = $( '#ssba_share_icon_size' ).val(),
-				iconLineHeightBar = $( '#ssba_share_height' ).val(),
-				iconColorBar = $( '#ssba_share_icon_color' ).val(),
-				iconColorHoverBar = $( '#ssba_share_icon_hover_color' ).val(),
-				buttonColorHoverBar = $( '#ssba_share_button_hover_color' ).val(),
-				newStyle = '#ssba-preview .ssbp-btn:before{ font-size: ' + iconSize + 'px; line-height: ' + iconLineHeight + 'px; color: ' + iconColor + '; } #ssba-preview .ssbp-btn:hover::before { color: ' + iconColorHover + '; } #ssba-preview .ssbp-btn:hover { background: ' + buttonColorHover + '!important; } #ssba-preview-2 .ssbp-btn:before{ font-size: ' + iconSizeBar + 'px; line-height: ' + iconLineHeightBar + 'px; color: ' + iconColorBar + '; } #ssba-preview-2 .ssbp-btn:hover::before { color: ' + iconColorHoverBar + '; } #ssba-preview-2 .ssbp-btn:hover { background: ' + buttonColorHoverBar + '!important; }';
+				iconSizeBar = $( '#ssba_bar_icon_size' ).val(),
+				iconLineHeightBar = $( '#ssba_bar_height' ).val(),
+				iconColorBar = $( '#ssba_bar_icon_color' ).val(),
+				iconColorHoverBar = $( '#ssba_bar_icon_hover_color' ).val(),
+				buttonColorHoverBar = $( '#ssba_bar_button_hover_color' ).val(),
+				newStyle = '#ssba-preview .ssbp-li--facebook_save { line-height: ' + iconLineHeight + 'px; } #ssba-preview .ssbp-btn:before{ font-size: ' + iconSize + 'px; line-height: ' + iconLineHeight + 'px; color: ' + iconColor + '; } #ssba-preview .ssbp-btn:hover::before { color: ' + iconColorHover + '; } #ssba-preview .ssbp-btn:hover { background: ' + buttonColorHover + '!important; } #ssba-preview-2 .ssbp-btn:before{ font-size: ' + iconSizeBar + 'px; line-height: ' + iconLineHeightBar + 'px; color: ' + iconColorBar + '; } #ssba-preview-2 .ssbp-btn:hover::before { color: ' + iconColorHoverBar + '; } #ssba-preview-2 .ssbp-btn:hover { background: ' + buttonColorHoverBar + '!important; }';
 
 			$( '#simple-share-buttons-adder-styles-inline-css' ).html( newStyle );
 		},
@@ -831,6 +892,7 @@ var SimpleShareButtonsAdder = ( function( $, wp ) {
 		 * @param type
 		 */
 		dismissNotice: function( type ){
+
 			// Send newsletter id to the test function.
 			wp.ajax.post( 'dismiss_notice', {
 				type: type,

@@ -7,6 +7,12 @@
  * @package SimpleShareButtonsAdder
  */
 
+$selected_tab = get_option( 'ssba_selected_tab' );
+$selected_tab = null !== $selected_tab && false !== $selected_tab ? $selected_tab : 'classic';
+$classic = 'classic' === $selected_tab ? 'active' : '';
+$modern = isset( $selected_tab ) && 'modern' === $selected_tab ? 'active' : '';
+$bar = isset( $selected_tab ) && 'bar' === $selected_tab ? 'active' : '';
+
 echo $this->admin_header(); // WPCS: XSS ok.
 echo $this->forms->open( false ); // WPCS: XSS ok.
 ?>
@@ -31,14 +37,30 @@ if ( isset( $_GET['accept-terms'] ) && 'Y' === $_GET['accept-terms'] ) { // WPCS
 	</div>
 <?php } ?>
 <ul class="nav nav-tabs">
-	<li class="active">
-		<a href="#classic-share-buttons" data-toggle="tab"><?php echo esc_html__( 'Classic Share Buttons', 'simple-share-buttons-adder' ); ?></a>
+	<li class="ssba-classic-tab <?php echo esc_attr( $classic ); ?>">
+		<a href="#classic-share-buttons" data-toggle="tab">
+			<?php echo esc_html__( 'Classic Share Buttons', 'simple-share-buttons-adder' ); ?>
+		</a>
+	</li>
+	<li class="ssba-modern-tab <?php echo esc_attr( $modern ); ?>">
+		<span class="ssba-new-icon">new</span>
+		<a href="#plus-share-buttons" data-toggle="tab">
+			<?php echo esc_html__( 'Modern Share Buttons', 'simple-share-buttons-adder' ); ?>
+		</a>
+	</li>
+	<li class="ssba-bar-tab <?php echo esc_attr( $bar ); ?>">
+		<span class="ssba-new-icon">new</span>
+		<a href="#share-bar" data-toggle="tab">
+			<?php echo esc_html__( 'Share Bar', 'simple-share-buttons-adder' ); ?>
+		</a>
 	</li>
 </ul>
 <div id="ssbaTabContent" class="tab-content">
 	<?php include_once( "{$this->plugin->dir_path}/templates/classic-tab.php" ); ?>
+	<?php include_once( "{$this->plugin->dir_path}/templates/plus-tab.php" ); ?>
+	<?php include_once( "{$this->plugin->dir_path}/templates/share-bar-tab.php" ); ?>
 </div>
-
+<input id="ssba_selected_tab" name="ssba_selected_tab" type="hidden" value="<?php echo esc_html( $selected_tab ); ?>"/>
 <?php
 echo $this->forms->close(); // WPCS: XSS ok.
 echo $this->admin_footer(); // WPCS: XSS ok.
