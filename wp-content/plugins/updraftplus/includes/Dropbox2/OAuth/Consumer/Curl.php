@@ -105,8 +105,6 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
                   }
             }
         }
-        
-        if (isset($request['headers'])) $options[CURLOPT_HTTPHEADER] = $request['headers'];
 
         /*
             Add check to see if it's an API v2 call if so then json encode the contents. This is so that it is backwards compatible with API v1 endpoints.
@@ -114,6 +112,8 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
         if (isset($additional['api_v2']) && !empty($request['postfields'])) {
             $request['postfields'] = json_encode($request['postfields']);
         }
+
+        if (isset($request['headers']) && !empty($request['headers'])) $options[CURLOPT_HTTPHEADER] = $request['headers'];
 
         if ($method == 'GET' && $this->outFile) { // GET
             $options[CURLOPT_RETURNTRANSFER] = false;
@@ -135,7 +135,15 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
             $options[CURLOPT_POSTFIELDS] = $this->inFile;
         } elseif ($method == 'POST') { // POST
             $options[CURLOPT_POST] = true;
-			$options[CURLOPT_POSTFIELDS] = $request['postfields'];
+            if (!empty($request['postfields'])) {
+				$options[CURLOPT_POSTFIELDS] = $request['postfields'];
+			} elseif (empty($additional['content_upload'])) {
+				// JSON representation of nullity
+				$options[CURLOPT_POSTFIELDS] = 'null';
+			} else {
+				// It's a content upload, and there's no data. Versions of php-curl differ as to whether they add a Content-Length header automatically or not. Dropbox complains if it's not there.
+				$options[CURLOPT_HTTPHEADER] = array_merge($options[CURLOPT_HTTPHEADER], array('Content-Length: 0'));
+			}
         } elseif ($method == 'PUT' && $this->inFile) { // PUT
             $options[CURLOPT_PUT] = true;
             $options[CURLOPT_INFILE] = $this->inFile;
@@ -143,6 +151,10 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
             $options[CURLOPT_INFILESIZE] = strlen(stream_get_contents($this->inFile));
             fseek($this->inFile, 0);
             $this->inFile = null;
+        }
+
+        if (isset($additional['timeout'])) {
+            $options[CURLOPT_TIMEOUT] = $additional['timeout'];
         }
 
         // Set the cURL options at once
@@ -184,12 +196,13 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
                     if (strpos($array[0] , 'incorrect_offset') !== false) {
                         $message = json_encode($array);
                     } elseif (strpos($array[0] , 'lookup_failed') !== false ) {
-                        //re-structure the array so it is correctly formatted for API
-                        //Note: Dropbox v2 returns different errors at different stages hence this fix
+                        // re-structure the array so it is correctly formatted for API
+                        // Note: Dropbox v2 returns different errors at different stages hence this fix
                         $correctOffset = array(
                             '0' => $array[1]->{'.tag'},
-                            '1' => $array[1]->correct_offset
                         );
+                        // the lookup_failed response doesn't always return a correct_offset this happens when the lookup fails because the session has been closed e.g the file has already been uploaded but the response didn't make it back to the client so we try again
+                        if (isset($array[1]->correct_offset)) $correctOffset['1'] = $array[1]->correct_offset;
 
                         $message = json_encode($correctOffset);
                     } else {
@@ -218,7 +231,7 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
                         throw new Dropbox_UnsupportedMediaTypeException($message, 415);
                     case 401:
                     	//401 means oauth token is expired continue to manually handle the exception depending on the situation
-                    	continue;
+                    	break;
                     case 409:
                         //409 in API V2 every error will return with a 409 to find out what the error is the error description should be checked.                      
                         throw new Dropbox_Exception($message, $code);
@@ -246,14 +259,14 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
         
         // If the status code is 100, the API server must send a final response
         // We need to explode the response again to get the actual response
-        if (preg_match('#^HTTP/1.1 100#i', $lines[0])) {
+        if (preg_match('#^HTTP/[\.\d]+ 100#i', $lines[0])) {
             list($headers, $response) = explode("\r\n\r\n", $response, 2);
             $lines = explode("\r\n", $headers);
         }
         
         // Get the HTTP response code from the first line
         $first = array_shift($lines);
-        $pattern = '#^HTTP/1.1 ([0-9]{3})#i';
+        $pattern = '#^HTTP/[\.\d]+ ([0-9]{3})#i';
         preg_match($pattern, $first, $matches);
         $code = $matches[1];
         
@@ -272,7 +285,7 @@ class Dropbox_Curl extends Dropbox_ConsumerAbstract
 
          if (is_string($body)) {
              $body_lines = explode("\r\n", $body);
-             if (preg_match('#^HTTP/1.1 100#i', $body_lines[0]) && preg_match('#^HTTP/1.#i', $body_lines[2])) {
+             if (preg_match('#^HTTP/[\.\d]+ 100#i', $body_lines[0]) && preg_match('#^HTTP/\d#i', $body_lines[2])) {
              return $this->parse($body);
              }
          }
