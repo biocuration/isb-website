@@ -1,30 +1,36 @@
+<div class="pmpro_billing_wrap">
 <?php
-	global $wpdb, $current_user, $pmpro_msg, $pmpro_msgt, $show_paypal_link;
+	global $wpdb, $current_user, $pmpro_msg, $pmpro_msgt, $show_check_payment_instructions, $show_paypal_link;
 	global $bfirstname, $blastname, $baddress1, $baddress2, $bcity, $bstate, $bzipcode, $bcountry, $bphone, $bemail, $bconfirmemail, $CardType, $AccountNumber, $ExpirationMonth, $ExpirationYear;
 
-	if (! is_user_logged_in()) {	
-		wp_redirect(pmpro_url('levels'));
-		exit();
-	}
 	/**
 	 * Filter to set if PMPro uses email or text as the type for email field inputs.
-	 * 
+	 *
 	 * @since 1.8.4.5
 	 *
 	 * @param bool $use_email_type, true to use email type, false to use text type
 	 */
 	$pmpro_email_field_type = apply_filters('pmpro_email_field_type', true);
-	
+
 	$gateway = pmpro_getOption("gateway");
 
-	$level = $current_user->membership_level;
+	// Set the wrapping class for the checkout div based on the default gateway;
+	if ( empty( $gateway ) ) {
+		$pmpro_billing_gateway_class = 'pmpro_billing_gateway-none';
+	} else {
+		$pmpro_billing_gateway_class = 'pmpro_billing_gateway-' . $gateway;
+	}
 
-
+	$levels = $current_user->membership_levels;
+	$has_recurring_levels = pmpro_has_recurring_level();
+	
 	//Make sure the $level object is a valid level definition
-	if(isset($level->id) && !empty($level->id))
-	{
-	?>
-		<p><?php printf(__("Logged in as <strong>%s</strong>.", 'paid-memberships-pro' ), $current_user->user_login);?> <small><a href="<?php echo wp_logout_url(get_bloginfo("url") . "/membership-checkout/?level=" . $level->id);?>"><?php _e("logout", 'paid-memberships-pro' );?></a></small></p>
+	if(!empty($levels) ) {
+		$level = $levels[0];
+		$checkout_url = pmpro_url( 'checkout', '?level=' . $level->id );
+		$logout_url = wp_logout_url( $checkout_url );
+		?>
+		<p><?php printf(__("Logged in as <strong>%s</strong>.", 'paid-memberships-pro' ), $current_user->user_login);?> <small><a href="<?php echo esc_url( $logout_url ); ?>"><?php _e("logout", 'paid-memberships-pro' );?></a></small></p>
 		<?php
 		 /**
 		 * pmpro_billing_message_top hook to add in general content to the billing page without using custom page templates.
@@ -34,7 +40,7 @@
 		 do_action('pmpro_billing_message_top'); ?>
 
 		<ul>
-			<?php 
+			<?php
 			 /**
 			 * pmpro_billing_bullets_top hook allows you to add information to the billing list (at the top).
 			 *
@@ -42,46 +48,62 @@
 			 * @param {objects} {$level} {Passes the $level object}
 			 */
 			do_action('pmpro_billing_bullets_top', $level);?>
-			<li><strong><?php _e("Level", 'paid-memberships-pro' );?>:</strong> <?php echo $level->name?></li>
-		<?php if($level->billing_amount > 0) { ?>
-			<li><strong><?php _e("Membership Fee", 'paid-memberships-pro' );?>:</strong>
-				<?php
-					$level = $current_user->membership_level;
-					if($current_user->membership_level->cycle_number > 1) {
-						printf(__('%s every %d %s.', 'paid-memberships-pro' ), pmpro_formatPrice($level->billing_amount), $level->cycle_number, pmpro_translate_billing_period($level->cycle_period, $level->cycle_number));
-					} elseif($current_user->membership_level->cycle_number == 1) {
-						printf(__('%s per %s.', 'paid-memberships-pro' ), pmpro_formatPrice($level->billing_amount), pmpro_translate_billing_period($level->cycle_period));
-					} else {
-						echo pmpro_formatPrice($current_user->membership_level->billing_amount);
-					}
+			
+			<?php foreach( $levels as $level ) {
+				if ( $has_recurring_levels != pmpro_isLevelRecurring( $level ) ) {
+					continue;
+				}
 				?>
-				
-			</li>
-		<?php } ?>
+				<li><strong><?php _e("Level", 'paid-memberships-pro' );?>:</strong> <?php echo $level->name?></li>
+				<?php if($level->billing_amount > 0) { ?>
+					<li><strong><?php _e("Membership Fee", 'paid-memberships-pro' );?>:</strong>
+						<?php
+							$level = $current_user->membership_level;
+							if($current_user->membership_level->cycle_number > 1) {
+								printf(__('%s every %d %s.', 'paid-memberships-pro' ), pmpro_formatPrice($level->billing_amount), $level->cycle_number, pmpro_translate_billing_period($level->cycle_period, $level->cycle_number));
+							} elseif($current_user->membership_level->cycle_number == 1) {
+								printf(__('%s per %s.', 'paid-memberships-pro' ), pmpro_formatPrice($level->billing_amount), pmpro_translate_billing_period($level->cycle_period));
+							} else {
+								echo pmpro_formatPrice($current_user->membership_level->billing_amount);
+							}
+						?>
 
-		<?php if($level->billing_limit) { ?>
-			<li><strong><?php _e("Duration", 'paid-memberships-pro' );?>:</strong> <?php echo $level->billing_limit.' '.sornot($level->cycle_period,$level->billing_limit)?></li>
-		<?php } ?>
-		<?php 
-		 /**
-		 * pmpro_billing_bullets_top hook allows you to add information to the billing list (at the bottom).
-		 *
-		 * @since 1.9.2
-		 * @param {objects} {$level} {Passes the $level object}
-		 */
-		do_action('pmpro_billing_bullets_bottom', $level);?>
+					</li>
+				<?php } ?>
+			<?php } ?>
+
+			<?php if($level->billing_limit) { ?>
+				<li><strong><?php _e("Duration", 'paid-memberships-pro' );?>:</strong> <?php echo $level->billing_limit.' '.sornot($level->cycle_period,$level->billing_limit)?></li>
+			<?php } ?>
+			<?php
+			 /**
+			 * pmpro_billing_bullets_top hook allows you to add information to the billing list (at the bottom).
+			 *
+			 * @since 1.9.2
+			 * @param {objects} {$level} {Passes the $level object}
+			 */
+			do_action('pmpro_billing_bullets_bottom', $level);?>
 		</ul>
 	<?php
 	}
 ?>
 
-<?php if(pmpro_isLevelRecurring($level)) { ?>
-	<?php if($show_paypal_link) { ?>
-
+<?php if ( $has_recurring_levels ) {
+	if ( $show_check_payment_instructions ) {
+		$instructions = pmpro_getOption("instructions"); ?>
+		<div class="pmpro_check_instructions"><?php echo wpautop( wp_unslash( $instructions ) ); ?></div>
+		<hr />
+		<p class="pmpro_actions_nav">
+			<span class="pmpro_actions_nav-right"><a href="<?php echo pmpro_url( 'account' )?>"><?php _e('View Your Membership Account &rarr;', 'paid-memberships-pro' );?></a></span>
+		</p> <!-- end pmpro_actions_nav -->
+	<?php } elseif ( $show_paypal_link ) { ?>
 		<p><?php  _e('Your payment subscription is managed by PayPal. Please <a href="http://www.paypal.com">login to PayPal here</a> to update your billing information.', 'paid-memberships-pro' );?></p>
-
+		<hr />
+		<p class="pmpro_actions_nav">
+			<span class="pmpro_actions_nav-right"><a href="<?php echo pmpro_url( 'account' )?>"><?php _e('View Your Membership Account &rarr;', 'paid-memberships-pro' );?></a></span>
+		</p> <!-- end pmpro_actions_nav -->
 	<?php } else { ?>
-
+		<div id="pmpro_level-<?php echo $level->id; ?>" class="<?php echo $pmpro_billing_gateway_class; ?>">
 		<form id="pmpro_form" class="pmpro_form" action="<?php echo pmpro_url("billing", "", "https")?>" method="post">
 
 			<input type="hidden" name="level" value="<?php echo esc_attr($level->id);?>" />
@@ -96,7 +118,7 @@
 			<?php
 				$pmpro_include_billing_address_fields = apply_filters('pmpro_include_billing_address_fields', true);
 				if($pmpro_include_billing_address_fields)
-				{ 
+				{
 			?>
 			<div id="pmpro_billing_address_fields" class="pmpro_checkout">
 				<hr />
@@ -127,11 +149,11 @@
 						{
 						?>
 							<div class="pmpro_checkout-field pmpro_checkout-field-bcity">
-								<label for="bcity"><?php _e('City', 'paid-memberships-pro' );?>City</label>
+								<label for="bcity"><?php _e('City', 'paid-memberships-pro' );?></label>
 								<input id="bcity" name="bcity" type="text" class="input <?php echo pmpro_getClassForField("bcity");?>" size="30" value="<?php echo esc_attr($bcity)?>" />
 							</div> <!-- end pmpro_checkout-field-bcity -->
 							<div class="pmpro_checkout-field pmpro_checkout-field-bstate">
-								<label for="bstate"><?php _e('State', 'paid-memberships-pro' );?>State</label>
+								<label for="bstate"><?php _e('State', 'paid-memberships-pro' );?></label>
 								<input id="bstate" name="bstate" type="text" class="input <?php echo pmpro_getClassForField("bstate");?>" size="30" value="<?php echo esc_attr($bstate)?>" />
 							</div> <!-- end pmpro_checkout-field-bstate -->
 							<div class="pmpro_checkout-field pmpro_checkout-field-bzipcode">
@@ -192,7 +214,7 @@
 					?>
 
 					<?php
-						$show_country = apply_filters("pmpro_international_addresses", false);
+						$show_country = apply_filters("pmpro_international_addresses", true);
 						if($show_country)
 						{
 					?>
@@ -233,11 +255,11 @@
 							$bconfirmemail = $current_user->user_email;
 					?>
 					<div class="pmpro_checkout-field pmpro_checkout-field-bemail">
-						<label for="bemail"><?php _e('E-mail Address', 'paid-memberships-pro' );?></label>
+						<label for="bemail"><?php _e('Email Address', 'paid-memberships-pro' );?></label>
 						<input id="bemail" name="bemail" type="<?php echo ($pmpro_email_field_type ? 'email' : 'text'); ?>" class="input <?php echo pmpro_getClassForField("bemail");?>" size="30" value="<?php echo esc_attr($bemail)?>" />
 					</div> <!-- end pmpro_checkout-field-bemail -->
 					<div class="pmpro_checkout-field pmpro_checkout-field-bconfirmemail">
-						<label for="bconfirmemail"><?php _e('Confirm E-mail', 'paid-memberships-pro' );?></label>
+						<label for="bconfirmemail"><?php _e('Confirm Email', 'paid-memberships-pro' );?></label>
 						<input id="bconfirmemail" name="bconfirmemail" type="<?php echo ($pmpro_email_field_type ? 'email' : 'text'); ?>" class="input <?php echo pmpro_getClassForField("bconfirmemail");?>" size="30" value="<?php echo esc_attr($bconfirmemail)?>" />
 					</div> <!-- end pmpro_checkout-field-bconfirmemail -->
 					<?php } ?>
@@ -249,122 +271,124 @@
 			//make sure gateways will show up credit card fields
 			global $pmpro_requirebilling;
 			$pmpro_requirebilling = true;
-			
+
 			//do we need to show the payment information (credit card) fields? gateways will override this
-			$pmpro_include_payment_information_fields = apply_filters('pmpro_include_payment_information_fields', true);						
+			$pmpro_include_payment_information_fields = apply_filters('pmpro_include_payment_information_fields', true);
 			if($pmpro_include_payment_information_fields)
 			{
 				$pmpro_accepted_credit_cards = pmpro_getOption("accepted_credit_cards");
 				$pmpro_accepted_credit_cards = explode(",", $pmpro_accepted_credit_cards);
 				$pmpro_accepted_credit_cards_string = pmpro_implodeToEnglish($pmpro_accepted_credit_cards);
-			?>
-			<div id="pmpro_payment_information_fields" class="pmpro_checkout">
-				<h3>
-					<span class="pmpro_checkout-h3-name"><?php _e('Credit Card Information', 'paid-memberships-pro' );?></span>
-					<span class="pmpro_checkout-h3-msg"><?php printf(__('We accept %s', 'paid-memberships-pro' ), $pmpro_accepted_credit_cards_string);?></span>
-				</h3>
-				<?php $sslseal = pmpro_getOption("sslseal"); ?>
-				<?php if(!empty($sslseal)) { ?>
-					<div class="pmpro_checkout-fields-display-seal">
-				<?php } ?>
-				<div class="pmpro_checkout-fields">
-					<?php
-						$pmpro_include_cardtype_field = apply_filters('pmpro_include_cardtype_field', false);
-						if($pmpro_include_cardtype_field) { ?>
-							<div class="pmpro_checkout-field pmpro_payment-card-type">
-								<label for="CardType"><?php _e('Card Type', 'paid-memberships-pro' );?></label>
-								<select id="CardType" name="CardType" class="<?php echo pmpro_getClassForField("CardType");?>">
-									<?php foreach($pmpro_accepted_credit_cards as $cc) { ?>
-										<option value="<?php echo $cc?>" <?php if($CardType == $cc) { ?>selected="selected"<?php } ?>><?php echo $cc?></option>
-									<?php } ?>
-								</select>
-							</div> <!-- end pmpro_payment-card-type -->
-						<?php } else { ?>
-							<input type="hidden" id="CardType" name="CardType" value="<?php echo esc_attr($CardType);?>" />
-							<script>
-								<!--
-								jQuery(document).ready(function() {
-										jQuery('#AccountNumber').validateCreditCard(function(result) {
-											var cardtypenames = {
-												"amex"                      : "American Express",
-												"diners_club_carte_blanche" : "Diners Club Carte Blanche",
-												"diners_club_international" : "Diners Club International",
-												"discover"                  : "Discover",
-												"jcb"                       : "JCB",
-												"laser"                     : "Laser",
-												"maestro"                   : "Maestro",
-												"mastercard"                : "Mastercard",
-												"visa"                      : "Visa",
-												"visa_electron"             : "Visa Electron"
-											};
+				?>
+				<div id="pmpro_payment_information_fields" class="pmpro_checkout">
+					<h3>
+						<span class="pmpro_checkout-h3-name"><?php _e('Credit Card Information', 'paid-memberships-pro' );?></span>
+						<span class="pmpro_checkout-h3-msg"><?php printf(__('We accept %s', 'paid-memberships-pro' ), $pmpro_accepted_credit_cards_string);?></span>
+					</h3>
+					<?php $sslseal = pmpro_getOption("sslseal"); ?>
+					<?php if(!empty($sslseal)) { ?>
+						<div class="pmpro_checkout-fields-display-seal">
+					<?php } ?>
+					<div class="pmpro_checkout-fields">
+						<?php
+							$pmpro_include_cardtype_field = apply_filters('pmpro_include_cardtype_field', false);
+							if($pmpro_include_cardtype_field) { ?>
+								<div class="pmpro_checkout-field pmpro_payment-card-type">
+									<label for="CardType"><?php _e('Card Type', 'paid-memberships-pro' );?></label>
+									<select id="CardType" name="CardType" class="<?php echo pmpro_getClassForField("CardType");?>">
+										<?php foreach($pmpro_accepted_credit_cards as $cc) { ?>
+											<option value="<?php echo $cc?>" <?php if($CardType == $cc) { ?>selected="selected"<?php } ?>><?php echo $cc?></option>
+										<?php } ?>
+									</select>
+								</div> <!-- end pmpro_payment-card-type -->
+							<?php } else { ?>
+								<input type="hidden" id="CardType" name="CardType" value="<?php echo esc_attr($CardType);?>" />
+								<script>
+									<!--
+									jQuery(document).ready(function() {
+											jQuery('#AccountNumber').validateCreditCard(function(result) {
+												var cardtypenames = {
+													"amex"                      : "American Express",
+													"diners_club_carte_blanche" : "Diners Club Carte Blanche",
+													"diners_club_international" : "Diners Club International",
+													"discover"                  : "Discover",
+													"jcb"                       : "JCB",
+													"laser"                     : "Laser",
+													"maestro"                   : "Maestro",
+													"mastercard"                : "Mastercard",
+													"visa"                      : "Visa",
+													"visa_electron"             : "Visa Electron"
+												};
 
-											if(result.card_type)
-												jQuery('#CardType').val(cardtypenames[result.card_type.name]);
-											else
-												jQuery('#CardType').val('Unknown Card Type');
-										});
-								});
-								-->
-							</script>
-							<?php
-							}
-						?>
-					<div class="pmpro_checkout-field pmpro_payment-account-number">
-						<label for="AccountNumber"><?php _e('Card Number', 'paid-memberships-pro' );?></label>
-						<input id="AccountNumber" name="AccountNumber" class="input <?php echo pmpro_getClassForField("AccountNumber");?>" type="text" size="25" value="<?php echo esc_attr($AccountNumber)?>" autocomplete="off" />
-					</div>
-					<div class="pmpro_checkout-field pmpro_payment-expiration">
-						<label for="ExpirationMonth"><?php _e('Expiration Date', 'paid-memberships-pro' );?></label>
-						<select id="ExpirationMonth" name="ExpirationMonth">
-							<option value="01" <?php if($ExpirationMonth == "01") { ?>selected="selected"<?php } ?>>01</option>
-							<option value="02" <?php if($ExpirationMonth == "02") { ?>selected="selected"<?php } ?>>02</option>
-							<option value="03" <?php if($ExpirationMonth == "03") { ?>selected="selected"<?php } ?>>03</option>
-							<option value="04" <?php if($ExpirationMonth == "04") { ?>selected="selected"<?php } ?>>04</option>
-							<option value="05" <?php if($ExpirationMonth == "05") { ?>selected="selected"<?php } ?>>05</option>
-							<option value="06" <?php if($ExpirationMonth == "06") { ?>selected="selected"<?php } ?>>06</option>
-							<option value="07" <?php if($ExpirationMonth == "07") { ?>selected="selected"<?php } ?>>07</option>
-							<option value="08" <?php if($ExpirationMonth == "08") { ?>selected="selected"<?php } ?>>08</option>
-							<option value="09" <?php if($ExpirationMonth == "09") { ?>selected="selected"<?php } ?>>09</option>
-							<option value="10" <?php if($ExpirationMonth == "10") { ?>selected="selected"<?php } ?>>10</option>
-							<option value="11" <?php if($ExpirationMonth == "11") { ?>selected="selected"<?php } ?>>11</option>
-							<option value="12" <?php if($ExpirationMonth == "12") { ?>selected="selected"<?php } ?>>12</option>
-						</select>/<select id="ExpirationYear" name="ExpirationYear">
-							<?php
-								for($i = date_i18n("Y"); $i < date_i18n("Y") + 10; $i++)
-								{
-							?>
-								<option value="<?php echo $i?>" <?php if($ExpirationYear == $i) { ?>selected="selected"<?php } ?>><?php echo $i?></option>
-							<?php
+												if(result.card_type)
+													jQuery('#CardType').val(cardtypenames[result.card_type.name]);
+												else
+													jQuery('#CardType').val('Unknown Card Type');
+											});
+									});
+									-->
+								</script>
+								<?php
 								}
 							?>
-						</select>
-					</div>
-					<?php
-						$pmpro_show_cvv = apply_filters("pmpro_show_cvv", true);
-						if($pmpro_show_cvv) {
-							if ( true == ini_get('allow_url_include') ) {
-								$cvv_template = pmpro_loadTemplate('popup-cvv', 'url', 'pages', 'html');
-							} else {
-								$cvv_template = plugins_url( 'paid-memberships-pro/pages/popup-cvv.html', PMPRO_DIR );
-							}
-						?>
-						<div class="pmpro_checkout-field pmpro_payment-cvv">
-							<label for="CVV"><?php _e('CVV', 'paid-memberships-pro' );?></label>
-							<input id="CVV" name="CVV" type="text" size="4" value="<?php if(!empty($_REQUEST['CVV'])) { echo esc_attr($_REQUEST['CVV']); }?>" class="input <?php echo pmpro_getClassForField("CVV");?>" />  <small>(<a href="javascript:void(0);" onclick="javascript:window.open('<?php echo pmpro_https_filter($cvv_template); ?>','cvv','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=600, height=475');"><?php _e("what's this?", 'paid-memberships-pro' );?></a>)</small>
+						<div class="pmpro_checkout-field pmpro_payment-account-number">
+							<label for="AccountNumber"><?php _e('Card Number', 'paid-memberships-pro' );?></label>
+							<input id="AccountNumber" name="AccountNumber" class="input <?php echo pmpro_getClassForField("AccountNumber");?>" type="text" size="25" value="<?php echo esc_attr($AccountNumber)?>" autocomplete="off" />
 						</div>
-					<?php } ?>
-				</div> <!-- end pmpro_checkout-fields -->
-			</div> <!-- end pmpro_payment_information_fields -->	
-			<?php } // if($pmpro_include_payment_information_fields) ?>
-			
+						<div class="pmpro_checkout-field pmpro_payment-expiration">
+							<label for="ExpirationMonth"><?php _e('Expiration Date', 'paid-memberships-pro' );?></label>
+							<select id="ExpirationMonth" name="ExpirationMonth">
+								<option value="01" <?php if($ExpirationMonth == "01") { ?>selected="selected"<?php } ?>>01</option>
+								<option value="02" <?php if($ExpirationMonth == "02") { ?>selected="selected"<?php } ?>>02</option>
+								<option value="03" <?php if($ExpirationMonth == "03") { ?>selected="selected"<?php } ?>>03</option>
+								<option value="04" <?php if($ExpirationMonth == "04") { ?>selected="selected"<?php } ?>>04</option>
+								<option value="05" <?php if($ExpirationMonth == "05") { ?>selected="selected"<?php } ?>>05</option>
+								<option value="06" <?php if($ExpirationMonth == "06") { ?>selected="selected"<?php } ?>>06</option>
+								<option value="07" <?php if($ExpirationMonth == "07") { ?>selected="selected"<?php } ?>>07</option>
+								<option value="08" <?php if($ExpirationMonth == "08") { ?>selected="selected"<?php } ?>>08</option>
+								<option value="09" <?php if($ExpirationMonth == "09") { ?>selected="selected"<?php } ?>>09</option>
+								<option value="10" <?php if($ExpirationMonth == "10") { ?>selected="selected"<?php } ?>>10</option>
+								<option value="11" <?php if($ExpirationMonth == "11") { ?>selected="selected"<?php } ?>>11</option>
+								<option value="12" <?php if($ExpirationMonth == "12") { ?>selected="selected"<?php } ?>>12</option>
+							</select>/<select id="ExpirationYear" name="ExpirationYear">
+								<?php
+									for($i = date_i18n("Y"); $i < date_i18n("Y") + 10; $i++)
+									{
+								?>
+									<option value="<?php echo $i?>" <?php if($ExpirationYear == $i) { ?>selected="selected"<?php } ?>><?php echo $i?></option>
+								<?php
+									}
+								?>
+							</select>
+						</div>
+						<?php
+							$pmpro_show_cvv = apply_filters("pmpro_show_cvv", true);
+							if($pmpro_show_cvv) {
+								if ( true == ini_get('allow_url_include') ) {
+									$cvv_template = pmpro_loadTemplate('popup-cvv', 'url', 'pages', 'html');
+								} else {
+									$cvv_template = plugins_url( 'paid-memberships-pro/pages/popup-cvv.html', PMPRO_DIR );
+								}
+							?>
+							<div class="pmpro_checkout-field pmpro_payment-cvv">
+								<label for="CVV"><?php _e('CVV', 'paid-memberships-pro' );?></label>
+								<input id="CVV" name="CVV" type="text" size="4" value="<?php if(!empty($_REQUEST['CVV'])) { echo esc_attr($_REQUEST['CVV']); }?>" class="input <?php echo pmpro_getClassForField("CVV");?>" />  <small>(<a href="javascript:void(0);" onclick="javascript:window.open('<?php echo pmpro_https_filter($cvv_template); ?>','cvv','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=600, height=475');"><?php _e("what's this?", 'paid-memberships-pro' );?></a>)</small>
+							</div>
+						<?php } ?>
+					</div> <!-- end pmpro_checkout-fields -->
+				</div> <!-- end pmpro_payment_information_fields -->
+			<?php
+			}
+			?>
+
 			<?php do_action("pmpro_billing_before_submit_button"); ?>
-		
-			<div align="center">
+
+			<div class="pmpro_submit">
+				<hr />
 				<input type="hidden" name="update-billing" value="1" />
 				<input type="submit" class="pmpro_btn pmpro_btn-submit" value="<?php _e('Update', 'paid-memberships-pro' );?>" />
 				<input type="button" name="cancel" class="pmpro_btn pmpro_btn-cancel" value="<?php _e('Cancel', 'paid-memberships-pro' );?>" onclick="location.href='<?php echo pmpro_url("account")?>';" />
 			</div>
-
 		</form>
 		<script>
 			<!--
@@ -376,7 +400,36 @@
 			});
 			-->
 		</script>
+		</div> <!-- end pmpro_level-ID -->
 	<?php } ?>
-<?php } else { ?>
-	<p><?php _e("This subscription is not recurring. So you don't need to update your billing information.", 'paid-memberships-pro' );?></p>
-<?php } ?>
+
+<?php } else { // End for recurring level check.
+	// Check to see if the user has a cancelled order
+	$order = new MemberOrder();
+	$order->getLastMemberOrder( $current_user->ID, array( 'cancelled', 'expired', 'admin_cancelled' ) );
+
+	if ( isset( $order->membership_id ) && ! empty( $order->membership_id ) && empty( $level->id ) ) {
+		$level = pmpro_getLevel( $order->membership_id );
+
+		// If no level check for a default level.
+		if ( empty( $level ) || ! $level->allow_signups ) {
+			$default_level_id = apply_filters( 'pmpro_default_level', 0 );
+		}
+		
+		// Show the correct checkout link.
+		if ( ! empty( $level ) && ! empty( $level->allow_signups ) ) {
+			$url = pmpro_url( 'checkout', '?level=' . $level->id );
+			printf( __( "Your membership is not active. <a href='%s'>Renew now.</a>", 'paid-memberships-pro' ), $url );
+		} elseif ( ! empty( $default_level_id ) ) {
+			$url = pmpro_url( 'checkout', '?level=' . $default_level_id );
+			printf( __( "You do not have an active membership. <a href='%s'>Register here.</a>", 'paid-memberships-pro' ), $url );
+		} else {
+			$url = pmpro_url( 'levels' );
+			printf( __( "You do not have an active membership. <a href='%s'>Choose a membership level.</a>", 'paid-memberships-pro' ), $url );
+		}
+	} else { ?>
+		<p><?php _e("This subscription is not recurring. So you don't need to update your billing information.", 'paid-memberships-pro' );?></p>
+	<?php }
+} ?>
+</div> <!-- end pmpro_billing_wrap -->
+

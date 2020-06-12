@@ -296,10 +296,7 @@
 			$last_uid = $theusers[($users_found - 1)];
 
 		//increment starting position
-		if(0 < $iterations)
-		{
-			$i_start += $max_users_per_loop;
-		}
+		$i_start += $max_users_per_loop;
 		
 		//escape the % for LIKE comparison with $wpdb
 		if(!empty($search))
@@ -321,7 +318,7 @@
 				mu.initial_payment,
 				mu.billing_amount,
 				mu.cycle_period,
-				UNIX_TIMESTAMP(mu.enddate) as enddate,
+				UNIX_TIMESTAMP(max(mu.enddate)) as enddate,
 				m.name as membership
 			FROM {$wpdb->users} u
 			LEFT JOIN {$wpdb->usermeta} um ON u.ID = um.user_id
@@ -329,7 +326,7 @@
 			LEFT JOIN {$wpdb->pmpro_membership_levels} m ON mu.membership_id = m.id
 			{$former_member_join}
 			WHERE u.ID BETWEEN %d AND %d AND mu.membership_id > 0 {$filter} {$search}
-			-- GROUP BY u.ID
+			GROUP BY u.ID
 			ORDER BY u.ID",
 				$first_uid,
 				$last_uid
@@ -553,10 +550,18 @@
 				ini_set('zlib.output_compression', 'Off');
 			}
 
-			// open and send the file contents to the remote location
-			$fh = fopen( $filename, 'rb' );
-			fpassthru($fh);
-			fclose($fh);
+			if( function_exists('fpassthru') )
+			{
+				// open and send the file contents to the remote location
+				$fh = fopen( $filename, 'rb' );
+				fpassthru($fh);
+				fclose($fh);
+			}
+			else
+			{
+				// use readfile() if fpassthru() is disabled (like on Flywheel Hosted)
+				readfile($filename);
+			}
 
 			// remove the temp file
 			unlink($filename);

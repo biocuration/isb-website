@@ -235,9 +235,9 @@
 
 		//is this a return call or notification
 		if(empty($params['message_type']))
-			$check = Twocheckout_Return::check( $params, pmpro_getOption( 'twocheckout_secretword' ), 'array' );
+			$check = Twocheckout_Return::check( $params, pmpro_getOption( 'twocheckout_secretword' ) );
 		else
-			$check = Twocheckout_Notification::check( $params, pmpro_getOption( 'twocheckout_secretword' ), 'array' );
+			$check = Twocheckout_Notification::check( $params, pmpro_getOption( 'twocheckout_secretword' ) );
 
 		if( empty ( $check ) )
 			$r = false;	//HTTP failure
@@ -341,17 +341,17 @@
 			{
 				$old_firstname = get_user_meta($morder->user_id, "first_name", true);
 				if(!empty($old_firstname))
-					update_user_meta($morder->user_id, "first_name", $_POST['first_name']);
+					update_user_meta($morder->user_id, "first_name", sanitize_text_field($_POST['first_name']));
 			}
 			if(!empty($_POST['last_name']))
 			{
 				$old_lastname = get_user_meta($morder->user_id, "last_name", true);
 				if(!empty($old_lastname))
-					update_user_meta($morder->user_id, "last_name", $_POST['last_name']);
+					update_user_meta($morder->user_id, "last_name", sanitize_text_field($_POST['last_name']));
 			}
 
 			//hook
-			do_action("pmpro_after_checkout", $morder->user_id);
+			do_action("pmpro_after_checkout", $morder->user_id, $morder);
 
 			//setup some values for the emails
 			if(!empty($morder))
@@ -424,12 +424,13 @@
 			$morder->membership_id = $last_order->membership_id;
 			$morder->payment_transaction_id = $txn_id;
 			$morder->subscription_transaction_id = $last_order->subscription_transaction_id;
-			$morder->InitialPayment = $_POST['item_list_amount_1'];	//not the initial payment, but the class is expecting that
-			$morder->PaymentAmount = $_POST['item_list_amount_1'];
+			$morder->InitialPayment = sanitize_text_field($_POST['item_list_amount_1']);	//not the initial payment, but the class is expecting that
+			$morder->PaymentAmount = sanitize_text_field($_POST['item_list_amount_1']);
+			$morder->datetime = sanitize_text_field($_POST['timestamp']);
 
-			$morder->FirstName = $_POST['customer_first_name'];
-			$morder->LastName = $_POST['customer_last_name'];
-			$morder->Email = $_POST['customer_email'];
+			$morder->FirstName = sanitize_text_field($_POST['customer_first_name']);
+			$morder->LastName = sanitize_text_field($_POST['customer_last_name']);
+			$morder->Email = sanitize_text_field($_POST['customer_email']);
 
 			$morder->gateway = $last_order->gateway;
 			$morder->gateway_environment = $last_order->gateway_environment;
@@ -459,9 +460,10 @@
 	*/
 	function pmpro_insRecurringStopped( $morder ) {
 		global $pmpro_error;
-		//hook to do other stuff when payments stop
-		do_action("pmpro_subscription_recuring_stopped", $last_order);
-
+		//hook to do other stuff when payments stop		
+		do_action( 'pmpro_subscription_recurring_stopped', $morder );
+    do_action( 'pmpro_subscription_recuring_stopped', $morder );    // Keeping the mispelled version in case. Will deprecate.
+    
 		$worked = pmpro_changeMembershipLevel( false, $morder->user->ID , 'inactive');
 		if( $worked === true ) {
 			//$pmpro_msg = __("Your membership has been cancelled.", 'paid-memberships-pro' );
@@ -492,7 +494,8 @@
 	function pmpro_insRecurringRestarted( $morder ) {
 		global $pmpro_error;
 		//hook to do other stuff when payments restart
-		do_action("pmpro_subscription_recuring_restarted", $last_order);
+		do_action( 'pmpro_subscription_recuring_restarted', $morder);
+		do_action( 'pmpro_subscription_recurring_restarted', $morder);
 
 		$worked = pmpro_changeMembershipLevel( $morder->membership_level->id, $morder->user->ID );
 		if( $worked === true ) {

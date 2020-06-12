@@ -26,8 +26,24 @@
 			//add fields to payment settings
 			add_filter('pmpro_payment_options', array('PMProGateway_authorizenet', 'pmpro_payment_options'));
 			add_filter('pmpro_payment_option_fields', array('PMProGateway_authorizenet', 'pmpro_payment_option_fields'), 10, 2);
+
+			add_filter('pmpro_checkout_order', array('PMProGateway_authorizenet', 'pmpro_checkout_order'));
+			add_filter('pmpro_billing_order', array('PMProGateway_authorizenet', 'pmpro_checkout_order'));
+
 		}
 
+		static function pmpro_checkout_order( $morder ) {
+
+			if ( isset( $_REQUEST['CVV'] ) ) {
+				$authorizenet_cvv = sanitize_text_field( $_REQUEST['CVV'] );
+			} else {
+				$authorizenet_cvv = '';
+			}
+
+			$morder->CVV2 = $authorizenet_cvv;
+			return $morder;
+		}
+		
 		/**
 		 * Make sure this gateway is in the gateways list
 		 *
@@ -58,7 +74,7 @@
 				'use_ssl',
 				'tax_state',
 				'tax_rate',
-				'accepted_credit_cards'
+				'accepted_credit_cards',
 			);
 
 			return $options;
@@ -90,7 +106,8 @@
 		?>
 		<tr class="pmpro_settings_divider gateway gateway_authorizenet" <?php if($gateway != "authorizenet") { ?>style="display: none;"<?php } ?>>
 			<td colspan="2">
-				<?php _e('Authorize.net Settings', 'paid-memberships-pro' ); ?>
+				<hr />
+				<h2 class="title"><?php esc_html_e('Authorize.net Settings', 'paid-memberships-pro' ); ?></h2>
 			</td>
 		</tr>
 		<tr class="gateway gateway_authorizenet" <?php if($gateway != "authorizenet") { ?>style="display: none;"<?php } ?>>
@@ -98,7 +115,7 @@
 				<label for="loginname"><?php _e('Login Name', 'paid-memberships-pro' );?>:</label>
 			</th>
 			<td>
-				<input type="text" id="loginname" name="loginname" size="60" value="<?php echo esc_attr($values['loginname'])?>" />
+				<input type="text" id="loginname" name="loginname" value="<?php echo esc_attr($values['loginname'])?>" class="regular-text code" />
 			</td>
 		</tr>
 		<tr class="gateway gateway_authorizenet" <?php if($gateway != "authorizenet") { ?>style="display: none;"<?php } ?>>
@@ -106,7 +123,7 @@
 				<label for="transactionkey"><?php _e('Transaction Key', 'paid-memberships-pro' );?>:</label>
 			</th>
 			<td>
-				<input type="text" id="transactionkey" name="transactionkey" size="60" value="<?php echo esc_attr($values['transactionkey'])?>" />
+				<input type="text" id="transactionkey" name="transactionkey" value="<?php echo esc_attr($values['transactionkey'])?>" class="regular-text code" />
 			</td>
 		</tr>
 		<tr class="gateway gateway_authorizenet" <?php if($gateway != "authorizenet") { ?>style="display: none;"<?php } ?>>
@@ -114,7 +131,8 @@
 				<label><?php _e('Silent Post URL', 'paid-memberships-pro' );?>:</label>
 			</th>
 			<td>
-				<p><?php _e('To fully integrate with Authorize.net, be sure to set your Silent Post URL to', 'paid-memberships-pro' );?> <pre><?php echo admin_url("admin-ajax.php") . "?action=authnet_silent_post";?></pre></p>
+				<p><?php _e('To fully integrate with Authorize.net, be sure to set your Silent Post URL to', 'paid-memberships-pro' ); ?></p>
+				<p><code><?php echo admin_url("admin-ajax.php") . "?action=authnet_silent_post";?></code></p>
 			</td>
 		</tr>
 		<?php
@@ -300,7 +318,7 @@
 				"x_exp_date"		=> $order->ExpirationDate,
 
 				"x_amount"			=> $amount,
-				"x_description"		=> $order->membership_level->name . " " . __("Membership", 'paid-memberships-pro' ),
+				"x_description"		=> apply_filters( 'pmpro_authorizenet_level_description', substr($order->membership_level->name . " at " . get_bloginfo("name"), 0, 127), $order->membership_level->name, $order, get_bloginfo("name")),
 
 				"x_first_name"		=> $order->FirstName,
 				"x_last_name"		=> $order->LastName,
@@ -455,7 +473,7 @@
 			//tax
 			$order->subtotal = $amount;
 			$tax = $order->getTax(true);
-			$amount = round((float)$order->subtotal + (float)$tax, 2);
+			$amount = pmpro_round_price((float)$order->subtotal + (float)$tax);
 
 			//combine address
 			$address = $order->Address1;
@@ -488,7 +506,7 @@
 
 				"x_amount"			=> $amount,
 				"x_tax"				=> $tax,
-				"x_description"		=> $order->membership_level->name . " Membership",
+				"x_description"		=> apply_filters( 'pmpro_authorizenet_level_description', substr($order->membership_level->name . " at " . get_bloginfo("name"), 0, 127), $order->membership_level->name, $order, get_bloginfo("name")),
 
 				"x_first_name"		=> $order->FirstName,
 				"x_last_name"		=> $order->LastName,
@@ -505,8 +523,10 @@
 				// guide at: http://developer.authorize.net
 			);
 
-			if(!empty($order->CVV2))
+
+			if(!empty($order->CVV2) ) {
 				$post_values["x_card_code"] = $order->CVV2;
+			}
 
 			// This section takes the input fields and converts them to the proper format
 			// for an http post.  For example: "x_login=username&x_tran_key=a1B2c3D4"
@@ -608,8 +628,8 @@
 			$amount_tax = $order->getTaxForPrice($amount);
 			$trial_tax = $order->getTaxForPrice($trialAmount);
 
-			$amount = round((float)$amount + (float)$amount_tax, 2);
-			$trialAmount = round((float)$trialAmount + (float)$trial_tax, 2);
+			$amount = pmpro_round_price((float)$amount + (float)$amount_tax);
+			$trialAmount = pmpro_round_price((float)$trialAmount + (float)$trial_tax);
 
 			//authorize.net doesn't support different periods between trial and actual
 
