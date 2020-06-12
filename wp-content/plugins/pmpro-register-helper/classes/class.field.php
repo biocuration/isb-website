@@ -18,7 +18,7 @@
 			$this->id = null;
 			$this->label = null;
 			$this->levels = null;
-			$this->memberlistcsv = false;
+			$this->memberslistcsv = false;
 			$this->readonly = false;
 			$this->depends = array();
 			$this->showrequired = true;
@@ -97,6 +97,11 @@
 			{
 				if(empty($this->size))
 					$this->size = 30;
+			}			
+			elseif($this->type == "number")
+			{
+				if(empty($this->size))
+					$this->size = 5;
 			}			
 			elseif($this->type == "select" || $type == "multiselect" || $type == "select2" || $type == "radio")
 			{
@@ -283,7 +288,20 @@
 
 			if($this->type == "text")
 			{
-				$r = '<input type="text" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr($value) . '" ';
+				$r = '<input type="text" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr(wp_unslash($value)) . '" ';
+				if(!empty($this->size))
+					$r .= 'size="' . $this->size . '" ';
+				if(!empty($this->class))
+					$r .= 'class="' . $this->class . '" ';
+				if(!empty($this->readonly))
+					$r .= 'readonly="readonly" ';
+				if(!empty($this->html_attributes))
+					$r .= $this->getHTMLAttributes();
+				$r .= ' />';				
+			}
+			elseif($this->type == "number")
+			{
+				$r = '<input type="number"  min="0" step="1" pattern="\d+" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr($value) . '" ';
 				if(!empty($this->size))
 					$r .= 'size="' . $this->size . '" ';
 				if(!empty($this->class))
@@ -296,7 +314,7 @@
 			}
 			elseif($this->type == "password")
 			{
-				$r = '<input type="password" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr($value) . '" ';
+				$r = '<input type="password" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr(wp_unslash($value)) . '" ';
 				if(!empty($this->size))
 					$r .= 'size="' . $this->size . '" ';
 				if(!empty($this->class))
@@ -329,10 +347,13 @@
 				$r .= ">\n";
 				foreach($this->options as $ovalue => $option)
 				{
-					$r .= '<option value="' . esc_attr($ovalue) . '" ';
+					$r .= '<option value="' . 
+						
+						
+						($ovalue) . '" ';
 					if(!empty($this->multiple) && in_array($ovalue, $value))
 						$r .= 'selected="selected" ';
-					elseif(!empty($ovalue) && $ovalue == $value)
+					elseif($ovalue == $value)
 						$r .= 'selected="selected" ';
 					$r .= '>' . $option . "</option>\n";
 				}
@@ -355,7 +376,7 @@
 				foreach($this->options as $ovalue => $option)
 				{
 					$r .= '<option value="' . esc_attr($ovalue) . '" ';
-					if(!empty($ovalue) && in_array($ovalue, $value))
+					if(in_array($ovalue, $value))
 						$r .= 'selected="selected" ';
 					$r .= '>' . $option . "</option>\n";
 				}
@@ -368,7 +389,15 @@
 					$value = array($value);
 					
 				//build multi select
-				$r = '<select id="' . $this->id . '" name="' . $this->name . '[]" multiple="multiple" placeholder='.__('"Choose one or more."', 'pmprorh');
+				$r = '<select id="' . $this->id . '" name="' . $this->name . '[]" multiple="multiple" ';
+				if(isset($this->placeholder)) {
+					$r .= 'placeholder="' . esc_attr($this->placeholder) . '" ';
+					if(empty($this->select2options)) {
+						$this->select2options = 'placeholder: "' . esc_attr($this->placeholder) . '"';
+					}
+				} else {
+					$r .= 'placeholder="' . __('Choose one or more.', 'pmpro-register-helper') . '" ';
+				}				
 				if(!empty($this->class))
 					$r .= 'class="' . $this->class . '" ';
 				if(!empty($this->readonly))
@@ -379,16 +408,16 @@
 				foreach($this->options as $ovalue => $option)
 				{
 					$r .= '<option value="' . esc_attr($ovalue) . '" ';
-					if(!empty($ovalue) && in_array($ovalue, $value))
+					if(in_array($ovalue, $value))
 						$r .= 'selected="selected" ';
 					$r .= '>' . $option . '</option>';
 				}
 				$r .= '</select>';
 				
 				if(!empty($this->select2options))
-					$r .= '<script>jQuery("#' . $this->id . '").select2({' . $this->select2options . '});</script>';
+					$r .= '<script>jQuery(document).ready(function($){ $("#' . $this->id . '").select2({' . $this->select2options . '}); });</script>';
 				else
-					$r .= '<script>jQuery("#' . $this->id . '").select2();</script>';
+					$r .= '<script>jQuery(document).ready(function($){ $("#' . $this->id . '").select2(); });</script>';
 			}
 			elseif($this->type == "radio")
 			{
@@ -401,6 +430,8 @@
 					$r .= '<input type="radio" id="pmprorh_field_' . $this->name . $count . '" name="' . $this->name . '" value="' . esc_attr($ovalue) . '" ';
 					if(!empty($ovalue) && $ovalue == $value)
 						$r .= 'checked="checked"';
+					if(!empty($this->class))
+					$r .= 'class="' . $this->class . '" ';
 					if(!empty($this->readonly))
 						$r .= 'disabled="disabled" ';
 					if(!empty($this->html_attributes))
@@ -413,9 +444,11 @@
 			elseif($this->type == "checkbox")
 			{
 				$r = '<input name="'.$this->name.'"' .' type="checkbox" value="1"'.' id="'.$this->id.'"';
-				$r.=checked( $value, 1,false);		
+				$r.=checked( $value, 1,false);
+				if(!empty($this->class))
+					$r .= 'class="' . $this->class . '" ';		
 				if(!empty($this->readonly))
-					$r .= 'readonly="readonly" ';
+					$r .= 'disabled="disabled" ';
 				if(!empty($this->html_attributes))
 					$r .= $this->getHTMLAttributes();		
 				$r .= ' /> ';
@@ -429,18 +462,21 @@
 				if(!is_array($value))
 					$value = array($value);
 
-				$r = sprintf( '<div class="pmprorh_grouped_checkboxes">' );
+				$r = sprintf( '<div class="pmprorh_grouped_checkboxes"><ul>' );
 				$counter = 1;
 				foreach($this->options as $ovalue => $option)
 				{
-				 
+					if ( ! empty( $this->class ) ) {
+						$class = $this->class;
+					}
+
 				    $r .= sprintf( '<li style="list-style: none;"><span class="pmprorh_checkbox_span">' );
 					$r .= sprintf(
                         '<input name="%1$s[]" type="checkbox" value="%2$s" id="%3$s" class="%4$s" %5$s %6$s %7$s />',
                          $this->name,
                         $ovalue,
 						"{$this->id}_{$counter}",
-                        $this->id,
+                        $this->id . ' ' . $class,
                         ( in_array($ovalue, $value) ? 'checked="checked"' : null ),
                         ( !empty( $this->readonly ) ? 'readonly="readonly"' : null ),
                         $this->getHTMLAttributes()
@@ -453,7 +489,7 @@
 					$r .= sprintf( '</span></li>' );
 				}
 				
-				$r .= sprintf( '</div>' );
+				$r .= sprintf( '</ul></div>' );
 				
 			}
 			
@@ -466,11 +502,13 @@
 					$r .= 'readonly="readonly" ';
 				if(!empty($this->html_attributes))
 					$r .= $this->getHTMLAttributes();
-				$r .= '>' . esc_textarea($value) . '</textarea>';				
+				$r .= '>' . esc_textarea(wp_unslash($value)) . '</textarea>';				
 			}
 			elseif($this->type == "hidden")
 			{
-				$r = '<input type="hidden" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr($value) . '" ';
+				$r = '<input type="hidden" id="' . $this->id . '" name="' . $this->name . '" value="' . esc_attr(wp_unslash($value)) . '" ';
+				if(!empty($this->class))
+					$r .= 'class="' . $this->class . '" ';
 				if(!empty($this->readonly))
 					$r .= 'readonly="readonly" ';
 				if(!empty($this->html_attributes))
@@ -563,7 +601,7 @@
                     if($i == $month)
                         $r .= 'selected="selected"';
 
-                    $r .= '>' . date("M", strtotime($i . "/1/" . $year, current_time("timestamp"))) . '</option>';
+                    $r .= '>' . date("M", strtotime($i . "/15/" . $year, current_time("timestamp"))) . '</option>';
                 }
 
                 $r .= '</select><input id="' . $this->id . '_d" name="' . $this->name . '[d]" type="text" size="2" value="' . $day . '" ';
@@ -600,7 +638,7 @@
 				if(is_string($this->showrequired))
 					$r .= $this->showrequired;
 				else
-					$r .= '<span class="pmpro_asterisk"> <abbr title="Required Field">*</abbr></span></span>';
+					$r .= '<span class="pmpro_asterisk"> <abbr title="Required Field">*</abbr></span>';
 			}
 
 			//anything meant to be added to the beginning or end?
@@ -635,7 +673,7 @@
 					{
 						$checks[] = "((jQuery('#" . $check['id']."')".".is(':checkbox')) "
 						 ."? jQuery('#" . $check['id'] . ":checked').length > 0"
-						 .":(jQuery('#" . $check['id'] . "').val() == " . json_encode($check['value']) . " || jQuery.inArray(" . json_encode($check['value']) . ", jQuery('#" . $check['id'] . "').val()) > -1)) ||"."(jQuery(\"input:radio[name='".$check['id']."']:checked\").val() == ".json_encode($check['value'])." || jQuery.inArray(".json_encode($check['value']).", jQuery(\"input:radio[name='".$check['id']."']:checked\").val()) > -1)";
+						 .":(jQuery('#" . $check['id'] . "').val() == " . json_encode($check['value']) . " || jQuery.inArray( jQuery('#" . $check['id'] . "').val(), " . json_encode($check['value']) . ") > -1)) ||"."(jQuery(\"input:radio[name='".$check['id']."']:checked\").val() == ".json_encode($check['value'])." || jQuery.inArray(".json_encode($check['value']).", jQuery(\"input:radio[name='".$check['id']."']:checked\").val()) > -1)";
 					
 						$binds[] = "#" . $check['id'].",input:radio[name=".$check['id']."]";
 					}				
@@ -734,6 +772,12 @@
 
 			//update class value for div and field element
 			$this->class .= " " . pmpro_getClassForField($this->name);
+			
+			// add default pmpro-required class to field.
+			if ( ! empty( $this->required ) ) {
+				$this->class .= " pmpro-required";
+			}
+			
 			$this->divclass .= " pmpro_checkout-field-" . $this->type;
 			?>
 			<div id="<?php echo $this->id;?>_div" class="pmpro_checkout-field<?php if(!empty($this->divclass)) echo ' ' . $this->divclass; ?>">
