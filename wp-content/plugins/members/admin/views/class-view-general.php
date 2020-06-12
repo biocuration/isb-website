@@ -5,7 +5,7 @@
  * @package    Members
  * @subpackage Admin
  * @author     Justin Tadlock <justintadlock@gmail.com>
- * @copyright  Copyright (c) 2009 - 2017, Justin Tadlock
+ * @copyright  Copyright (c) 2009 - 2018, Justin Tadlock
  * @link       https://themehybrid.com/plugins/members
  * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  */
@@ -61,7 +61,6 @@ class View_General extends View {
 		// Add settings sections.
 		add_settings_section( 'roles_caps',          esc_html__( 'Roles and Capabilities', 'members' ), array( $this, 'section_roles_caps' ), 'members-settings' );
 		add_settings_section( 'content_permissions', esc_html__( 'Content Permissions',    'members' ), '__return_false',                     'members-settings' );
-		add_settings_section( 'sidebar_widgets',     esc_html__( 'Sidebar Widgets',        'members' ), '__return_false',                     'members-settings' );
 		add_settings_section( 'private_site',        esc_html__( 'Private Site',           'members' ), '__return_false',                     'members-settings' );
 
 		/* === Settings Fields === */
@@ -75,15 +74,13 @@ class View_General extends View {
 		add_settings_field( 'enable_content_permissions', esc_html__( 'Enable Permissions', 'members' ), array( $this, 'field_enable_content_permissions' ), 'members-settings', 'content_permissions' );
 		add_settings_field( 'content_permissions_error',  esc_html__( 'Error Message',      'members' ), array( $this, 'field_content_permissions_error'  ), 'members-settings', 'content_permissions' );
 
-		// Widgets fields.
-		add_settings_field( 'widget_login', esc_html__( 'Login Widget', 'members' ), array( $this, 'field_widget_login' ), 'members-settings', 'sidebar_widgets' );
-		add_settings_field( 'widget_users', esc_html__( 'Users Widget', 'members' ), array( $this, 'field_widget_users' ), 'members-settings', 'sidebar_widgets' );
-
 		// Private site fields.
 		add_settings_field( 'enable_private_site', esc_html__( 'Enable Private Site', 'members' ), array( $this, 'field_enable_private_site' ), 'members-settings', 'private_site' );
 		add_settings_field( 'private_rest_api',    esc_html__( 'REST API',            'members' ), array( $this, 'field_private_rest_api'    ), 'members-settings', 'private_site' );
 		add_settings_field( 'enable_private_feed', esc_html__( 'Disable Feed',        'members' ), array( $this, 'field_enable_private_feed' ), 'members-settings', 'private_site' );
 		add_settings_field( 'private_feed_error',  esc_html__( 'Feed Error Message',  'members' ), array( $this, 'field_private_feed_error'  ), 'members-settings', 'private_site' );
+
+		do_action( 'members_register_settings' );
 	}
 
 	/**
@@ -102,8 +99,6 @@ class View_General extends View {
 		$settings['show_human_caps']      = ! empty( $settings['show_human_caps'] )      ? true : false;
 		$settings['multi_roles']          = ! empty( $settings['multi_roles'] )          ? true : false;
 		$settings['content_permissions']  = ! empty( $settings['content_permissions'] )  ? true : false;
-		$settings['login_form_widget']    = ! empty( $settings['login_form_widget'] )    ? true : false;
-		$settings['users_widget']         = ! empty( $settings['users_widget'] )         ? true : false;
 		$settings['private_blog']         = ! empty( $settings['private_blog'] )         ? true : false;
 		$settings['private_rest_api']     = ! empty( $settings['private_rest_api'] )     ? true : false;
 		$settings['private_feed']         = ! empty( $settings['private_feed'] )         ? true : false;
@@ -113,7 +108,7 @@ class View_General extends View {
 		$settings['private_feed_error']        = stripslashes( wp_filter_post_kses( addslashes( $settings['private_feed_error']        ) ) );
 
 		// Return the validated/sanitized settings.
-		return $settings;
+		return apply_filters( 'members_validate_settings', $settings );
 	}
 
 	/**
@@ -222,36 +217,6 @@ class View_General extends View {
 			)
 		);
 	}
-
-	/**
-	 * Login widget field callback.
-	 *
-	 * @since  2.0.0
-	 * @access public
-	 * @return void
-	 */
-	public function field_widget_login() { ?>
-
-		<label>
-			<input type="checkbox" name="members_settings[login_form_widget]" value="true" <?php checked( members_login_widget_enabled() ); ?> />
-			<?php esc_html_e( 'Enable the login form widget.', 'members' ); ?>
-		</label>
-	<?php }
-
-	/**
-	 * Uers widget field callback.
-	 *
-	 * @since  2.0.0
-	 * @access public
-	 * @return void
-	 */
-	public function field_widget_users() { ?>
-
-		<label>
-			<input type="checkbox" name="members_settings[users_widget]" value="true" <?php checked( members_users_widget_enabled() ); ?> />
-			<?php esc_html_e( 'Enable the users widget.', 'members' ); ?>
-		</label>
-	<?php }
 
 	/**
 	 * Enable private site field callback.
