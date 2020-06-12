@@ -1,76 +1,102 @@
 {
   "properties":    {
-    "slug":                   "plugin",
-    "name":                   "Dashboard",
-    "show_feature_menu_item": true,
-    "storage_key":            "plugin",
-    "tagline":                "Overview of the plugin settings",
-    "show_central":           true,
-    "access_restricted":      true,
-    "premium":                false,
-    "has_custom_actions":     true,
-    "order":                  10
+    "slug":                  "plugin",
+    "name":                  "General Settings",
+    "sidebar_name":          "General",
+    "menu_title":            "Settings",
+    "show_module_menu_item": true,
+    "show_module_options":   true,
+    "storage_key":           "plugin",
+    "tagline":               "General Plugin Settings",
+    "auto_enabled":          true,
+    "show_central":          true,
+    "access_restricted":     true,
+    "premium":               false,
+    "run_if_whitelisted":    true,
+    "run_if_verified_bot":   true,
+    "run_if_wpcli":          true,
+    "order":                 10
   },
   "admin_notices": {
     "override-forceoff":          {
-      "id":          "override-forceoff",
-      "schedule":    "conditions",
-      "valid_admin": true,
-      "type":        "error"
+      "id":               "override-forceoff",
+      "schedule":         "conditions",
+      "valid_admin":      true,
+      "plugin_page_only": false,
+      "can_dismiss":      false,
+      "type":             "error"
     },
-    "plugin-update-available":    {
-      "id":          "plugin-update-available",
-      "schedule":    "conditions",
-      "valid_admin": true,
-      "type":        "warning"
+    "plugin-disabled":            {
+      "id":               "plugin-disabled",
+      "schedule":         "conditions",
+      "valid_admin":      true,
+      "plugin_page_only": true,
+      "can_dismiss":      false,
+      "type":             "error"
+    },
+    "php7":          {
+      "id":               "php7",
+      "schedule":         "conditions",
+      "valid_admin":      true,
+      "plugin_page_only": false,
+      "can_dismiss":      true,
+      "type":             "warning"
+    },
+    "compat-sgoptimize":          {
+      "id":               "compat-sgoptimize",
+      "schedule":         "conditions",
+      "valid_admin":      true,
+      "plugin_admin":     "ignore",
+      "plugin_page_only": false,
+      "can_dismiss":      false,
+      "type":             "warning"
     },
     "wizard_welcome":             {
-      "id":          "wizard_welcome",
-      "schedule":    "once",
-      "valid_admin": true,
-      "delay_days":  0,
-      "type":        "promo"
-    },
-    "allow-tracking":             {
-      "id":          "allow-tracking",
-      "schedule":    "conditions",
-      "valid_admin": true,
-      "delay_days":  1,
-      "type":        "promo"
+      "id":       "wizard_welcome",
+      "per_user": false,
+      "type":     "info"
     },
     "plugin-mailing-list-signup": {
-      "id":          "plugin-mailing-list-signup",
-      "schedule":    "once",
-      "valid_admin": true,
-      "delay_days":  15,
-      "type":        "promo"
+      "id":               "plugin-mailing-list-signup",
+      "min_install_days": 5,
+      "type":             "promo",
+      "drip_form_id":     "250437573"
+    },
+    "plugin-update-available":    {
+      "id":   "plugin-update-available",
+      "type": "warning"
+    },
+    "allow-tracking":             {
+      "id":               "allow-tracking",
+      "plugin_admin":     true,
+      "min_install_days": 3,
+      "type":             "promo"
     },
     "rate-plugin":                {
-      "id":          "rate-plugin",
-      "schedule":    "once",
-      "valid_admin": true,
-      "delay_days":  30,
-      "type":        "promo"
-    },
-    "translate-plugin":           {
-      "id":          "translate-plugin",
-      "schedule":    "once",
-      "valid_admin": true,
-      "delay_days":  45,
-      "type":        "promo"
+      "id":               "rate-plugin",
+      "min_install_days": 30,
+      "type":             "promo"
     }
   },
   "sections":      [
     {
-      "slug":        "section_global_security_options",
-      "primary":     true,
-      "title":       "Global Plugin Security Options",
-      "title_short": "Global Options"
+      "slug":          "section_defaults",
+      "primary":       true,
+      "title":         "Plugin Defaults",
+      "title_short":   "Plugin Defaults",
+      "help_video_id": "338533495"
     },
     {
-      "slug":        "section_defaults",
-      "title":       "Plugin Defaults",
-      "title_short": "Plugin Defaults"
+      "slug":          "section_general_plugin_options",
+      "title":         "General Plugin Options",
+      "title_short":   "General Options",
+      "help_video_id": "338540386"
+    },
+    {
+      "slug":          "section_third_party_captcha",
+      "title":         "CAPTCHA",
+      "title_short":   "CAPTCHA",
+      "help_video_id": "338546796"
     },
     {
       "slug":        "section_importexport",
@@ -78,14 +104,9 @@
       "title_short": "Import / Export"
     },
     {
-      "slug":        "section_general_plugin_options",
-      "title":       "General Plugin Options",
-      "title_short": "General Options"
-    },
-    {
-      "slug":        "section_third_party_google",
-      "title":       "Google",
-      "title_short": "Google"
+      "slug":        "section_global_security_options",
+      "title":       "Global Plugin Security Options",
+      "title_short": "Disable Shield"
     },
     {
       "slug":   "section_non_ui",
@@ -100,7 +121,7 @@
       "type":        "checkbox",
       "link_info":   "",
       "link_blog":   "",
-      "name":        "Enable Plugin Features",
+      "name":        "Enable/Disable All Plugin Modules",
       "summary":     "Global Plugin On/Off Switch",
       "description": "Uncheck this option to disable all Shield features"
     },
@@ -109,7 +130,7 @@
       "section":     "section_general_plugin_options",
       "default":     "N",
       "type":        "checkbox",
-      "link_info":   "http://icwp.io/7i",
+      "link_info":   "https://shsec.io/7i",
       "link_blog":   "",
       "name":        "Enable Information Gathering",
       "summary":     "Permit Anonymous Usage Information Gathering",
@@ -155,6 +176,10 @@
           "text":      "HTTP_INCAP_CLIENT_IP"
         },
         {
+          "value_key": "HTTP_X_SP_FORWARDED_IP",
+          "text":      "HTTP_X_SP_FORWARDED_IP"
+        },
+        {
           "value_key": "HTTP_FORWARDED",
           "text":      "HTTP_FORWARDED"
         },
@@ -163,7 +188,7 @@
           "text":      "HTTP_CLIENT_IP"
         }
       ],
-      "link_info":     "",
+      "link_info":     "https://shsec.io/dn",
       "link_blog":     "",
       "name":          "Visitor IP Address",
       "summary":       "Which Address Is Yours",
@@ -197,22 +222,22 @@
       "section":     "section_general_plugin_options",
       "default":     "N",
       "type":        "checkbox",
-      "link_info":   "http://icwp.io/5v",
-      "link_blog":   "http://icwp.io/wpsf20",
+      "link_info":   "https://shsec.io/5v",
+      "link_blog":   "https://shsec.io/wpsf20",
       "name":        "Show Plugin Badge",
       "summary":     "Display Plugin Badge On Your Site",
       "description": "Enabling this option helps support the plugin by spreading the word about it on your website. The plugin badge also demonstrates to visitors that you take your website security seriously."
     },
     {
-      "key":         "delete_on_deactivate",
+      "key":         "enable_xmlrpc_compatibility",
       "section":     "section_defaults",
       "default":     "N",
       "type":        "checkbox",
       "link_info":   "",
       "link_blog":   "",
-      "name":        "Delete Plugin Settings",
-      "summary":     "Delete All Plugin Settings Upon Plugin Deactivation",
-      "description": "Careful: Removes all plugin options when you deactivate the plugin."
+      "name":        "XML-RPC Compatibility",
+      "summary":     "Allow Login Through XML-RPC To By-Pass Login Guard Rules",
+      "description": "Enable this if you need XML-RPC functionality e.g. if you use the WordPress iPhone/Android App."
     },
     {
       "key":         "importexport_enable",
@@ -220,8 +245,8 @@
       "premium":     true,
       "default":     "Y",
       "type":        "checkbox",
-      "link_info":   "",
-      "link_blog":   "",
+      "link_info":   "https://shsec.io/do",
+      "link_blog":   "https://shsec.io/dp",
       "name":        "Allow Import/Export",
       "summary":     "Allow Import Of Options To, And Export Of Options From, This Site",
       "description": "Uncheck this box to completely disable import and export of options."
@@ -241,6 +266,7 @@
       "key":          "importexport_whitelist",
       "section":      "section_importexport",
       "transferable": false,
+      "sensitive":    true,
       "default":      [],
       "type":         "array",
       "link_info":    "",
@@ -252,6 +278,7 @@
     {
       "key":         "importexport_whitelist_notify",
       "section":     "section_importexport",
+      "sensitive":   true,
       "default":     "N",
       "type":        "checkbox",
       "link_info":   "",
@@ -274,20 +301,40 @@
       "description":  "Keep this Secret Key private as it will allow the import and export of options."
     },
     {
-      "key":          "unique_installation_id",
-      "section":      "section_general_plugin_options",
-      "transferable": false,
-      "default":      "",
-      "type":         "noneditable_text",
-      "link_info":    "",
-      "link_blog":    "",
-      "name":         "Installation ID",
-      "summary":      "Unique Plugin Installation ID",
-      "description":  "Keep this ID private."
+      "key":         "delete_on_deactivate",
+      "section":     "section_general_plugin_options",
+      "default":     "N",
+      "type":        "checkbox",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Delete Plugin Settings",
+      "summary":     "Delete All Plugin Settings Upon Plugin Deactivation",
+      "description": "Careful: Removes all plugin options when you deactivate the plugin."
+    },
+    {
+      "key":           "captcha_provider",
+      "section":       "section_third_party_captcha",
+      "default":       "grecaptcha",
+      "type":          "select",
+      "value_options": [
+        {
+          "value_key": "grecaptcha",
+          "text":      "Google reCAPTCHA v2"
+        },
+        {
+          "value_key": "hcaptcha",
+          "text":      "hCaptcha"
+        }
+      ],
+      "link_info":     "https://shsec.io/dq",
+      "link_blog":     "",
+      "name":          "CAPTCHA Provider",
+      "summary":       "Which CAPTCHA Provider To Use Throughout",
+      "description":   "You can choose the CAPTCHA provider depending on your preferences."
     },
     {
       "key":           "google_recaptcha_style",
-      "section":       "section_third_party_google",
+      "section":       "section_third_party_captcha",
       "premium":       true,
       "default":       "light",
       "type":          "select",
@@ -302,99 +349,192 @@
         },
         {
           "value_key": "invisible",
-          "text":      "Invisible reCAPTCHA"
+          "text":      "Invisible"
         }
       ],
-      "link_info":     "",
+      "link_info":     "https://shsec.io/dq",
       "link_blog":     "",
-      "name":          "reCAPTCHA Style",
+      "name":          "CAPTCHA Type",
       "summary":       "How Google reCAPTCHA Will Be Displayed By Default",
       "description":   "You can choose the reCAPTCHA display format that best suits your site, including the new Invisible Recaptcha."
     },
     {
       "key":         "google_recaptcha_site_key",
-      "section":     "section_third_party_google",
+      "section":     "section_third_party_captcha",
       "sensitive":   true,
       "default":     "",
       "type":        "text",
-      "link_info":   "http://icwp.io/shld5",
-      "link_blog":   "",
-      "name":        "reCAPTCHA Secret",
-      "summary":     "Google reCAPTCHA Secret Key",
-      "description": "Enter your Google reCAPTCHA secret key for use throughout the plugin."
-    },
-    {
-      "key":         "google_recaptcha_secret_key",
-      "section":     "section_third_party_google",
-      "sensitive":   true,
-      "default":     "",
-      "type":        "text",
-      "link_info":   "http://icwp.io/shld5",
+      "link_info":   "https://shsec.io/shld5",
       "link_blog":   "",
       "name":        "reCAPTCHA Site Key",
-      "summary":     "Google reCAPTCHA Site Key",
+      "summary":     "Google reCAPTCHA Site Key - Only v2 or Invisible. v3 NOT supported.",
       "description": "Enter your Google reCAPTCHA site key for use throughout the plugin."
     },
     {
+      "key":         "google_recaptcha_secret_key",
+      "section":     "section_third_party_captcha",
+      "sensitive":   true,
+      "default":     "",
+      "type":        "text",
+      "link_info":   "https://shsec.io/shld5",
+      "link_blog":   "",
+      "name":        "reCAPTCHA Secret",
+      "summary":     "Google reCAPTCHA Secret Key - Only v2 or Invisible. v3 NOT supported.",
+      "description": "Enter your Google reCAPTCHA secret key for use throughout the plugin."
+    },
+    {
       "key":          "tracking_last_sent_at",
+      "section":      "section_non_ui",
       "transferable": false,
+      "type":         "integer",
       "default":      0,
-      "section":      "section_non_ui"
+      "min":          0
+    },
+    {
+      "key":          "unique_installation_id",
+      "section":      "section_non_ui",
+      "transferable": false,
+      "type":         "text",
+      "default":      0
     },
     {
       "key":     "tracking_permission_set_at",
-      "default": 0,
-      "section": "section_non_ui"
+      "section": "section_non_ui",
+      "type":    "integer",
+      "default": 0
     },
     {
       "key":          "installation_time",
+      "section":      "section_non_ui",
       "transferable": false,
-      "section":      "section_non_ui"
+      "type":         "integer",
+      "default":      0
+    },
+    {
+      "key":          "activated_at",
+      "transferable": false,
+      "section":      "section_non_ui",
+      "type":         "integer",
+      "default":      0
     },
     {
       "key":          "importexport_secretkey_expires_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "section":      "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
       "key":          "importexport_handshake_expires_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "section":      "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key":          "importexport_last_import_hash",
+      "key":          "last_ip_detect_source",
       "transferable": false,
-      "section":      "section_non_ui"
+      "section":      "section_non_ui",
+      "type":         "text",
+      "default":      ""
     },
     {
-      "key":          "this_server_ip",
+      "key":          "openssl_private_key",
       "transferable": false,
       "sensitive":    true,
       "section":      "section_non_ui",
-      "value":        ""
+      "type":         "text",
+      "default":      ""
     },
     {
-      "key":          "this_server_ip_last_check_at",
+      "key":          "snapi_data",
+      "transferable": false,
+      "sensitive":    true,
+      "section":      "section_non_ui",
+      "type":         "array",
+      "default":      []
+    },
+    {
+      "key":          "captcha_checked_at",
       "transferable": false,
       "section":      "section_non_ui",
-      "value":        0
+      "type":         "int",
+      "default":      -1
+    },
+    {
+      "key":          "cache_dir_write_test",
+      "transferable": false,
+      "section":      "section_non_ui",
+      "type":         "array",
+      "default":      []
     }
   ],
   "definitions":   {
+    "survey_email":           "c3VwcG9ydEBvbmVkb2xsYXJwbHVnaW4uY29t",
     "help_video_id":          "",
     "tracking_cron_handle":   "plugin_tracking_cron",
     "tracking_post_url":      "https://tracking.icontrolwp.com/track/plugin/shield",
     "importexport_cron_name": "autoimport",
+    "href_privacy_policy":    "https://shsec.io/wpshieldprivacypolicy",
+    "db_classes":             {
+      "geoip": "\\FernleafSystems\\Wordpress\\Plugin\\Shield\\Databases\\GeoIp\\Handler",
+      "notes": "\\FernleafSystems\\Wordpress\\Plugin\\Shield\\Databases\\AdminNotes\\Handler"
+    },
+    "db_autoexpire_notes":    0,
+    "db_autoexpire_geoip":    30,
+    "db_notes_name":          "notes",
+    "db_notes_table_columns": [
+      "id",
+      "wp_username",
+      "note",
+      "created_at",
+      "deleted_at"
+    ],
+    "geoip_table_name":       "geoip",
+    "geoip_table_columns":    [
+      "id",
+      "ip",
+      "meta",
+      "created_at",
+      "deleted_at"
+    ],
     "active_plugin_features": [
+      {
+        "slug":          "insights",
+        "storage_key":   "insights",
+        "load_priority": 1,
+        "menu_priority": 5
+      },
       {
         "slug":          "admin_access_restriction",
         "storage_key":   "admin_access_restriction",
-        "load_priority": 20
+        "load_priority": 11
+      },
+      {
+        "slug":          "ips",
+        "storage_key":   "ips",
+        "load_priority": 15
+      },
+      {
+        "slug":          "audit_trail",
+        "storage_key":   "audit_trail",
+        "load_priority": 11,
+        "hidden":        false
+      },
+      {
+        "slug":        "hack_protect",
+        "storage_key": "hack_protect"
+      },
+      {
+        "slug":          "traffic",
+        "storage_key":   "traffic",
+        "load_priority": 12,
+        "min_php":       "5.4"
       },
       {
         "slug":          "firewall",
         "storage_key":   "firewall",
-        "load_priority": 13
+        "load_priority": 1000
       },
       {
         "slug":        "login_protect",
@@ -409,12 +549,28 @@
         "storage_key": "commentsfilter"
       },
       {
-        "slug":        "autoupdates",
-        "storage_key": "autoupdates"
+        "slug":          "events",
+        "storage_key":   "events",
+        "load_priority": 11
       },
       {
-        "slug":        "hack_protect",
-        "storage_key": "hack_protect"
+        "slug":          "reporting",
+        "storage_key":   "reporting",
+        "load_priority": 12
+      },
+      {
+        "slug":          "sessions",
+        "storage_key":   "sessions",
+        "load_priority": 5
+      },
+      {
+        "slug":          "license",
+        "storage_key":   "license",
+        "load_priority": 10
+      },
+      {
+        "slug":        "autoupdates",
+        "storage_key": "autoupdates"
       },
       {
         "slug":        "headers",
@@ -425,55 +581,57 @@
         "storage_key": "lockdown"
       },
       {
-        "slug":          "ips",
-        "storage_key":   "ips",
-        "load_priority": 12
-      },
-      {
-        "slug":          "statistics",
-        "storage_key":   "statistics",
-        "load_priority": 11,
-        "hidden":        false
-      },
-      {
-        "slug":          "sessions",
-        "storage_key":   "sessions",
-        "load_priority": 5
-      },
-      {
-        "slug":          "audit_trail",
-        "storage_key":   "audit_trail",
-        "load_priority": 11,
-        "hidden":        false
-      },
-      {
-        "slug":          "license",
-        "storage_key":   "license",
-        "load_priority": 10
-      },
-      {
         "slug":        "email",
         "storage_key": "email"
       }
     ],
+    "events":                 {
+      "test_cron_run":          {
+        "audit":  false,
+        "recent": true
+      },
+      "import_notify_sent":     {
+        "stat": false
+      },
+      "import_notify_received": {
+        "stat": false
+      },
+      "options_exported":       {
+        "stat":   true,
+        "recent": true
+      },
+      "options_imported":       {
+        "stat":   true,
+        "recent": true
+      },
+      "whitelist_site_added":   {
+        "stat": false
+      },
+      "whitelist_site_removed": {
+        "stat": false
+      },
+      "master_url_set":         {
+        "stat": false
+      },
+      "recaptcha_success":      {
+        "audit": false
+      },
+      "recaptcha_fail":         {
+        "audit": true
+      }
+    },
     "wizards":                {
-      "welcome":      {
-        "title": "Getting Started Setup Wizard",
-        "desc": "An introduction to this security plugin, helping you get setup and started quickly with the core features.",
+      "welcome": {
+        "title":                "Getting Started Setup Wizard",
+        "desc":                 "An introduction to this security plugin, helping you get setup and started quickly with the core features.",
         "min_user_permissions": "manage_options",
         "steps":                {
           "welcome":                  {
             "security_admin": false,
-            "title":             "Welcome"
+            "title":          "Welcome"
           },
           "ip_detect":                {
             "title": "IP Detection"
-          },
-          "license":                  {
-            "title": "Go Pro"
-          },
-          "import":                   {
-            "title": "Import"
           },
           "admin_access_restriction": {
             "title": "Security Admin"
@@ -498,26 +656,7 @@
           },
           "thankyou":                 {
             "security_admin": false,
-            "title":             "Thank You!"
-          }
-        }
-      },
-      "importexport": {
-        "title": "Options Import/Export Wizard",
-        "desc": "Walks you through the import and export of options, as well as configuring ongoing automated options-sync.",
-        "min_user_permissions": "manage_options",
-        "has_premium": true,
-        "steps":                {
-          "start":    {
-            "security_admin": false,
-            "title":             "Start: Options Import"
-          },
-          "import":   {
-            "title": "Run Options Import"
-          },
-          "finished": {
-            "security_admin": false,
-            "title":             "Finished: Options Import"
+            "title":          "Thank You!"
           }
         }
       }

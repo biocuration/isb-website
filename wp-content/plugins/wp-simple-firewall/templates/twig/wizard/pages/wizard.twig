@@ -16,9 +16,8 @@
 
 {% block body_content_main %}
 	<div class="row">
-		<div class="col-md-8 col-md-offset-2">
-			<div id="wizard">
-			</div>
+		<div class="col-12 col-xl-8 offset-xl-2">
+			<div id="wizard"></div>
 		</div>
 	</div>
 {% endblock %}
@@ -129,27 +128,24 @@ var iCWP_WPSF_Wizard_FormHandler = new function () {
 		bRequestCurrentlyRunning = true;
 
 		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'action' )
-							 .attr( 'value', "{{ ajax.content.icwp_ajax_action }}" )
+							 .attr( 'value', "{{ ajax.content.action }}" )
 							 .appendTo( $oForm );
-		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'icwp_ajax_action' )
-							 .attr( 'value', "{{ ajax.content.icwp_ajax_action }}" )
+		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'exec' )
+							 .attr( 'value', "{{ ajax.content.exec }}" )
 							 .appendTo( $oForm );
-		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'icwp_nonce' )
-							 .attr( 'value', "{{ ajax.content.icwp_nonce }}" )
+		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'exec_nonce' )
+							 .attr( 'value', "{{ ajax.content.exec_nonce }}" )
 							 .appendTo( $oForm );
-		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'icwp_nonce_action' )
-							 .attr( 'value', "{{ ajax.content.icwp_nonce_action }}" )
-							 .appendTo( $oForm );
-		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'icwp_action_module' )
-							 .attr( 'value', "{{ ajax.content.icwp_action_module }}" )
+		jQuery( '<input />' ).attr( 'type', 'hidden' ).attr( 'name', 'mod_slug' )
+							 .attr( 'value', "{{ ajax.content.mod_slug }}" )
 							 .appendTo( $oForm );
 
 		if ( jQuery( 'p.wizard-response', $oForm ).length === 0 ) {
-			$oForm.append( '<p class="wizard-response"></p>' )
+			$oForm.append( '<p class="wizard-response alert"></p>' )
 		}
 
 		var $oResponseField = jQuery( 'p.wizard-response', $oForm );
-		$oResponseField.removeClass( 'bg-success bg-danger' )
+		$oResponseField.removeClass( 'alert-danger alert-success' )
 					   .html( '...' );
 
 		var $oSubmitButton = jQuery( 'button[type=submit]', $oForm );
@@ -158,13 +154,18 @@ var iCWP_WPSF_Wizard_FormHandler = new function () {
 		jQuery.post( '{{ ajax.content.ajaxurl }}', $oForm.serialize(),
 			function ( oResponse ) {
 
+				if ( typeof oResponse === "undefined" || typeof oResponse.data === "undefined" ) {
+					alert( 'There was a critical failure in the request. Cannot proceed. Example causes are HTTPS misconfiguration or PHP error warnings output.' );
+					return;
+				}
+
 				if ( oResponse.success ) {
-					$oResponseField.removeClass( 'bg-danger' )
-								   .addClass( 'bg-success' );
+					$oResponseField.removeClass( 'alert-danger' )
+								   .addClass( 'alert-success' );
 				}
 				else {
-					$oResponseField.removeClass( 'bg-success' )
-								   .addClass( 'bg-danger' );
+					$oResponseField.removeClass( 'alert-success' )
+								   .addClass( 'alert-danger' );
 					$oSubmitButton.prop( 'disabled', false );
 				}
 
@@ -183,7 +184,7 @@ var iCWP_WPSF_Wizard_FormHandler = new function () {
 					iCWP_WPSF_Wizard_FormHandler.reRenderCurrent();
 				}
 
-				jQuery( $oForm ).trigger( 'icwpWizardFormSubmit', oResponse.success );
+				jQuery( $oForm ).trigger( 'icwpWizardFormSubmit', oResponse );
 			}
 		).always(
 			function () {
@@ -220,6 +221,11 @@ var iCWP_WPSF_Wizard_FormHandler = new function () {
 
 		jQuery.post( '{{ ajax.steps.ajaxurl }}', reqData,
 			function ( oResponse ) {
+				if ( typeof oResponse === "undefined" || typeof oResponse.data === "undefined" ) {
+					alert( 'There was a critical failure in the request. Cannot proceed. Example causes are HTTPS misconfiguration or PHP error warnings output.' );
+					return;
+				}
+
 				if ( undefined !== oResponse.data.next_step ) {
 					$oWizard.steps( 'add', oResponse.data.next_step );
 					$oWizard.steps( 'next' );

@@ -1,0 +1,14 @@
+{% extends "/notices/base-info.twig" %}
+
+{% block notice_body %}
+	<div class="row">
+		<div class="col">
+			{% include '/snippets/optin_form_drip_inline.twig' %}
+		</div>
+	</div>
+	<div class="row">
+		<div class="col">
+			{{ strings.summary }}
+		</div>
+	</div>
+{% endblock %}

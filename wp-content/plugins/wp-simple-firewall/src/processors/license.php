@@ -1,15 +1,11 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_Processor_License' ) ) {
-	return;
-}
+use FernleafSystems\Wordpress\Plugin\Shield\Modules;
 
-require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'base.php' );
+/**
+ * Class ICWP_WPSF_Processor_License
+ * @deprecated 9.0
+ */
+class ICWP_WPSF_Processor_License extends Modules\BaseShield\ShieldProcessor {
 
-class ICWP_WPSF_Processor_License extends ICWP_WPSF_Processor_Base {
-
-	/**
-	 */
-	public function run() {
-	}
 }

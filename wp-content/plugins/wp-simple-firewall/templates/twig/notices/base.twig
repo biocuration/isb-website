@@ -1,7 +1,42 @@
-
+{% import "/common/macros.twig" as icwp_macros %}
 {% block notice_wrapper %}
-	<div class="{% block notice_classes %}{% endblock %} icwp-admin-notice">
-		{% block notice_body %}
-		{% endblock %}
+
+	<div id="{{ unique_render_id }}"
+		 class="{{ notice_classes }} odp-admin-notice notice is-dismissible">
+
+		<div class="notice-icon">
+			<span class="dashicons dashicons-shield"></span>&nbsp;
+		</div>
+
+		<div class="notice-content">
+			{% if strings.title|default('') is not empty %}
+				<h3 class="notice-title">{{ strings.title|title }}</h3>
+			{% endif %}
+			<div>
+				{% block notice_body %}{% endblock %}
+			</div>
+		</div>
+
+		<div class="dismiss-p">
+			<a class="icwp-notice-dismiss" href="#"><?php echo $strings[ 'dismiss' ]; ?></a>
+		</div>
+
+		<div style="clear:both;"></div>
 	</div>
+{% endblock %}
+
+{% block notice_js %}
+	<script type="text/javascript">
+		jQuery( document ).on(
+			'click',
+			'#{{ unique_render_id }} button.notice-dismiss, #{{ unique_render_id }} a.icwp-notice-dismiss',
+			function () {
+				var $oContainer = jQuery( '#{{ unique_render_id }}' );
+				jQuery.get( ajaxurl, {{ ajax.dismiss_admin_notice|raw }} );
+				$oContainer.fadeOut( 500, function () {
+					$oContainer.remove();
+				} );
+			}
+		);
+	</script>
 {% endblock %}

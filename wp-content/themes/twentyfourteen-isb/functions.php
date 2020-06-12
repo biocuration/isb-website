@@ -33,3 +33,21 @@ add_filter( 'login_headertitle', 'my_login_logo_url_title' );
 
 // update_option( 'siteurl', 'https://www.biocuration.org' );
 // update_option( 'home', 'https://www.biocuration.org' );
+
+/**
+ * Removes angle brackets (characters < and >) arounds URLs in a given string
+ *
+ * @param string $string    The string to remove potential angle brackets from
+ *
+ * @return string    $string where any angle brackets surrounding an URL have been removed.
+ * 
+ * From: https://wordpress.stackexchange.com/questions/246377/missing-url-in-password-reset-email
+ * Addresses: https://github.com/biocuration/isb-website/issues/52
+ */
+function remove_angle_brackets_around_url($string)
+{
+    return preg_replace('/<(' . preg_quote(network_site_url(), '/') . '[^>]*)>/', '\1', $string);
+}
+
+// Apply the remove_angle_brackets_around_url() function on the "retrieve password" message:
+add_filter('retrieve_password_message', 'remove_angle_brackets_around_url', 99, 1);

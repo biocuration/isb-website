@@ -1,189 +1,196 @@
 {
-  "slug": "autoupdates",
-  "properties": {
-    "slug": "autoupdates",
-    "name": "Automatic Updates",
-    "show_feature_menu_item": true,
-    "storage_key": "autoupdates",
-    "tagline": "Take back full control of WordPress automatic updates",
-    "show_central": true,
-    "access_restricted": true,
-    "premium": false,
-    "order": 60
+  "slug":        "autoupdates",
+  "properties":  {
+    "slug":                  "autoupdates",
+    "name":                  "Automatic Updates",
+    "sidebar_name":          "Auto Updates",
+    "show_module_menu_item": false,
+    "show_module_options":   true,
+    "storage_key":           "autoupdates",
+    "tagline":               "Take back full control of WordPress automatic updates",
+    "show_central":          true,
+    "access_restricted":     true,
+    "premium":               false,
+    "run_if_whitelisted":    true,
+    "run_if_verified_bot":   true,
+    "run_if_wpcli":          true,
+    "order":                 60
   },
-  "sections": [
+  "sections":    [
     {
-      "slug": "section_enable_plugin_feature_automatic_updates_control",
-      "primary": true,
-      "title": "Enable Plugin Feature: Automatic Updates",
-      "title_short": "Enable / Disable",
-      "summary": [
-        "Purpose - Automatic Updates lets you manage the WordPress automatic updates engine so you choose what exactly gets updated automatically.",
-        "Recommendation - Keep the Automatic Updates feature turned on."
-      ]
-    },
-    {
-      "slug": "section_disable_all_wordpress_automatic_updates",
-      "title": "Disable ALL WordPress Automatic Updates",
-      "title_short": "Turn Off",
-      "summary": [
-        "Purpose - If you never want WordPress to automatically update anything on your site, turn on this option.",
-        "Recommendation - Do not turn on this option unless you really need to block updates."
-      ]
-    },
-    {
-      "slug": "section_automatic_updates_for_wordpress_components",
-      "title": "Automatic Updates For WordPress Components",
+      "slug":        "section_automatic_updates_for_wordpress_components",
+      "primary":     true,
+      "title":       "Automatic Updates For WordPress Components",
       "title_short": "WordPress Components",
-      "summary": [
+      "summary":     [
         "Purpose - Control how automatic updates for each WordPress component is handled.",
         "Recommendation - You should at least allow minor updates for the WordPress core."
       ]
     },
     {
-      "slug": "section_automatic_update_email_notifications",
-      "title": "Automatic Update Email Notifications",
-      "title_short": "Notifications",
-      "summary": "Purpose - Control how you are notified of automatic updates that have occurred."
+      "slug":        "section_options",
+      "title":       "Auto-Update Options",
+      "title_short": "Auto-Update Options",
+      "summary":     "Purpose - Make adjustments to how automatic updates are handled on your site."
     },
     {
-      "slug": "section_non_ui",
+      "slug":        "section_enable_plugin_feature_automatic_updates_control",
+      "title":       "Enable Module: Automatic Updates",
+      "title_short": "Disable Module",
+      "summary":     [
+        "Purpose - Automatic Updates lets you manage the WordPress automatic updates engine so you choose what exactly gets updated automatically.",
+        "Recommendation - Keep the Automatic Updates feature turned on."
+      ]
+    },
+    {
+      "slug":   "section_non_ui",
       "hidden": true
     }
   ],
-  "options": [
+  "options":     [
     {
-      "key": "enable_autoupdates",
-      "section": "section_enable_plugin_feature_automatic_updates_control",
-      "default": "Y",
-      "type": "checkbox",
-      "link_info": "http://icwp.io/3w",
-      "link_blog": "",
-      "name": "Enable Automatic Updates",
-      "summary": "Enable (or Disable) The Automatic Updates Feature",
-      "description": "Checking/Un-Checking this option will completely turn on/off the whole Automatic Updates feature"
+      "key":         "enable_autoupdates",
+      "section":     "section_enable_plugin_feature_automatic_updates_control",
+      "default":     "Y",
+      "type":        "checkbox",
+      "link_info":   "https://shsec.io/3w",
+      "link_blog":   "https://shsec.io/hj",
+      "name":        "Enable Automatic Updates",
+      "summary":     "Enable (or Disable) The Automatic Updates module",
+      "description": "Un-Checking this option will completely disable the Automatic Updates module"
     },
     {
-      "key": "enable_autoupdate_disable_all",
-      "section": "section_disable_all_wordpress_automatic_updates",
-      "default": "N",
-      "type": "checkbox",
-      "link_info": "http://icwp.io/3v",
-      "link_blog": "",
-      "name": "Disable All",
-      "summary": "Completely Disable WordPress Automatic Updates",
+      "key":         "enable_autoupdate_disable_all",
+      "section":     "section_automatic_updates_for_wordpress_components",
+      "default":     "N",
+      "type":        "checkbox",
+      "link_info":   "https://shsec.io/3v",
+      "link_blog":   "",
+      "name":        "Disable All",
+      "summary":     "Completely Disable WordPress Automatic Updates",
       "description": "When selected, regardless of any other settings, all WordPress automatic updates on this site will be completely disabled!"
     },
     {
-      "key": "autoupdate_core",
-      "section": "section_automatic_updates_for_wordpress_components",
-      "default": "core_minor",
-      "type": "select",
+      "key":           "autoupdate_core",
+      "section":       "section_automatic_updates_for_wordpress_components",
+      "default":       "core_minor",
+      "type":          "select",
       "value_options": [
         {
           "value_key": "core_never",
-          "text": "Never"
+          "text":      "Never"
         },
         {
           "value_key": "core_minor",
-          "text": "Minor Versions Only"
+          "text":      "Minor Versions Only"
         },
         {
           "value_key": "core_major",
-          "text": "Major and Minor Versions"
+          "text":      "Major and Minor Versions"
         }
       ],
-      "link_info": "http://icwp.io/3x",
-      "link_blog": "",
-      "name": "WordPress Core Updates",
-      "summary": "Decide how the WordPress Core will automatically update, if at all",
-      "description": "At least automatically upgrading minor versions is recommended (and is the WordPress default)."
+      "link_info":     "https://shsec.io/3x",
+      "link_blog":     "",
+      "name":          "WordPress Core Updates",
+      "summary":       "Decide how the WordPress Core will automatically update, if at all",
+      "description":   "At least automatically upgrading minor versions is recommended (and is the WordPress default)."
     },
     {
-      "key": "enable_autoupdate_plugins",
-      "section": "section_automatic_updates_for_wordpress_components",
-      "default": "N",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Plugins",
-      "summary": "Automatically Update Plugins",
+      "key":         "enable_autoupdate_plugins",
+      "section":     "section_automatic_updates_for_wordpress_components",
+      "default":     "N",
+      "type":        "checkbox",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Plugins",
+      "summary":     "Automatically Update Plugins",
       "description": "Note: Automatic updates for plugins are disabled on WordPress by default."
     },
     {
-      "key": "enable_individual_autoupdate_plugins",
-      "section": "section_non_ui",
-      "default": "N",
-      "type": "checkbox",
-      "premium": true,
-      "link_info": "",
-      "link_blog": "",
-      "name": "Individually Select Plugins",
-      "summary": "Select Individual Plugins To Automatically Update",
-      "description": "Turning this on will provide an option on the plugins page to select whether a plugin is automatically updated."
-    },
-    {
-      "key": "enable_autoupdate_themes",
-      "section": "section_automatic_updates_for_wordpress_components",
-      "default": "N",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Themes",
-      "summary": "Automatically Update Themes",
+      "key":         "enable_autoupdate_themes",
+      "section":     "section_automatic_updates_for_wordpress_components",
+      "default":     "N",
+      "type":        "checkbox",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Themes",
+      "summary":     "Automatically Update Themes",
       "description": "Note: Automatic updates for themes are disabled on WordPress by default."
     },
     {
-      "key": "enable_autoupdate_translations",
-      "section": "section_automatic_updates_for_wordpress_components",
-      "default": "Y",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Translations",
-      "summary": "Automatically Update Translations",
-      "description": "Note: Automatic updates for translations are enabled on WordPress by default."
+      "key":         "update_delay",
+      "section":     "section_options",
+      "premium":     true,
+      "default":     "0",
+      "type":        "integer",
+      "link_info":   "https://shsec.io/e5",
+      "link_blog":   "",
+      "name":        "Update Delay",
+      "summary":     "Delay Automatic Updates For Period Of Stability",
+      "description": "Shield will delay upgrades until the new update has been available for the set number of days."
     },
     {
-      "key": "enable_autoupdate_ignore_vcs",
-      "section": "section_automatic_updates_for_wordpress_components",
-      "default": "N",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Ignore Version Control",
-      "summary": "Ignore Version Control Systems Such As GIT and SVN",
-      "description": "If you use SVN or GIT and WordPress detects it, automatic updates are disabled by default. Check this box to ignore version control systems and allow automatic updates."
+      "key":           "autoupdate_plugin_self",
+      "section":       "section_options",
+      "default":       "auto",
+      "type":          "select",
+      "value_options": [
+        {
+          "value_key": "auto",
+          "text":      "Let The Plugin Decide"
+        },
+        {
+          "value_key": "disabled",
+          "text":      "Disabled"
+        },
+        {
+          "value_key": "immediate",
+          "text":      "As Soon As Possible"
+        }
+      ],
+      "link_info":     "https://shsec.io/3x",
+      "link_blog":     "",
+      "name":          "WordPress Core Updates",
+      "summary":       "Decide how the WordPress Core will automatically update, if at all",
+      "description":   "At least automatically upgrading minor versions is recommended (and is the WordPress default)."
     },
     {
-      "key": "enable_upgrade_notification_email",
-      "section": "section_automatic_update_email_notifications",
-      "sensitive": true,
-      "default": "",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Send Report Email",
-      "summary": "Send email notices after automatic updates",
+      "key":         "enable_upgrade_notification_email",
+      "section":     "section_options",
+      "default":     "Y",
+      "type":        "checkbox",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Send Report Email",
+      "summary":     "Send email notices after automatic updates",
       "description": "You can turn on/off email notices from automatic updates by un/checking this box."
     },
     {
-      "key": "override_email_address",
-      "section": "section_automatic_update_email_notifications",
-      "sensitive": true,
-      "default": "",
-      "type": "email",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Report Email Address",
-      "summary": "Where to send upgrade notification reports",
+      "key":         "override_email_address",
+      "section":     "section_options",
+      "sensitive":   true,
+      "default":     "",
+      "type":        "email",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Report Email Address",
+      "summary":     "Where to send upgrade notification reports",
       "description": "If this is empty, it will default to the Site Admin email address"
     },
     {
-      "key": "selected_plugins",
+      "key":          "delay_tracking",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": [],
-      "section": "section_non_ui"
+      "sensitive":    true,
+      "type":         "array",
+      "default":      []
+    },
+    {
+      "key":          "selected_plugins",
+      "section":      "section_non_ui",
+      "transferable": false,
+      "type":         "array",
+      "default":      []
     }
   ],
   "definitions": {

@@ -1,4 +1,4 @@
-<h2>What is the Shield?</h2>
+<h5>What is the Shield?</h5>
 <p>Shield is a security plugin designed to protect your WordPress site from numerous avenues of attack.</p>
 <p>It's a big plugin, but nearly every option is documented and it's just a matter of reading the details.</p>
 
@@ -16,7 +16,7 @@
 		   public IP address.
 		</p>
 		<p>Don't know your IP address? Go here:
-			(<a href="http://icwp.io/an" target="_blank">We've done it for you</a> ;)
+			(<a href="https://shsec.io/an" target="_blank">We've done it for you</a> ;)
 		</p>
 		<p>With this result, you should be able to select the correct item from the list. The higher up the
 		   list the better, with <code>REMOTE_ADDR</code> being the #1 preferred, if possible.</p>

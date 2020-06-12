@@ -1,110 +1,150 @@
 {
-  "slug": "license",
-  "properties": {
-    "slug": "license",
-    "name": "Shield Pro",
-    "tagline": "The Best In WordPress Security, Only Better.",
-    "auto_enabled": true,
-    "show_feature_menu_item": true,
-    "highlight_menu_item": true,
-    "hide_summary": true,
-    "storage_key": "license",
-    "show_central": true,
-    "premium": false,
-    "access_restricted": true
+  "slug":          "license",
+  "properties":    {
+    "slug":                  "license",
+    "name":                  "Pro Security",
+    "menu_title":            "Go Pro!",
+    "show_module_menu_item": true,
+    "highlight_menu_item":   true,
+    "tagline":               "The Best In WordPress Security, Only Better.",
+    "auto_enabled":          true,
+    "storage_key":           "license",
+    "show_central":          false,
+    "premium":               false,
+    "access_restricted":     true,
+    "run_if_whitelisted":    true,
+    "run_if_verified_bot":   true,
+    "run_if_wpcli":          true
   },
-  "sections": [
+  "admin_notices": {
+    "wphashes-token-fail": {
+      "id":               "wphashes-token-fail",
+      "schedule":         "conditions",
+      "valid_admin":      true,
+      "plugin_page_only": true,
+      "can_dismiss":      false,
+      "type":             "error"
+    }
+  },
+  "sections":      [
     {
-      "slug": "section_license_options",
-      "title": "License Options",
-      "primary": true
-    },
-    {
-      "slug": "section_non_ui",
+      "slug":   "section_non_ui",
       "hidden": true
     }
   ],
-  "options": [
+  "options":       [
     {
-      "key": "license_key",
-      "section": "section_license_options",
-      "default": "",
-      "type": "text",
-      "link_info": "",
-      "link_blog": "",
-      "name": "License Key",
-      "summary": "License Key",
-      "description": "License Key."
+      "key":          "license_key",
+      "section":      "section_non_ui",
+      "sensitive":    true,
+      "transferable": false,
+      "type":         "text",
+      "default":      ""
     },
     {
-      "key": "license_activated_at",
+      "key":          "license_activated_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": 0,
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "license_deactivated_at",
+      "key":          "license_deactivated_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": 0,
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "license_last_checked_at",
+      "key":          "license_last_checked_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": 0,
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "license_expires_at",
+      "key":          "last_warning_email_sent_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": 0,
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "license_official_status",
+      "key":          "last_deactivated_email_sent_at",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": "",
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "license_deactivated_reason",
+      "key":          "last_errors",
+      "section":      "section_non_ui",
       "transferable": false,
-      "default": "",
-      "section": "section_non_ui"
+      "type":         "array",
+      "default":      ""
     },
     {
-      "key": "license_registered_email",
+      "key":          "last_error_at",
+      "section":      "section_non_ui",
+      "sensitive":    true,
       "transferable": false,
-      "default": "",
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "is_license_shield_central",
+      "key":          "keyless_handshake_hash",
+      "section":      "section_non_ui",
+      "sensitive":    true,
       "transferable": false,
-      "default": false,
-      "section": "section_non_ui"
+      "type":         "text",
+      "default":      ""
     },
     {
-      "key": "last_errors",
+      "key":          "keyless_handshake_until",
+      "section":      "section_non_ui",
+      "sensitive":    true,
       "transferable": false,
-      "default": "",
-      "section": "section_non_ui"
+      "type":         "integer",
+      "default":      0
     },
     {
-      "key": "last_error_at",
+      "key":          "license_data",
+      "section":      "section_non_ui",
+      "sensitive":    true,
       "transferable": false,
-      "default": 0,
-      "section": "section_non_ui"
+      "type":         "array",
+      "default":      []
+    },
+    {
+      "key":          "wphashes_api_token",
+      "transferable": false,
+      "section":      "section_non_ui",
+      "type":         "array",
+      "default":      []
     }
   ],
-  "definitions": {
-    "license_store_url": "https://onedollarplugin.com/edd-sl/",
-    "license_item_name": "Shield Security Pro",
-    "license_item_id": "6047",
-    "license_item_name_sc": "Shield Security Pro (via Shield Central)",
-    "license_item_id_sc": "968",
-    "license_lack_check_expire_days": 3,
-    "license_key_length": 32,
-    "license_key_type": "alphanumeric"
+  "definitions":   {
+    "license_store_url":            "https://onedollarplugin.com/edd-sl/",
+    "license_store_url_api":        "https://onedollarplugin.com/wp-json/odp-eddkeyless/v1",
+    "keyless_cp":                   "https://shsec.io/c5",
+    "license_item_name":            "Shield Security Pro",
+    "license_item_id":              "6047",
+    "license_item_name_sc":         "Shield Security Pro (via Shield Central)",
+    "lic_verify_expire_days":       7,
+    "lic_verify_expire_grace_days": 3,
+    "keyless":                      true,
+    "keyless_handshake_expire":     90,
+    "events":                       {
+      "lic_check_success":   {
+        "stat": false
+      },
+      "lic_fail_email":      {
+        "stat": false
+      },
+      "lic_fail_deactivate": {
+        "cat":  2,
+        "stat": false
+      }
+    }
   }
 }

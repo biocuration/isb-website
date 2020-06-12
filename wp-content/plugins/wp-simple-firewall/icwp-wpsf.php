@@ -1,17 +1,17 @@
 <?php
 /*
  * Plugin Name: Shield Security
- * Plugin URI: http://icwp.io/2f
+ * Plugin URI: https://shsec.io/2f
  * Description: Powerful, Easy-To-Use #1 Rated WordPress Security System
- * Version: 6.2.2
+ * Version: 9.0.4
  * Text Domain: wp-simple-firewall
- * Domain Path: /languages/
- * Author: iControlWP
- * Author URI: http://icwp.io/2e
+ * Domain Path: /languages
+ * Author: Shield Security
+ * Author URI: https://shsec.io/bv
  */
 
 /**
- * Copyright (c) 2018 iControlWP <support@icontrolwp.com>
+ * Copyright (c) 2020 Shield Security <support@shieldsecurity.io>
  * All rights reserved.
  * "Shield" (formerly WordPress Simple Firewall) is distributed under the GNU
  * General Public License, Version 2, June 1991. Copyright (C) 1989, 1991 Free
@@ -28,26 +28,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-if ( !defined( 'ICWP_DS' ) ) {
-	define( 'ICWP_DS', DIRECTORY_SEPARATOR );
+if ( version_compare( PHP_VERSION, '5.4.0', '<' ) ) {
+	global $sIcwpWpsfPluginFile;
+	$sIcwpWpsfPluginFile = plugin_basename( __FILE__ );
+	include_once( dirname( __FILE__ ).'/unsupported.php' );
+	return;
 }
 
-if ( !function_exists( '_wpsf_e' ) ) {
-	function _wpsf_e( $sStr ) {
-		_e( $sStr, 'wp-simple-firewall' );
-	}
-}
-if ( !function_exists( '_wpsf__' ) ) {
-	function _wpsf__( $sStr ) {
-		return __( $sStr, 'wp-simple-firewall' );
-	}
+if ( @is_file( dirname( __FILE__ ).'/src/lib/vendor/autoload.php' ) ) {
+	require_once( dirname( __FILE__ ).'/src/lib/vendor/autoload.php' );
 }
 
-// makes it available to the extension also.
-require_once( dirname( __FILE__ ).'/src/common/icwp-foundation.php' );
+if ( !include_once( dirname( __FILE__ ).'/filesnotfound.php' ) ) {
+	return;
+}
 
 add_action( 'plugins_loaded', 'icwp_wpsf_init', 1 ); // use 0 for extensions to ensure hooks have been added.
 function icwp_wpsf_init() {
 	$sRootFile = __FILE__;
 	require_once( dirname( __FILE__ ).'/init.php' );
 }
+
+function icwp_wpsf_onactivate() {
+	icwp_wpsf_init();
+	try {
+		\FernleafSystems\Wordpress\Plugin\Shield\Controller\Controller::GetInstance()->onWpActivatePlugin();
+	}
+	catch ( Exception $oE ) {
+	}
+}
+
+register_activation_hook( __FILE__, 'icwp_wpsf_onactivate' );

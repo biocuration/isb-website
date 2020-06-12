@@ -1,27 +1,51 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_FeatureHandler_BaseWpsf', false ) ) {
-	return;
-}
-
-require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'base.php' );
+use FernleafSystems\Wordpress\Plugin\Shield;
+use FernleafSystems\Wordpress\Plugin\Shield\Modules\Plugin;
+use FernleafSystems\Wordpress\Services\Services;
+use FernleafSystems\Wordpress\Services\Utilities;
 
 class ICWP_WPSF_FeatureHandler_BaseWpsf extends ICWP_WPSF_FeatureHandler_Base {
 
 	/**
-	 * @var ICWP_WPSF_Processor_Sessions
+	 * @var bool
 	 */
-	static protected $oSessProcessor;
+	protected static $bIsVerifiedBot;
 
 	/**
-	 * @return ICWP_WPSF_Processor_Sessions
+	 * @var bool
 	 */
-	public function getSessionsProcessor() {
-		return self::$oSessProcessor;
+	private static $bVisitorIsWhitelisted;
+
+	/**
+	 * @return bool
+	 */
+	public function canCacheDirWrite() {
+		return ( new Shield\Modules\Plugin\Lib\TestCacheDirWrite() )
+			->setMod( $this->getCon()->getModule_Plugin() )
+			->canWrite();
 	}
 
 	/**
-	 * @return ICWP_WPSF_SessionVO|null
+	 * @return \ICWP_WPSF_Processor_Sessions
+	 */
+	public function getSessionsProcessor() {
+		return $this->getCon()
+					->getModule_Sessions()
+					->getProcessor();
+	}
+
+	/**
+	 * @return Shield\Databases\Session\Handler
+	 */
+	public function getDbHandler_Sessions() {
+		return $this->getCon()
+					->getModule_Sessions()
+					->getDbHandler_Sessions();
+	}
+
+	/**
+	 * @return Shield\Databases\Session\EntryVO|null
 	 */
 	public function getSession() {
 		$oP = $this->getSessionsProcessor();
@@ -32,137 +56,321 @@ class ICWP_WPSF_FeatureHandler_BaseWpsf extends ICWP_WPSF_FeatureHandler_Base {
 	 * @return bool
 	 */
 	public function hasSession() {
-		return !is_null( $this->getSession() );
+		return ( $this->getSession() instanceof \FernleafSystems\Wordpress\Plugin\Shield\Databases\Session\EntryVO );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function hasValidRequestIP() {
+		return Services::IP()->isValidIp( Services::IP()->getRequestIp() );
+	}
+
+	public function onWpInit() {
+		parent::onWpInit();
+		if ( $this->isThisModulePage() && !$this->isWizardPage() && ( $this->getSlug() != 'insights' ) ) {
+			$this->redirectToInsightsSubPage();
+		}
+	}
+
+	protected function redirectToInsightsSubPage() {
+		Services::Response()->redirect(
+			$this->getCon()->getModule_Insights()->getUrl_AdminPage(),
+			[
+				'inav'   => 'settings',
+				'subnav' => $this->getSlug()
+			],
+			true, false
+		);
+	}
+
+	/**
+	 * @return Plugin\Lib\Captcha\CaptchaConfigVO
+	 */
+	public function getCaptchaCfg() {
+		$oPlugMod = $this->getCon()->getModule_Plugin();
+		/** @var Shield\Modules\Plugin\Options $oOpts */
+		$oOpts = $oPlugMod->getOptions();
+		$oCfg = ( new Plugin\Lib\Captcha\CaptchaConfigVO() )->applyFromArray( $oOpts->getCaptchaConfig() );
+		$oCfg->invisible = $oCfg->theme === 'invisible';
+
+		if ( $oCfg->provider === Plugin\Lib\Captcha\CaptchaConfigVO::PROV_GOOGLE_RECAP2 ) {
+			$oCfg->url_api = 'https://www.google.com/recaptcha/api.js';
+		}
+		elseif ( $oCfg->provider === Plugin\Lib\Captcha\CaptchaConfigVO::PROV_HCAPTCHA ) {
+			$oCfg->url_api = 'https://hcaptcha.com/1/api.js';
+		}
+		else {
+			error_log( 'CAPTCHA Provider not supported: '.$oCfg->provider );
+		}
+
+		$oCfg->js_handle = $this->getCon()->prefix( $oCfg->provider );
+
+		return $oCfg;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isWlEnabled() {
+		return $this->getCon()->getModule_SecAdmin()->isWlEnabled();
 	}
 
 	/**
 	 * @return array
 	 */
-	protected function getGoogleRecaptchaConfig() {
-		$aConfig = apply_filters( $this->prefix( 'google_recaptcha_config' ), array() );
-		if ( !is_array( $aConfig ) ) {
-			$aConfig = array();
+	public function getSecAdminLoginAjaxData() {
+		// We set a custom mod_slug so that this module handles the ajax request
+		$aAjaxData = $this->getAjaxActionData( 'sec_admin_login' );
+		$aAjaxData[ 'mod_slug' ] = $this->prefix( 'admin_access_restriction' );
+		return $aAjaxData;
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getSecAdminCheckAjaxData() {
+		// We set a custom mod_slug so that this module handles the ajax request
+		$aAjaxData = $this->getAjaxActionData( 'sec_admin_check' );
+		$aAjaxData[ 'mod_slug' ] = $this->prefix( 'admin_access_restriction' );
+		return $aAjaxData;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getPluginReportEmail() {
+		return $this->getCon()
+					->getModule_Plugin()
+					->getPluginReportEmail();
+	}
+
+	/**
+	 * @uses echo()
+	 */
+	public function displayModuleAdminPage() {
+		if ( $this->canDisplayOptionsForm() ) {
+			parent::displayModuleAdminPage();
 		}
-		return array_merge(
-			array(
-				'key'    => '',
-				'secret' => '',
-				'style'  => 'light',
-			),
-			$aConfig
+		else {
+			echo $this->renderRestrictedPage();
+		}
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getBaseDisplayData() {
+		return Services::DataManipulation()->mergeArraysRecursive(
+			parent::getBaseDisplayData(),
+			[
+				'head'    => [
+					'html' => [
+						'lang' => Services::WpGeneral()->getLocale( '-' ),
+						'dir'  => is_rtl() ? 'rtl' : 'ltr',
+					],
+					'meta' => [
+						[
+							'type'      => 'http-equiv',
+							'type_type' => 'Cache-Control',
+							'content'   => 'no-store, no-cache',
+						],
+						[
+							'type'      => 'http-equiv',
+							'type_type' => 'Expires',
+							'content'   => '0',
+						],
+					]
+				],
+				'ajax'    => [
+					'sec_admin_login' => $this->getSecAdminLoginAjaxData(),
+				],
+				'flags'   => [
+					'show_promo'  => !$this->isPremium(),
+					'has_session' => $this->hasSession()
+				],
+				'hrefs'   => [
+					'aar_forget_key' => $this->isWlEnabled() ?
+						$this->getCon()->getLabels()[ 'AuthorURI' ] : 'https://shsec.io/gc'
+				],
+				'classes' => [
+					'top_container' => implode( ' ', array_filter( [
+						'odp-outercontainer',
+						$this->isPremium() ? 'is-pro' : 'is-not-pro',
+						$this->getModSlug(),
+						Services::Request()->query( 'inav', '' )
+					] ) )
+				],
+			]
 		);
 	}
 
 	/**
-	 * Overridden in the plugin handler getting the option value
 	 * @return string
+	 */
+	protected function renderRestrictedPage() {
+		/** @var Shield\Modules\SecurityAdmin\Options $oSecOpts */
+		$oSecOpts = $this->getCon()
+						 ->getModule_SecAdmin()
+						 ->getOptions();
+		$aData = Services::DataManipulation()
+						 ->mergeArraysRecursive(
+							 $this->getBaseDisplayData(),
+							 [
+								 'ajax'    => [
+									 'restricted_access' => $this->getAjaxActionData( 'restricted_access' ),
+								 ],
+								 'strings' => [
+									 'force_remove_email' => __( "If you've forgotten your key, a link can be sent to the plugin administrator email address to remove this restriction.", 'wp-simple-firewall' ),
+									 'click_email'        => __( "Click here to send the verification email.", 'wp-simple-firewall' ),
+									 'send_to_email'      => sprintf( __( "Email will be sent to %s", 'wp-simple-firewall' ),
+										 Utilities\Obfuscate::Email( $this->getPluginReportEmail() ) ),
+									 'no_email_override'  => __( "The Security Administrator has restricted the use of the email override feature.", 'wp-simple-firewall' ),
+								 ],
+								 'flags'   => [
+									 'allow_email_override' => $oSecOpts->isEmailOverridePermitted()
+								 ]
+							 ]
+						 );
+		return $this->renderTemplate( '/wpadmin_pages/security_admin/index.twig', $aData, true );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function getIfSupport3rdParty() {
+		return $this->isPremium();
+	}
+
+	/**
+	 * @return bool
+	 * @throws \Exception
+	 */
+	protected function isReadyToExecute() {
+		$oOpts = $this->getOptions();
+		return ( $oOpts->isModuleRunIfWhitelisted() || !$this->isVisitorWhitelisted() )
+			   && ( $oOpts->isModuleRunIfVerifiedBot() || !$this->isVerifiedBot() )
+			   && ( $oOpts->isModuleRunUnderWpCli() || !Services::WpGeneral()->isWpCli() )
+			   && parent::isReadyToExecute();
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isVisitorWhitelisted() {
+		if ( !isset( self::$bVisitorIsWhitelisted ) ) {
+			$oIp = ( new Shield\Modules\IPs\Lib\Ops\LookupIpOnList() )
+				->setDbHandler( $this->getCon()->getModule_IPs()->getDbHandler_IPs() )
+				->setIP( Services::IP()->getRequestIp() )
+				->setListTypeWhite()
+				->lookup();
+			self::$bVisitorIsWhitelisted = $oIp instanceof Shield\Databases\IPs\EntryVO;
+		}
+		return self::$bVisitorIsWhitelisted;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isVerifiedBot() {
+		if ( !isset( self::$bIsVerifiedBot ) ) {
+			$oIP = Services::IP();
+
+			if ( $oIP->isLoopback() ) {
+				self::$bIsVerifiedBot = false;
+			}
+			else {
+				$oSP = Services::ServiceProviders();
+				$sIp = $oIP->getRequestIp();
+				$sAgent = Services::Request()->getUserAgent();
+				if ( empty( $sAgent ) ) {
+					$sAgent = 'Unknown';
+				}
+				self::$bIsVerifiedBot = $oSP->isIp_GoogleBot( $sIp, $sAgent )
+										|| $oSP->isIp_BingBot( $sIp, $sAgent )
+										|| $oSP->isIp_AppleBot( $sIp, $sAgent )
+										|| $oSP->isIp_YahooBot( $sIp, $sAgent )
+										|| $oSP->isIp_DuckDuckGoBot( $sIp, $sAgent )
+										|| $oSP->isIp_YandexBot( $sIp, $sAgent )
+										|| ( class_exists( 'ICWP_Plugin' ) && $oSP->isIp_iControlWP( $sIp ) )
+										|| $oSP->isIp_BaiduBot( $sIp, $sAgent )
+										|| $oSP->isIp_Stripe( $sIp, $sAgent );
+			}
+		}
+		return self::$bIsVerifiedBot;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isXmlrpcBypass() {
+		return $this->getCon()
+					->getModule_Plugin()
+					->isXmlrpcBypass();
+	}
+
+	/**
+	 * @param string[] $aArray
+	 * @param string   $sPregReplacePattern
+	 * @return string[]
+	 */
+	protected function cleanStringArray( $aArray, $sPregReplacePattern ) {
+		$aCleaned = [];
+		if ( !is_array( $aArray ) ) {
+			return $aCleaned;
+		}
+
+		foreach ( $aArray as $nKey => $sVal ) {
+			$sVal = preg_replace( $sPregReplacePattern, '', $sVal );
+			if ( !empty( $sVal ) ) {
+				$aCleaned[] = $sVal;
+			}
+		}
+		return array_unique( array_filter( $aCleaned ) );
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getModDisabledInsight() {
+		return [
+			'name'    => __( 'Module Disabled', 'wp-simple-firewall' ),
+			'enabled' => false,
+			'summary' => __( 'All features of this module are completely disabled', 'wp-simple-firewall' ),
+			'weight'  => 2,
+			'href'    => $this->getUrl_DirectLinkToOption( $this->getEnableModOptKey() ),
+		];
+	}
+
+	/**
+	 * @return string
+	 * @deprecated 9.0
+	 */
+	public function getPluginDefaultRecipientAddress() {
+		return $this->getPluginReportEmail();
+	}
+
+	/**
+	 * @return string
+	 * @deprecated 9.0
 	 */
 	public function getGoogleRecaptchaSecretKey() {
-		$aConfig = $this->getGoogleRecaptchaConfig();
-		return $aConfig[ 'secret' ];
+		return $this->getCaptchaCfg()->secret;
 	}
 
 	/**
-	 * Overriden in the plugin handler getting the option value
 	 * @return string
+	 * @deprecated 9.0
 	 */
 	public function getGoogleRecaptchaSiteKey() {
-		$aConfig = $this->getGoogleRecaptchaConfig();
-		return $aConfig[ 'key' ];
+		return $this->getCaptchaCfg()->key;
 	}
 
 	/**
-	 * Overriden in the plugin handler getting the option value
 	 * @return string
+	 * @deprecated 9.0
 	 */
-	public function getGoogleRecaptchaStyle() {
-		$aConfig = $this->getGoogleRecaptchaConfig();
-		return $aConfig[ 'style' ];
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getIsGoogleRecaptchaReady() {
-		$sKey = $this->getGoogleRecaptchaSiteKey();
-		$sSecret = $this->getGoogleRecaptchaSecretKey();
-		return ( !empty( $sSecret ) && !empty( $sKey ) && $this->loadDataProcessor()->getPhpSupportsNamespaces() );
-	}
-
-	/**
-	 * @return array
-	 */
-	protected function getBaseDisplayData() {
-		return $this->loadDP()->mergeArraysRecursive(
-			parent::getBaseDisplayData(),
-			array(
-				'strings' => array(
-					'go_to_settings'                    => _wpsf__( 'Settings' ),
-					'on'                                => _wpsf__( 'On' ),
-					'off'                               => _wpsf__( 'Off' ),
-					'more_info'                         => _wpsf__( 'More Info' ),
-					'blog'                              => _wpsf__( 'Blog' ),
-					'plugin_activated_features_summary' => _wpsf__( 'Plugin Activated Features Summary:' ),
-					'save_all_settings'                 => _wpsf__( 'Save All Settings' ),
-					'options_title'                     => _wpsf__( 'Options' ),
-					'options_summary'                   => _wpsf__( 'Configure Module' ),
-					'actions_title'                     => _wpsf__( 'Actions and Info' ),
-					'actions_summary'                   => _wpsf__( 'Perform actions for this module' ),
-					'help_title'                        => _wpsf__( 'Help' ),
-					'help_summary'                      => _wpsf__( 'Learn More' ),
-
-					'aar_what_should_you_enter'    => _wpsf__( 'What should you enter here?' ),
-					'aar_must_supply_key_first'    => _wpsf__( 'At some point you entered a Security Admin Access Key - to manage this plugin, you must supply it here first.' ),
-					'aar_to_manage_must_enter_key' => _wpsf__( 'To manage this plugin you must enter the access key.' ),
-					'aar_enter_access_key'         => _wpsf__( 'Enter Access Key' ),
-					'aar_submit_access_key'        => _wpsf__( 'Submit Security Admin Key' )
-				),
-				'flags'   => array(
-					'show_summary' => true,
-					'has_session'  => $this->hasSession()
-				)
-			)
-		);
-	}
-
-	protected function getTranslatedString( $sKey, $sDefault ) {
-		$aStrings = array(
-			'nonce_failed_empty'    => _wpsf__( 'Nonce security checking failed - the nonce value was empty.' ),
-			'nonce_failed_supplied' => _wpsf__( 'Nonce security checking failed - the nonce supplied was "%s".' ),
-		);
-		return ( isset( $aStrings[ $sKey ] ) ? $aStrings[ $sKey ] : $sDefault );
-	}
-
-	/**
-	 * @return bool
-	 */
-	protected function isVisitorWhitelisted() {
-		return apply_filters( $this->prefix( 'visitor_is_whitelisted' ), false );
-	}
-
-	/**
-	 * @param array $aOptionsParams
-	 * @return array
-	 * @throws Exception
-	 */
-	protected function loadStrings_SectionTitlesDefaults( $aOptionsParams ) {
-
-		switch ( $aOptionsParams[ 'slug' ] ) {
-
-			case 'section_user_messages' :
-				$sTitle = _wpsf__( 'User Messages' );
-				$sTitleShort = _wpsf__( 'User Messages' );
-				$aSummary = array(
-					sprintf( _wpsf__( 'Purpose - %s' ), _wpsf__( 'Customize the messages displayed to the user.' ) ),
-					sprintf( _wpsf__( 'Recommendation - %s' ), _wpsf__( 'Use this section if you need to communicate to the user in a particular manner.' ) ),
-					sprintf( _wpsf__( 'Hint - %s' ), sprintf( _wpsf__( 'To reset any message to its default, enter the text exactly: %s' ), 'default' ) )
-				);
-				break;
-
-			default:
-				throw new Exception( sprintf( 'A section slug was defined but with no associated strings. Slug: "%s".', $aOptionsParams[ 'slug' ] ) );
-		}
-
-		return array( $sTitle, $sTitleShort, $aSummary );
+	public function getCaptchaStyle() {
+		return $this->getCaptchaCfg()->theme;
 	}
 }

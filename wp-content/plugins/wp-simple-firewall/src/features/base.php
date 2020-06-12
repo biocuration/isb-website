@@ -1,126 +1,258 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_FeatureHandler_Base', false ) ) {
-	return;
-}
+use FernleafSystems\Wordpress\Plugin\Shield;
+use FernleafSystems\Wordpress\Services\Services;
 
-abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
+abstract class ICWP_WPSF_FeatureHandler_Base {
 
-	/**
-	 * @var ICWP_WPSF_Plugin_Controller
-	 */
-	static protected $oPluginController;
-
-	/**
-	 * @var boolean
-	 */
-	protected $bBypassAdminAccess = false;
-
-	/**
-	 * @var ICWP_WPSF_OptionsVO
-	 */
-	protected $oOptions;
-
-	/**
-	 * @var boolean
-	 */
-	protected $bModuleMeetsRequirements;
+	use Shield\Modules\PluginControllerConsumer;
 
 	/**
 	 * @var string
 	 */
-	const CollateSeparator = '--SEP--';
-	/**
-	 * @var string
-	 */
-	const PluginVersionKey = 'current_plugin_version';
-
-	/**
-	 * @var boolean
-	 */
-	protected $bPluginDeleting = false;
+	private $sOptionsStoreKey;
 
 	/**
 	 * @var string
 	 */
-	protected $sOptionsStoreKey;
+	protected $sModSlug;
 
 	/**
-	 * @var string
+	 * @var bool
 	 */
-	protected $sFeatureName;
-
-	/**
-	 * @var string
-	 */
-	protected $sFeatureSlug;
-
-	/**
-	 * @var boolean
-	 */
-	protected static $bForceOffFileExists;
+	protected $bImportExportWhitelistNotify = false;
 
 	/**
 	 * @var ICWP_WPSF_FeatureHandler_Email
 	 */
-	protected static $oEmailHandler;
+	private static $oEmailHandler;
 
 	/**
-	 * @var ICWP_WPSF_Processor_Base
+	 * @var Shield\Modules\Base\BaseProcessor
 	 */
-	protected $oProcessor;
+	private $oProcessor;
 
 	/**
 	 * @var ICWP_WPSF_Wizard_Base
 	 */
-	protected $oWizard;
+	private $oWizard;
 
 	/**
-	 * @var string
+	 * @var Shield\Modules\Base\BaseReporting
 	 */
-	protected static $sActivelyDisplayedModuleOptions = '';
+	private $oReporting;
 
 	/**
-	 * @param ICWP_WPSF_Plugin_Controller $oPluginController
-	 * @param array                       $aFeatureProperties
-	 * @throws Exception
+	 * @var Shield\Modules\Base\Strings
 	 */
-	public function __construct( $oPluginController, $aFeatureProperties = array() ) {
-		if ( empty( $oPluginController ) ) {
-			throw new Exception();
+	private $oStrings;
+
+	/**
+	 * @var Shield\Modules\Base\Options
+	 */
+	private $oOpts;
+
+	/**
+	 * @var Shield\Databases\Base\Handler[]
+	 */
+	private $aDbHandlers;
+
+	/**
+	 * @param Shield\Controller\Controller $oPluginController
+	 * @param array                        $aMod
+	 * @throws \Exception
+	 */
+	public function __construct( $oPluginController, $aMod = [] ) {
+		if ( !$oPluginController instanceof Shield\Controller\Controller ) {
+			throw new \Exception( 'Plugin controller not supplied to Module' );
 		}
-		else if ( empty( self::$oPluginController ) ) {
-			self::$oPluginController = $oPluginController;
+		$this->setCon( $oPluginController );
+
+		if ( empty( $aMod[ 'storage_key' ] ) && empty( $aMod[ 'slug' ] ) ) {
+			throw new \Exception( 'Module storage key AND slug are undefined' );
 		}
 
-		if ( isset( $aFeatureProperties[ 'storage_key' ] ) ) {
-			$this->sOptionsStoreKey = $aFeatureProperties[ 'storage_key' ];
+		$this->sOptionsStoreKey = empty( $aMod[ 'storage_key' ] ) ? $aMod[ 'slug' ] : $aMod[ 'storage_key' ];
+		if ( isset( $aMod[ 'slug' ] ) ) {
+			$this->sModSlug = $aMod[ 'slug' ];
 		}
 
-		if ( isset( $aFeatureProperties[ 'slug' ] ) ) {
-			$this->sFeatureSlug = $aFeatureProperties[ 'slug' ];
-		}
-
-		// before proceeding, we must now test the system meets the minimum requirements.
-		if ( $this->getModuleMeetRequirements() ) {
-
-			$nRunPriority = isset( $aFeatureProperties[ 'load_priority' ] ) ? $aFeatureProperties[ 'load_priority' ] : 100;
-			// Handle any upgrades as necessary (only go near this if it's the admin area)
-			add_action( $this->prefix( 'run_processors' ), array( $this, 'onRunProcessors' ), $nRunPriority );
-			add_action( 'init', array( $this, 'onWpInit' ), 1 );
-			add_action( $this->prefix( 'import_options' ), array( $this, 'processImportOptions' ) );
-			add_action( $this->prefix( 'form_submit' ), array( $this, 'handleFormSubmit' ) );
-			add_filter( $this->prefix( 'filter_plugin_submenu_items' ), array( $this, 'filter_addPluginSubMenuItem' ) );
-			add_filter( $this->prefix( 'get_feature_summary_data' ), array( $this, 'filter_getFeatureSummaryData' ) );
-			add_action( $this->prefix( 'plugin_shutdown' ), array( $this, 'action_doFeatureShutdown' ) );
-			add_action( $this->prefix( 'delete_plugin' ), array( $this, 'deletePluginOptions' ) );
-			add_filter( $this->prefix( 'aggregate_all_plugin_options' ), array( $this, 'aggregateOptionsValues' ) );
-
-			add_filter( $this->prefix( 'register_admin_notices' ), array( $this, 'fRegisterAdminNotices' ) );
-			add_filter( $this->prefix( 'gather_options_for_export' ), array( $this, 'exportTransferableOptions' ) );
-
+		if ( $this->verifyModuleMeetRequirements() ) {
+			$this->handleAutoPageRedirects();
+			$this->setupHooks( $aMod );
 			$this->doPostConstruction();
 		}
+	}
+
+	/**
+	 * @param array $aModProps
+	 */
+	protected function setupHooks( $aModProps ) {
+		$oCon = $this->getCon();
+		$nRunPriority = isset( $aModProps[ 'load_priority' ] ) ? $aModProps[ 'load_priority' ] : 100;
+
+		add_action( $oCon->prefix( 'modules_loaded' ), function () {
+			$this->onModulesLoaded();
+		}, $nRunPriority );
+		add_action( $oCon->prefix( 'run_processors' ), [ $this, 'onRunProcessors' ], $nRunPriority );
+		add_action( 'init', [ $this, 'onWpInit' ], 1 );
+
+		$nMenuPri = isset( $aModProps[ 'menu_priority' ] ) ? $aModProps[ 'menu_priority' ] : 100;
+		add_filter( $oCon->prefix( 'submenu_items' ), [ $this, 'supplySubMenuItem' ], $nMenuPri );
+		add_filter( $oCon->prefix( 'admin_bar_menu_items' ), [ $this, 'addAdminMenuBarItems' ], $nMenuPri );
+		add_filter( $oCon->prefix( 'collect_mod_summary' ), [ $this, 'addModuleSummaryData' ], $nMenuPri );
+		add_filter( $oCon->prefix( 'collect_notices' ), [ $this, 'addInsightsNoticeData' ] );
+		add_filter( $oCon->prefix( 'collect_summary' ), [ $this, 'addInsightsConfigData' ], $nRunPriority );
+		add_action( $oCon->prefix( 'plugin_shutdown' ), [ $this, 'onPluginShutdown' ] );
+		add_action( $oCon->prefix( 'deactivate_plugin' ), [ $this, 'onPluginDeactivate' ] );
+		add_action( $oCon->prefix( 'delete_plugin' ), [ $this, 'onPluginDelete' ] );
+		add_filter( $oCon->prefix( 'aggregate_all_plugin_options' ), [ $this, 'aggregateOptionsValues' ] );
+
+		add_filter( $oCon->prefix( 'register_admin_notices' ), [ $this, 'fRegisterAdminNotices' ] );
+
+		add_action( $oCon->prefix( 'daily_cron' ), [ $this, 'runDailyCron' ] );
+		add_action( $oCon->prefix( 'hourly_cron' ), [ $this, 'runHourlyCron' ] );
+
+		// supply supported events for this module
+		add_filter( $oCon->prefix( 'get_all_events' ), function ( $aEvents ) {
+			return array_merge(
+				is_array( $aEvents ) ? $aEvents : [],
+				array_map(
+					function ( $aEvt ) {
+						$aEvt[ 'context' ] = $this->getSlug();
+						return $aEvt;
+					},
+					is_array( $this->getDef( 'events' ) ) ? $this->getDef( 'events' ) : []
+				)
+			);
+		} );
+
+		add_action( 'admin_enqueue_scripts', [ $this, 'onWpEnqueueAdminJs' ], 100 );
+
+		if ( is_admin() || is_network_admin() ) {
+			$this->loadAdminNotices();
+		}
+
+//		if ( $this->isAdminOptionsPage() ) {
+//			add_action( 'current_screen', array( $this, 'onSetCurrentScreen' ) );
+//		}
+
+		$this->setupCustomHooks();
+	}
+
+	protected function setupCustomHooks() {
+	}
+
+	protected function doPostConstruction() {
+	}
+
+	public function runDailyCron() {
+		$this->cleanupDatabases();
+	}
+
+	public function runHourlyCron() {
+	}
+
+	protected function cleanupDatabases() {
+		foreach ( $this->getDbHandlers( true ) as $oDbh ) {
+			if ( $oDbh instanceof Shield\Databases\Base\Handler && $oDbh->isReady() ) {
+				$oDbh->autoCleanDb();
+			}
+		}
+	}
+
+	/**
+	 * @param bool $bInitAll
+	 * @return Shield\Databases\Base\Handler[]
+	 */
+	protected function getDbHandlers( $bInitAll = false ) {
+		if ( $bInitAll ) {
+			foreach ( $this->getAllDbClasses() as $sDbSlug => $sDbClass ) {
+				$this->getDbH( $sDbSlug );
+			}
+		}
+		return is_array( $this->aDbHandlers ) ? $this->aDbHandlers : [];
+	}
+
+	/**
+	 * @param string $sDbhKey
+	 * @return Shield\Databases\Base\Handler|mixed|false
+	 */
+	protected function getDbH( $sDbhKey ) {
+		$oDbH = false;
+
+		if ( !is_array( $this->aDbHandlers ) ) {
+			$this->aDbHandlers = [];
+		}
+
+		if ( !empty( $this->aDbHandlers[ $sDbhKey ] ) ) {
+			$oDbH = $this->aDbHandlers[ $sDbhKey ];
+		}
+		else {
+			$aDbClasses = $this->getAllDbClasses();
+			if ( isset( $aDbClasses[ $sDbhKey ] ) ) {
+				/** @var Shield\Databases\Base\Handler $oDbH */
+				$oDbH = new $aDbClasses[ $sDbhKey ]();
+				try {
+					$oDbH->setMod( $this )->tableInit();
+				}
+				catch ( \Exception $oE ) {
+				}
+			}
+			$this->aDbHandlers[ $sDbhKey ] = $oDbH;
+		}
+
+		return $oDbH;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function getAllDbClasses() {
+		$aCls = $this->getOptions()->getDef( 'db_classes' );
+		return is_array( $aCls ) ? $aCls : [];
+	}
+
+	protected function updateHandler() {
+		$oH = $this->loadClass( 'Upgrade' );
+		if ( $oH instanceof Shield\Modules\Base\Upgrade ) {
+			$oH->setMod( $this )->execute();
+		}
+	}
+
+	/**
+	 * @param string $sEncoding
+	 * @return array
+	 */
+	public function getAjaxFormParams( $sEncoding = 'none' ) {
+		$oReq = Services::Request();
+		$aFormParams = [];
+		$sRaw = $oReq->post( 'form_params', '' );
+
+		if ( !empty( $sRaw ) ) {
+
+			$sMaybeEncoding = $oReq->post( 'enc_params' );
+			if ( in_array( $sMaybeEncoding, [ 'none', 'lz-string', 'b64' ] ) ) {
+				$sEncoding = $sMaybeEncoding;
+			}
+
+			switch ( $sEncoding ) {
+				case 'lz-string':
+					$sRaw = \LZCompressor\LZString::decompress( base64_decode( $sRaw ) );
+					break;
+
+				case 'b64':
+					$sRaw = base64_decode( $sRaw );
+					break;
+
+				case 'none':
+				default:
+					break;
+			}
+
+			parse_str( $sRaw, $aFormParams );
+		}
+		return $aFormParams;
 	}
 
 	/**
@@ -129,47 +261,22 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 */
 	public function fRegisterAdminNotices( $aAdminNotices ) {
 		if ( !is_array( $aAdminNotices ) ) {
-			$aAdminNotices = array();
+			$aAdminNotices = [];
 		}
-		return array_merge( $aAdminNotices, $this->getOptionsVo()->getAdminNotices() );
+		return array_merge( $aAdminNotices, $this->getOptions()->getAdminNotices() );
 	}
 
 	/**
 	 * @return bool
 	 */
-	protected function getModuleMeetRequirements() {
-		if ( !isset( $this->bModuleMeetsRequirements ) ) {
-			$this->bModuleMeetsRequirements = $this->verifyModuleMeetRequirements();
-		}
-		return $this->bModuleMeetsRequirements;
-	}
-
-	/**
-	 * @return bool
-	 */
-	protected function hasValidPremiumLicense() {
-		return apply_filters( $this->getPremiumLicenseFilterName(), false );
-	}
-
-	/**
-	 * @return string
-	 */
-	protected function getPremiumLicenseFilterName() {
-		return $this->prefix( 'license_is_valid'.self::getConn()->getUniqueRequestId( false ) );
-	}
-
-	/**
-	 * @return bool
-	 */
-	protected function verifyModuleMeetRequirements() {
+	private function verifyModuleMeetRequirements() {
 		$bMeetsReqs = true;
 
-		$aPhpReqs = $this->getOptionsVo()->getFeatureRequirement( 'php' );
+		$aPhpReqs = $this->getOptions()->getFeatureRequirement( 'php' );
 		if ( !empty( $aPhpReqs ) ) {
 
 			if ( !empty( $aPhpReqs[ 'version' ] ) ) {
-				$bMeetsReqs = $bMeetsReqs && $this->loadDataProcessor()
-												  ->getPhpVersionIsAtLeast( $aPhpReqs[ 'version' ] );
+				$bMeetsReqs = $bMeetsReqs && Services::Data()->getPhpVersionIsAtLeast( $aPhpReqs[ 'version' ] );
 			}
 			if ( !empty( $aPhpReqs[ 'functions' ] ) && is_array( $aPhpReqs[ 'functions' ] ) ) {
 				foreach ( $aPhpReqs[ 'functions' ] as $sFunction ) {
@@ -186,81 +293,99 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 		return $bMeetsReqs;
 	}
 
-	protected function doPostConstruction() {
+	protected function onModulesLoaded() {
 	}
 
-	/**
-	 */
 	public function onRunProcessors() {
-		$this->getOptionsVo()
-			 ->setIsPremiumLicensed( $this->isPremium() );
-
-		if ( $this->getIsMainFeatureEnabled() && $this->isReadyToExecute() ) {
-			$this->doExecuteProcessor();
+		if ( $this->isUpgrading() ) {
+			$this->updateHandler();
 		}
-	}
-
-	/**
-	 * @param array $aOptions
-	 */
-	public function processImportOptions( $aOptions ) {
-		if ( !empty( $aOptions ) && is_array( $aOptions ) && array_key_exists( $this->getOptionsStorageKey(), $aOptions ) ) {
-			$this->getOptionsVo()
-				 ->setMultipleOptions( $aOptions[ $this->getOptionsStorageKey() ] );
-			$this->setBypassAdminProtection( true )
-				 ->savePluginOptions();
+		$oOpts = $this->getOptions();
+		if ( $oOpts->getFeatureProperty( 'auto_load_processor' ) ) {
+			$this->loadProcessor();
 		}
-	}
-
-	/**
-	 * for now only import by file is supported
-	 */
-	protected function importOptions() {
-		// So we don't poll for the file every page load.
-		if ( $this->loadDataProcessor()->FetchGet( 'icwp_shield_import' ) == 1 ) {
-			$aOptions = self::getConn()->getOptionsImportFromFile();
-			if ( !empty( $aOptions ) && is_array( $aOptions ) && array_key_exists( $this->getOptionsStorageKey(), $aOptions ) ) {
-				$this->getOptionsVo()->setMultipleOptions( $aOptions[ $this->getOptionsStorageKey() ] );
-				$this
-					->setBypassAdminProtection( true )
-					->savePluginOptions();
+		try {
+			$bSkip = (bool)$oOpts->getFeatureProperty( 'skip_processor' );
+			if ( !$bSkip && !$this->isUpgrading() && $this->isModuleEnabled() && $this->isReadyToExecute() ) {
+				$this->doExecuteProcessor();
 			}
 		}
+		catch ( \Exception $oE ) {
+		}
 	}
 
 	/**
-	 * Used to effect certain processing that is to do with options etc. but isn't related to processing
-	 * functionality of the plugin.
+	 * @return bool
+	 * @throws \Exception
 	 */
 	protected function isReadyToExecute() {
-		$oProcessor = $this->getProcessor();
-		return ( is_object( $oProcessor ) && $oProcessor instanceof ICWP_WPSF_Processor_Base )
-			   && !self::getConn()->getIfForceOffActive();
+		return !is_null( $this->getProcessor() );
 	}
 
 	protected function doExecuteProcessor() {
-		$this->getProcessor()->run();
+		$this->getProcessor()->execute();
 	}
 
 	/**
 	 * A action added to WordPress 'init' hook
 	 */
 	public function onWpInit() {
+		$oReq = Services::Request();
+
+		$sShieldAction = $this->getCon()->getShieldAction();
+		if ( !empty( $sShieldAction ) ) {
+			do_action( $this->getCon()->prefix( 'shield_action' ), $sShieldAction );
+		}
+
+		if ( $this->isModuleRequest() ) {
+
+			if ( Services::WpGeneral()->isAjax() ) {
+				$this->loadAjaxHandler();
+			}
+			else {
+				try {
+					if ( $this->verifyModActionRequest() ) {
+						$this->handleModAction( $oReq->request( 'exec' ) );
+					}
+				}
+				catch ( \Exception $oE ) {
+					wp_nonce_ays( '' );
+				}
+			}
+		}
+
 		$this->runWizards();
-		$this->updateHandler();
-		$this->setupAjaxHandlers();
+
+		// GDPR
+		if ( $this->isPremium() ) {
+			add_filter( $this->prefix( 'wpPrivacyExport' ), [ $this, 'onWpPrivacyExport' ], 10, 3 );
+			add_filter( $this->prefix( 'wpPrivacyErase' ), [ $this, 'onWpPrivacyErase' ], 10, 3 );
+		}
+	}
+
+	/**
+	 * We have to do it this way as the "page hook" is built upon the top-level plugin
+	 * menu name. But what if we white label?  So we need to dynamically grab the page hook
+	 */
+	public function onSetCurrentScreen() {
+		global $page_hook;
+		add_action( 'load-'.$page_hook, [ $this, 'onLoadOptionsScreen' ] );
+	}
+
+	public function onLoadOptionsScreen() {
+		if ( $this->getCon()->isValidAdminArea() ) {
+			$this->buildContextualHelp();
+		}
 	}
 
 	/**
 	 * Override this and adapt per feature
-	 * @return ICWP_WPSF_Processor_Base
+	 * @return Shield\Modules\Base\BaseProcessor|mixed
 	 */
-	protected function loadFeatureProcessor() {
+	protected function loadProcessor() {
 		if ( !isset( $this->oProcessor ) ) {
-			include_once( self::getConn()
-							  ->getPath_SourceFile( sprintf( 'processors%s%s.php', DIRECTORY_SEPARATOR, $this->getFeatureSlug() ) ) );
 			$sClassName = $this->getProcessorClassName();
-			if ( !class_exists( $sClassName, false ) ) {
+			if ( !class_exists( $sClassName ) ) {
 				return null;
 			}
 			$this->oProcessor = new $sClassName( $this );
@@ -273,8 +398,13 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	protected function getProcessorClassName() {
-		return ucwords( self::getConn()->getOptionStoragePrefix() ).'Processor_'.
-			   str_replace( ' ', '', ucwords( str_replace( '_', ' ', $this->getFeatureSlug() ) ) );
+		return implode( '_',
+			[
+				strtoupper( $this->getCon()->getPluginPrefix( '_' ) ),
+				'Processor',
+				str_replace( ' ', '', ucwords( str_replace( '_', ' ', $this->getSlug() ) ) )
+			]
+		);
 	}
 
 	/**
@@ -282,96 +412,149 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	protected function getWizardClassName() {
-		return ucwords( self::getConn()->getOptionStoragePrefix() ).'Wizard_'.
-			   str_replace( ' ', '', ucwords( str_replace( '_', ' ', $this->getFeatureSlug() ) ) );
-	}
-
-	/**
-	 * @return ICWP_WPSF_OptionsVO
-	 */
-	protected function getOptionsVo() {
-		if ( !isset( $this->oOptions ) ) {
-			$oCon = self::getConn();
-			$this->oOptions = ICWP_WPSF_Factory::OptionsVo();
-			$this->oOptions
-				->setPathToConfig( $oCon->getPath_ConfigFile( $this->getFeatureSlug() ) )
-				->setIsPremiumLicensed( $this->isPremium() )
-				->setOptionsEncoding( $oCon->getOptionsEncoding() )
-				->setRebuildFromFile( $oCon->getIsRebuildOptionsFromFile() )
-				->setOptionsStorageKey( $this->getOptionsStorageKey() )
-				->setIfLoadOptionsFromStorage( !$oCon->getIsResetPlugin() );
-		}
-		return $this->oOptions;
-	}
-
-	/**
-	 * @return array
-	 */
-	public function getAdminNotices() {
-		return $this->getOptionsVo()->getAdminNotices();
+		return implode( '_',
+			[
+				strtoupper( $this->getCon()->getPluginPrefix( '_' ) ),
+				'Wizard',
+				str_replace( ' ', '', ucwords( str_replace( '_', ' ', $this->getSlug() ) ) )
+			]
+		);
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function getIsUpgrading() {
-//			return $this->getVersion() != self::getController()->getVersion();
-		return self::getConn()->getIsRebuildOptionsFromFile();
+	public function isUpgrading() {
+		return $this->getCon()->getIsRebuildOptionsFromFile() || $this->getOptions()->getRebuildFromFile();
 	}
 
 	/**
 	 * Hooked to the plugin's main plugin_shutdown action
 	 */
-	public function action_doFeatureShutdown() {
-		if ( !$this->isPluginDeleting() ) {
-			$this->savePluginOptions();
+	public function onPluginShutdown() {
+		if ( !$this->getCon()->plugin_deleting ) {
+			if ( rand( 1, 40 ) === 2 ) {
+				// cleanup databases randomly just in-case cron doesn't run.
+				$this->cleanupDatabases();
+			}
+			$this->saveModOptions();
 		}
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function isPluginDeleting() {
-		return $this->bPluginDeleting;
 	}
 
 	/**
 	 * @return string
 	 */
-	protected function getOptionsStorageKey() {
-		if ( !isset( $this->sOptionsStoreKey ) ) {
-			// not ideal as it doesn't take into account custom storage keys as when passed into the constructor
-			$this->sOptionsStoreKey = $this->getOptionsVo()->getFeatureProperty( 'storage_key' );
-		}
-
-		return $this->prefixOptionKey( $this->sOptionsStoreKey ).'_options';
+	public function getOptionsStorageKey() {
+		return $this->getCon()->prefixOption( $this->sOptionsStoreKey ).'_options';
 	}
 
 	/**
-	 * @return ICWP_WPSF_Processor_Base
+	 * @return Shield\Modules\Base\BaseProcessor|Shield\Modules\Base\OneTimeExecute|mixed
 	 */
 	public function getProcessor() {
-		return $this->loadFeatureProcessor();
+		return $this->loadProcessor();
 	}
 
 	/**
 	 * @return string
 	 */
 	public function getUrl_AdminPage() {
-		return $this->loadWp()
-					->getUrl_AdminPage(
-						$this->getModSlug(),
-						self::getConn()->getIsWpmsNetworkAdminOnly()
-					);
+		return Services::WpGeneral()
+					   ->getUrl_AdminPage(
+						   $this->getModSlug(),
+						   $this->getCon()->getIsWpmsNetworkAdminOnly()
+					   );
 	}
 
 	/**
-	 * TODO: Get rid of this crap and/or handle the Exception thrown in loadFeatureHandler()
+	 * @param string $sAction
+	 * @return string
+	 */
+	public function buildAdminActionNonceUrl( $sAction ) {
+		$aActionNonce = $this->getNonceActionData( $sAction );
+		$aActionNonce[ 'ts' ] = Services::Request()->ts();
+		return add_query_arg( $aActionNonce, $this->getUrl_AdminPage() );
+	}
+
+	/**
+	 * @param string $sAction
+	 * @return array
+	 */
+	protected function getModActionParams( $sAction ) {
+		$oCon = $this->getCon();
+		return [
+			'action'     => $oCon->prefix(),
+			'exec'       => $sAction,
+			'mod_slug'   => $this->getModSlug(),
+			'ts'         => Services::Request()->ts(),
+			'exec_nonce' => substr(
+				hash_hmac( 'md5', $sAction.Services::Request()->ts(), $oCon->getSiteInstallationId() )
+				, 0, 6 )
+		];
+	}
+
+	/**
+	 * @return bool
+	 * @throws \Exception
+	 */
+	protected function verifyModActionRequest() {
+		$bValid = false;
+
+		$oCon = $this->getCon();
+		$oReq = Services::Request();
+
+		$sExec = $oReq->request( 'exec' );
+		if ( !empty( $sExec ) && $oReq->request( 'action' ) == $oCon->prefix() ) {
+
+
+			if ( wp_verify_nonce( $oReq->request( 'exec_nonce' ), $sExec ) && $oCon->getMeetsBasePermissions() ) {
+				$bValid = true;
+			}
+			else {
+				$bValid = $oReq->request( 'exec_nonce' ) ===
+						  substr( hash_hmac( 'md5', $sExec.$oReq->request( 'ts' ), $oCon->getSiteInstallationId() ), 0, 6 );
+			}
+			if ( !$bValid ) {
+				throw new Exception( 'Invalid request' );
+			}
+		}
+
+		return $bValid;
+	}
+
+	/**
+	 * @param string $sOptKey
+	 * @return string
+	 */
+	public function getUrl_DirectLinkToOption( $sOptKey ) {
+		$sUrl = $this->getUrl_AdminPage();
+		$aDef = $this->getOptions()->getOptDefinition( $sOptKey );
+		if ( !empty( $aDef[ 'section' ] ) ) {
+			$sUrl = $this->getUrl_DirectLinkToSection( $aDef[ 'section' ] );
+		}
+		return $sUrl;
+	}
+
+	/**
+	 * @param string $sSection
+	 * @return string
+	 */
+	public function getUrl_DirectLinkToSection( $sSection ) {
+		if ( $sSection == 'primary' ) {
+			$aSec = $this->getOptions()->getPrimarySection();
+			$sSection = $aSec[ 'slug' ];
+		}
+		return $this->getUrl_AdminPage().'#tab-'.$sSection;
+	}
+
+	/**
+	 * TODO: Get rid of this crap and/or handle the \Exception thrown in loadFeatureHandler()
 	 * @return ICWP_WPSF_FeatureHandler_Email
+	 * @throws \Exception
 	 */
 	public function getEmailHandler() {
 		if ( is_null( self::$oEmailHandler ) ) {
-			self::$oEmailHandler = self::getConn()->loadFeatureHandler( array( 'slug' => 'email' ) );
+			self::$oEmailHandler = $this->getCon()->getModule( 'email' );
 		}
 		return self::$oEmailHandler;
 	}
@@ -388,42 +571,57 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return $this
 	 */
 	public function setIsMainFeatureEnabled( $bEnable ) {
-		return $this->setOpt( 'enable_'.$this->getFeatureSlug(), $bEnable ? 'Y' : 'N' );
+		return $this->setOpt( 'enable_'.$this->getSlug(), $bEnable ? 'Y' : 'N' );
 	}
 
 	/**
-	 * @return mixed
+	 * @return bool
 	 */
-	public function getIsMainFeatureEnabled() {
-		if ( apply_filters( $this->prefix( 'globally_disabled' ), false ) ) {
-			return false;
+	public function isModuleEnabled() {
+		$oOpts = $this->getOptions();
+		/** @var Shield\Modules\Plugin\Options $oPluginOpts */
+		$oPluginOpts = $this->getCon()->getModule_Plugin()->getOptions();
+
+		if ( $this->getOptions()->getFeatureProperty( 'auto_enabled' ) === true ) {
+			// Auto enabled modules always run regardless
+			$bEnabled = true;
+		}
+		elseif ( $oPluginOpts->isPluginGloballyDisabled() ) {
+			$bEnabled = false;
+		}
+		elseif ( $this->getCon()->getIfForceOffActive() ) {
+			$bEnabled = false;
+		}
+		elseif ( $oOpts->getFeatureProperty( 'premium' ) === true && !$this->isPremium() ) {
+			$bEnabled = false;
+		}
+		else {
+			$bEnabled = $this->isModOptEnabled();
 		}
 
-		$bEnabled =
-			$this->getOptIs( 'enable_'.$this->getFeatureSlug(), 'Y' )
-			|| $this->getOptIs( 'enable_'.$this->getFeatureSlug(), true, true )
-			|| ( $this->getOptionsVo()->getFeatureProperty( 'auto_enabled' ) === true );
 		return $bEnabled;
 	}
 
 	/**
-	 * @return string
+	 * @return bool
 	 */
-	protected function getMainFeatureName() {
-		if ( !isset( $this->sFeatureName ) ) {
-			$this->sFeatureName = $this->getOptionsVo()->getFeatureProperty( 'name' );
-		}
-		return $this->sFeatureName;
+	protected function isModOptEnabled() {
+		return $this->isOpt( $this->getEnableModOptKey(), 'Y' )
+			   || $this->isOpt( $this->getEnableModOptKey(), true, true );
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getFeatureSlug() {
-		if ( !isset( $this->sFeatureSlug ) ) {
-			$this->sFeatureSlug = $this->getOptionsVo()->getFeatureProperty( 'slug' );
-		}
-		return $this->sFeatureSlug;
+	protected function getEnableModOptKey() {
+		return 'enable_'.$this->getSlug();
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getMainFeatureName() {
+		return __( $this->getOptions()->getFeatureProperty( 'name' ), 'wp-simple-firewall' );
 	}
 
 	/**
@@ -431,65 +629,65 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	public function getModSlug( $bWithPrefix = true ) {
-		return $bWithPrefix ? $this->prefix( $this->getFeatureSlug() ) : $this->getFeatureSlug();
+		return $bWithPrefix ? $this->prefix( $this->getSlug() ) : $this->getSlug();
 	}
 
 	/**
-	 * @return int
-	 */
-	public function getPluginInstallationTime() {
-		return $this->getOpt( 'installation_time', 0 );
-	}
-
-	/**
-	 * With trailing slash
-	 * @param string $sSourceFile
 	 * @return string
 	 */
-	public function getResourcesDir( $sSourceFile = '' ) {
-		return self::getConn()
-				   ->getRootDir().'resources'.DIRECTORY_SEPARATOR.ltrim( $sSourceFile, DIRECTORY_SEPARATOR );
+	public function getSlug() {
+		if ( !isset( $this->sModSlug ) ) {
+			$this->sModSlug = $this->getOptions()->getFeatureProperty( 'slug' );
+		}
+		return $this->sModSlug;
+	}
+
+	/**
+	 * @param array $aItems
+	 * @return array
+	 * @deprecated 9.0.4
+	 */
+	public function addAdminMenuBarItems( array $aItems ) {
+		return $aItems;
 	}
 
 	/**
 	 * @param array $aItems
 	 * @return array
 	 */
-	public function filter_addPluginSubMenuItem( $aItems ) {
-		$sMenuTitleName = $this->getOptionsVo()->getFeatureProperty( 'menu_title' );
-		if ( is_null( $sMenuTitleName ) ) {
-			$sMenuTitleName = $this->getMainFeatureName();
-		}
-		if ( $this->getIfShowFeatureMenuItem() && !empty( $sMenuTitleName ) ) {
+	public function supplySubMenuItem( $aItems ) {
 
-			$sHumanName = self::getConn()->getHumanName();
+		$sTitle = $this->getOptions()->getFeatureProperty( 'menu_title' );
+		$sTitle = empty( $sTitle ) ? $this->getMainFeatureName() : __( $sTitle, 'wp-simple-firewall' );
 
-			$bMenuHighlighted = $this->getOptionsVo()->getFeatureProperty( 'highlight_menu_item' );
+		if ( !empty( $sTitle ) ) {
+
+			$sHumanName = $this->getCon()->getHumanName();
+
+			$bMenuHighlighted = $this->getOptions()->getFeatureProperty( 'highlight_menu_item' );
 			if ( $bMenuHighlighted ) {
-				$sMenuTitleName = sprintf( '<span class="icwp_highlighted">%s</span>', $sMenuTitleName );
+				$sTitle = sprintf( '<span class="icwp_highlighted">%s</span>', $sTitle );
 			}
-			$sMenuPageTitle = $sMenuTitleName.' - '.$sHumanName;
-			$aItems[ $sMenuPageTitle ] = array(
-				$sMenuTitleName,
-				$this->getModSlug(),
-				array( $this, 'displayModuleAdminPage' )
-			);
 
-			$aAdditionalItems = $this->getOptionsVo()->getAdditionalMenuItems();
+			$sMenuPageTitle = $sTitle.' - '.$sHumanName;
+			$aItems[ $sMenuPageTitle ] = [
+				$sTitle,
+				$this->getModSlug(),
+				[ $this, 'displayModuleAdminPage' ],
+				$this->getIfShowModuleMenuItem()
+			];
+
+			$aAdditionalItems = $this->getOptions()->getAdditionalMenuItems();
 			if ( !empty( $aAdditionalItems ) && is_array( $aAdditionalItems ) ) {
 
 				foreach ( $aAdditionalItems as $aMenuItem ) {
-
-					if ( empty( $aMenuItem[ 'callback' ] ) || !method_exists( $this, $aMenuItem[ 'callback' ] ) ) {
-						continue;
-					}
-
 					$sMenuPageTitle = $sHumanName.' - '.$aMenuItem[ 'title' ];
-					$aItems[ $sMenuPageTitle ] = array(
-						$aMenuItem[ 'title' ],
+					$aItems[ $sMenuPageTitle ] = [
+						__( $aMenuItem[ 'title' ], 'wp-simple-firewall' ),
 						$this->prefix( $aMenuItem[ 'slug' ] ),
-						array( $this, $aMenuItem[ 'callback' ] )
-					);
+						[ $this, $aMenuItem[ 'callback' ] ],
+						true
+					];
 				}
 			}
 		}
@@ -497,55 +695,135 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * Handles the case where we want to redirect certain menu requests to other pages
+	 * of the plugin automatically. It lets us create custom menu items.
+	 * This can of course be extended for any other types of redirect.
+	 */
+	public function handleAutoPageRedirects() {
+		$aConf = $this->getOptions()->getRawData_FullFeatureConfig();
+		if ( !empty( $aConf[ 'custom_redirects' ] ) && $this->getCon()->isValidAdminArea() ) {
+			foreach ( $aConf[ 'custom_redirects' ] as $aRedirect ) {
+				if ( Services::Request()->query( 'page' ) == $this->prefix( $aRedirect[ 'source_mod_page' ] ) ) {
+					Services::Response()->redirect(
+						$this->getCon()->getModule( $aRedirect[ 'target_mod_page' ] )->getUrl_AdminPage(),
+						$aRedirect[ 'query_args' ],
+						true,
+						false
+					);
+				}
+			}
+		}
+	}
+
+	/**
 	 * @return array
 	 */
 	protected function getAdditionalMenuItem() {
-		return array();
+		return [];
 	}
 
 	/**
 	 * @param array $aSummaryData
 	 * @return array
 	 */
-	public function filter_getFeatureSummaryData( $aSummaryData ) {
-		if ( !$this->getIfShowSummaryItem() ) {
-			return $aSummaryData;
+	public function addModuleSummaryData( $aSummaryData ) {
+		if ( $this->getIfShowModuleLink() ) {
+			$aSummaryData[ $this->getModSlug( false ) ] = $this->buildSummaryData();
 		}
-
-		$sMenuTitle = $this->getOptionsVo()->getFeatureProperty( 'menu_title' );
-		$aSummary = array(
-			'enabled'    => $this->getIsMainFeatureEnabled(),
-			'active'     => self::$sActivelyDisplayedModuleOptions == $this->getFeatureSlug(),
-			'slug'       => $this->getFeatureSlug(),
-			'name'       => $this->getMainFeatureName(),
-			'menu_title' => empty( $sMenuTitle ) ? $this->getMainFeatureName() : $sMenuTitle,
-			'href'       => network_admin_url( 'admin.php?page='.$this->getModSlug() ),
-		);
-		$aSummary[ 'content' ] = $this->renderTemplate( 'snippets/summary_single', $aSummary );
-
-		$aSummaryData[] = $aSummary;
 		return $aSummaryData;
 	}
 
 	/**
-	 * @return boolean
+	 * @param array $aAllNotices
+	 * @return array
 	 */
-	public function getIfShowFeatureMenuItem() {
-		return $this->getOptionsVo()->getFeatureProperty( 'show_feature_menu_item' );
+	public function addInsightsNoticeData( $aAllNotices ) {
+		return $aAllNotices;
 	}
 
 	/**
-	 * @return boolean
+	 * @param array $aAllData
+	 * @return array
 	 */
-	public function getIfShowSummaryItem() {
-		return $this->getIfShowFeatureMenuItem() && !$this->getOptionsVo()->getFeatureProperty( 'hide_summary' );
+	public function addInsightsConfigData( $aAllData ) {
+		return $aAllData;
 	}
 
 	/**
-	 * @return boolean
+	 * @return array
+	 */
+	protected function buildSummaryData() {
+		$oOpts = $this->getOptions();
+		$sMenuTitle = $oOpts->getFeatureProperty( 'menu_title' );
+
+		$aSections = $oOpts->getSections();
+		foreach ( $aSections as $sSlug => $aSection ) {
+			try {
+				$aStrings = $this->getStrings()->getSectionStrings( $aSection[ 'slug' ] );
+				foreach ( $aStrings as $sKey => $sVal ) {
+					unset( $aSection[ $sKey ] );
+					$aSection[ $sKey ] = $sVal;
+				}
+			}
+			catch ( \Exception $oE ) {
+			}
+		}
+
+		$aSum = [
+			'enabled'      => $this->isEnabledForUiSummary(),
+			'active'       => $this->isThisModulePage() || $this->isPage_InsightsThisModule(),
+			'slug'         => $this->getSlug(),
+			'name'         => $this->getMainFeatureName(),
+			'sidebar_name' => $oOpts->getFeatureProperty( 'sidebar_name' ),
+			'menu_title'   => empty( $sMenuTitle ) ? $this->getMainFeatureName() : __( $sMenuTitle, 'wp-simple-firewall' ),
+			'href'         => network_admin_url( 'admin.php?page='.$this->getModSlug() ),
+			'sections'     => $aSections,
+			'options'      => [],
+		];
+
+		foreach ( $oOpts->getVisibleOptionsKeys() as $sOptKey ) {
+			try {
+				$aOptData = $this->getStrings()->getOptionStrings( $sOptKey );
+				$aOptData[ 'href' ] = $this->getUrl_DirectLinkToOption( $sOptKey );
+				$aSum[ 'options' ][ $sOptKey ] = $aOptData;
+			}
+			catch ( \Exception $oE ) {
+			}
+		}
+
+		$aSum[ 'tooltip' ] = sprintf(
+			'%s',
+			empty( $aSum[ 'sidebar_name' ] ) ? $aSum[ 'name' ] : __( $aSum[ 'sidebar_name' ], 'wp-simple-firewall' )
+		);
+		return $aSum;
+	}
+
+	/**
+	 * @return bool
+	 */
+	protected function isEnabledForUiSummary() {
+		return $this->isModuleEnabled();
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function getIfShowModuleMenuItem() {
+		return (bool)$this->getOptions()->getFeatureProperty( 'show_module_menu_item' );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function getIfShowModuleLink() {
+		return (bool)$this->getOptions()->getFeatureProperty( 'show_module_options' );
+	}
+
+	/**
+	 * @return bool
 	 */
 	public function getIfUseSessions() {
-		return $this->getOptionsVo()->getFeatureProperty( 'use_sessions' );
+		return $this->getOptions()->getFeatureProperty( 'use_sessions' );
 	}
 
 	/**
@@ -554,23 +832,14 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return mixed|null
 	 */
 	public function getDef( $sKey ) {
-		return $this->getOptionsVo()->getFeatureDefinition( $sKey );
-	}
-
-	/**
-	 * @deprecated
-	 * @param string $sKey
-	 * @return mixed|null
-	 */
-	public function getDefinition( $sKey ) {
-		return $this->getDef( $sKey );
+		return $this->getOptions()->getDef( $sKey );
 	}
 
 	/**
 	 * @return $this
 	 */
 	public function clearLastErrors() {
-		return $this->setLastErrors( array() );
+		return $this->setLastErrors( [] );
 	}
 
 	/**
@@ -578,10 +847,10 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @param string $sGlue
 	 * @return string|array
 	 */
-	public function getLastErrors( $bAsString = true, $sGlue = " " ) {
+	public function getLastErrors( $bAsString = false, $sGlue = " " ) {
 		$aErrors = $this->getOpt( 'last_errors' );
 		if ( !is_array( $aErrors ) ) {
-			$aErrors = array();
+			$aErrors = [];
 		}
 		return $bAsString ? implode( $sGlue, $aErrors ) : $aErrors;
 	}
@@ -599,26 +868,18 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return mixed
 	 */
 	public function getOpt( $sOptionKey, $mDefault = false ) {
-		return $this->getOptionsVo()->getOpt( $sOptionKey, $mDefault );
+		return $this->getOptions()->getOpt( $sOptionKey, $mDefault );
 	}
 
 	/**
-	 * @param string  $sOptionKey
-	 * @param mixed   $mValueToTest
-	 * @param boolean $bStrict
+	 * @param string $sOptionKey
+	 * @param mixed  $mValueToTest
+	 * @param bool   $bStrict
 	 * @return bool
 	 */
-	public function getOptIs( $sOptionKey, $mValueToTest, $bStrict = false ) {
-		$mOptionValue = $this->getOptionsVo()->getOpt( $sOptionKey );
+	public function isOpt( $sOptionKey, $mValueToTest, $bStrict = false ) {
+		$mOptionValue = $this->getOptions()->getOpt( $sOptionKey );
 		return $bStrict ? $mOptionValue === $mValueToTest : $mOptionValue == $mValueToTest;
-	}
-
-	/**
-	 * Retrieves the full array of options->values
-	 * @return array
-	 */
-	public function getOptions() {
-		return $this->buildOptions();
 	}
 
 	/**
@@ -630,7 +891,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 		if ( $sValue == 'default' ) {
 			$sValue = $this->getTextOptDefault( $sOptKey );
 		}
-		return $sValue;
+		return __( $sValue, 'wp-simple-firewall' );
 	}
 
 	/**
@@ -643,24 +904,16 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	}
 
 	/**
-	 * @return string
-	 */
-	public function getVersion() {
-		$sVersion = $this->getOpt( self::PluginVersionKey );
-		return empty( $sVersion ) ? self::getConn()->getVersion() : $sVersion;
-	}
-
-	/**
 	 * @param array|string $mErrors
 	 * @return $this
 	 */
-	public function setLastErrors( $mErrors ) {
+	public function setLastErrors( $mErrors = [] ) {
 		if ( !is_array( $mErrors ) ) {
 			if ( is_string( $mErrors ) ) {
-				$mErrors = array( $mErrors );
+				$mErrors = [ $mErrors ];
 			}
 			else {
-				$mErrors = array();
+				$mErrors = [];
 			}
 		}
 		return $this->setOpt( 'last_errors', $mErrors );
@@ -674,8 +927,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return $this
 	 */
 	protected function setOpt( $sOptionKey, $mValue ) {
-		$this->setBypassAdminProtection( true );
-		$this->getOptionsVo()->setOpt( $sOptionKey, $mValue );
+		$this->getOptions()->setOpt( $sOptionKey, $mValue );
 		return $this;
 	}
 
@@ -683,195 +935,117 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @param array $aOptions
 	 */
 	public function setOptions( $aOptions ) {
-		$oVO = $this->getOptionsVo();
+		$oVO = $this->getOptions();
 		foreach ( $aOptions as $sKey => $mValue ) {
 			$oVO->setOpt( $sKey, $mValue );
 		}
 	}
 
-	protected function setupAjaxHandlers() {
-		$bAdminRun = false;
-
-		if ( $this->isValidAjaxRequestForModule() ) { // TODO replicate all this for the backend
-			$this->frontEndAjaxHandlers();
-			$this->adminAjaxHandlers();
-			$bAdminRun = true;
-//			$this->sendAjaxResponse( false, array( 'message' => 'Failed Ajax Nonce' ) );
-		}
-
-		if ( !$bAdminRun && $this->loadWp()->isAjax() ) { //TODO: isValidAjaxRequest()
-			if ( is_admin() || is_network_admin() ) {
-				$this->adminAjaxHandlers();
-			}
-		}
-	}
-
 	/**
-	 * A valid Ajax request must have all the icwp items as posted with getBaseAjaxActionRenderData()
-	 * Note: Also performs nonce checking
 	 * @return bool
 	 */
-	protected function isValidAjaxRequestForModule() {
-		$oDp = $this->loadDP();
-
-		$bValid = $this->loadWp()->isAjax()
-				  && ( $this->getModSlug() == $oDp->post( 'icwp_action_module', '' ) );
-		if ( $bValid ) {
-			$aItems = array_keys( $this->getBaseAjaxActionRenderData() );
-			foreach ( $aItems as $sKey ) {
-				if ( strpos( $sKey, 'icwp_' ) === 0 ) {
-					$bValid = $bValid && ( strlen( $oDp->post( $sKey, '' ) ) > 0 );
-				}
-			}
-		}
-		return $bValid && $this->checkNonceAction( $oDp->post( 'icwp_nonce' ), $oDp->post( 'icwp_nonce_action' ) );
+	public function isModuleRequest() {
+		return ( $this->getModSlug() == Services::Request()->request( 'mod_slug' ) );
 	}
 
 	/**
 	 * @param string $sAction
 	 * @param bool   $bAsJsonEncodedObject
-	 * @return array
+	 * @return array|string
 	 */
-	public function getBaseAjaxActionRenderData( $sAction = '', $bAsJsonEncodedObject = false ) {
-		$aData = array(
-			'action'             => $this->prefix( $sAction ), //wp ajax doesn't work without this.
-			'icwp_ajax_action'   => $this->prefix( $sAction ),
-			'icwp_nonce'         => $this->genNonce( $sAction ),
-			'icwp_nonce_action'  => $sAction,
-			'icwp_action_module' => $this->getModSlug(),
-			'ajaxurl'            => admin_url( 'admin-ajax.php' ),
-		);
+	public function getAjaxActionData( $sAction = '', $bAsJsonEncodedObject = false ) {
+		$aData = $this->getNonceActionData( $sAction );
+		$aData[ 'ajaxurl' ] = admin_url( 'admin-ajax.php' );
 		return $bAsJsonEncodedObject ? json_encode( (object)$aData ) : $aData;
 	}
 
-	protected function adminAjaxHandlers() {
-		add_action( 'wp_ajax_icwp_OptionsFormSave', array( $this, 'ajaxOptionsFormSave' ) );
-
-		// TODO: move this to the wizard handler itself
-		if ( $this->canRunWizards() && $this->hasWizard() ) {
-			$oWiz = $this->getWizardHandler();
-			if ( !is_null( $oWiz ) ) {
-				add_action( $this->prefixWpAjax( 'WizardProcessStepSubmit' ), array(
-					$oWiz,
-					'ajaxWizardProcessStepSubmit'
-				) );
-				add_action( $this->prefixWpAjax( 'WizardRenderStep' ), array(
-					$oWiz,
-					'ajaxWizardRenderStep'
-				) );
-			}
-		}
-	}
-
-	protected function frontEndAjaxHandlers() {
-	}
-
 	/**
 	 * @param string $sAction
-	 * @return string
+	 * @return array
 	 */
-	protected function genNonce( $sAction = '' ) {
-		return wp_create_nonce( $this->prefix( $sAction ) );
+	public function getNonceActionData( $sAction = '' ) {
+		$aData = $this->getCon()->getNonceActionData( $sAction );
+		$aData[ 'mod_slug' ] = $this->getModSlug();
+		return $aData;
 	}
 
 	/**
-	 * @param string $sNonce
-	 * @param string $sAction
-	 * @return bool
+	 * @return string[]
 	 */
-	protected function checkNonceAction( $sNonce, $sAction = '' ) {
-		return wp_verify_nonce( $sNonce, $this->prefix( $sAction ) );
+	public function getDismissedNotices() {
+		$aDN = $this->getOpt( 'dismissed_notices' );
+		return is_array( $aDN ) ? $aDN : [];
 	}
 
 	/**
-	 * Will send ajax error response immediately upon failure
-	 * @return bool
+	 * @return string[]
 	 */
-	protected function checkAjaxNonce() {
-
-		$sNonce = $this->loadDataProcessor()->FetchRequest( '_ajax_nonce', '' );
-		if ( empty( $sNonce ) ) {
-			$sMessage = $this->getTranslatedString( 'nonce_failed_empty', 'Nonce security checking failed - the nonce value was empty.' );
-		}
-		else if ( wp_verify_nonce( $sNonce, 'icwp_ajax' ) === false ) {
-			$sMessage = $this->getTranslatedString( 'nonce_failed_supplied', 'Nonce security checking failed - the nonce supplied was "%s".' );
-			$sMessage = sprintf( $sMessage, $sNonce );
-		}
-		else {
-			return true; // At this stage we passed the nonce check
-		}
-
-		// At this stage we haven't returned after success so we failed the nonce check
-		$this->sendAjaxResponse( false, array( 'message' => $sMessage ) );
-		return false; //unreachable
+	public function getUiTrack() {
+		$aDN = $this->getOpt( 'ui_track' );
+		return is_array( $aDN ) ? $aDN : [];
 	}
 
 	/**
-	 * @return bool
+	 * @param string[] $aDismissed
+	 * @return $this
 	 */
-	public function getBypassAdminRestriction() {
-		return $this->bBypassAdminAccess;
+	public function setDismissedNotices( $aDismissed ) {
+		return $this->setOpt( 'dismissed_notices', $aDismissed );
 	}
 
 	/**
-	 * @param string $sKey
-	 * @param string $sDefault
-	 * @return string
+	 * @param string[] $aDismissed
+	 * @return $this
 	 */
-	protected function getTranslatedString( $sKey, $sDefault ) {
-		return $sDefault;
+	public function setUiTrack( $aDismissed ) {
+		return $this->setOpt( 'ui_track', $aDismissed );
 	}
 
 	/**
-	 * @return ICWP_WPSF_Wizard_Base|null
+	 * @return \ICWP_WPSF_Wizard_Base|null
 	 */
-	protected function getWizardHandler() {
+	public function getWizardHandler() {
 		if ( !isset( $this->oWizard ) ) {
-			include_once( self::getConn()->getPath_SourceFile( sprintf( 'wizards/%s.php', $this->getFeatureSlug() ) ) );
 			$sClassName = $this->getWizardClassName();
-			if ( !class_exists( $sClassName, false ) ) {
+			if ( !class_exists( $sClassName ) ) {
 				return null;
 			}
-			$this->oWizard = new $sClassName( $this );
+			$this->oWizard = new $sClassName();
+			$this->oWizard->setMod( $this );
 		}
 		return $this->oWizard;
 	}
 
 	/**
-	 * @param       $bSuccess
-	 * @param array $aData
+	 * @param bool $bPreProcessOptions
+	 * @return $this
 	 */
-	public function sendAjaxResponse( $bSuccess, $aData = array() ) {
-		$bSuccess ? wp_send_json_success( $aData ) : wp_send_json_error( $aData );
-	}
+	public function saveModOptions( $bPreProcessOptions = false ) {
 
-	/**
-	 * Saves the options to the WordPress Options store.
-	 * It will also update the stored plugin options version.
-	 * @return void
-	 */
-	public function savePluginOptions() {
+		if ( $bPreProcessOptions ) {
+			$this->preProcessOptions();
+		}
+
 		$this->doPrePluginOptionsSave();
-		$this->updateOptionsVersion();
 		if ( apply_filters( $this->prefix( 'force_options_resave' ), false ) ) {
-			$this->getOptionsVo()
-				 ->setIsPremiumLicensed( $this->isPremium() )
+			$this->getOptions()
 				 ->setNeedSave( true );
 		}
+
+		// we set the flag that options have been updated. (only use this flag if it's a MANUAL options update)
+		$this->bImportExportWhitelistNotify = $this->getOptions()->getNeedSave();
 		$this->store();
+		return $this;
+	}
+
+	protected function preProcessOptions() {
 	}
 
 	private function store() {
-		add_filter( $this->prefix( 'bypass_permission_to_manage' ), '__return_true', 1000 );
-		$this->getOptionsVo()->doOptionsSave( self::getConn()->getIsResetPlugin() );
-		remove_filter( $this->prefix( 'bypass_permission_to_manage' ), '__return_true', 1000 );
-	}
-
-	protected function updateOptionsVersion() {
-		if ( $this->getIsUpgrading() || self::getConn()->getIsRebuildOptionsFromFile() ) {
-			$this->setOpt( self::PluginVersionKey, self::getConn()->getVersion() );
-			$this->getOptionsVo()->cleanTransientStorage();
-		}
+		add_filter( $this->prefix( 'bypass_is_plugin_admin' ), '__return_true', 1000 );
+		$this->getOptions()
+			 ->doOptionsSave( $this->getCon()->getIsResetPlugin(), $this->isPremium() );
+		remove_filter( $this->prefix( 'bypass_is_plugin_admin' ), '__return_true', 1000 );
 	}
 
 	/**
@@ -879,7 +1053,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	public function aggregateOptionsValues( $aAggregatedOptions ) {
-		return array_merge( $aAggregatedOptions, $this->getOptionsVo()->getAllOptionsValues() );
+		return array_merge( $aAggregatedOptions, $this->getOptions()->getAllOptionsValues() );
 	}
 
 	/**
@@ -890,9 +1064,11 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 */
 	public function buildOptions() {
 
-		$bPremiumEnabled = self::getConn()->isPremiumExtensionsEnabled();
+		$bPremiumEnabled = $this->getCon()->isPremiumExtensionsEnabled();
 
-		$aOptions = $this->getOptionsVo()->getOptionsForPluginUse();
+		$oOptsVo = $this->getOptions();
+		$aOptions = $oOptsVo->getOptionsForPluginUse();
+
 		foreach ( $aOptions as $nSectionKey => $aSection ) {
 
 			if ( !empty( $aSection[ 'options' ] ) ) {
@@ -908,20 +1084,59 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 					}
 				}
 
-				if ( !empty( $aSection[ 'help_video_id' ] ) ) {
-					$aSection[ 'help_video_url' ] = $this->getHelpVideoUrl( $aSection[ 'help_video_id' ] );
-				}
-
 				if ( empty( $aSection[ 'options' ] ) ) {
 					unset( $aOptions[ $nSectionKey ] );
 				}
 				else {
-					$aOptions[ $nSectionKey ] = $this->loadStrings_SectionTitles( $aSection );
+					try {
+						$aStrings = $this->getStrings()->getSectionStrings( $aSection[ 'slug' ] );
+						foreach ( $aStrings as $sKey => $sVal ) {
+							unset( $aSection[ $sKey ] );
+							$aSection[ $sKey ] = $sVal;
+						}
+					}
+					catch ( \Exception $oE ) {
+					}
+					$aOptions[ $nSectionKey ] = $aSection;
 				}
+
+				$aWarnings = [];
+				if ( !$oOptsVo->isSectionReqsMet( $aSection[ 'slug' ] ) ) {
+					$aWarnings[] = __( 'Unfortunately your WordPress and/or PHP versions are too old to support this feature.', 'wp-simple-firewall' );
+				}
+				$aOptions[ $nSectionKey ][ 'warnings' ] = array_merge(
+					$aWarnings,
+					$this->getSectionWarnings( $aSection[ 'slug' ] )
+				);
+				$aOptions[ $nSectionKey ][ 'notices' ] = $this->getSectionNotices( $aSection[ 'slug' ] );
+
+				if ( !empty( $aSection[ 'help_video_id' ] ) ) {
+					$sHelpVideoUrl = $this->getHelpVideoUrl( $aSection[ 'help_video_id' ] );
+				}
+				else {
+					$sHelpVideoUrl = '';
+				}
+				$aOptions[ $nSectionKey ][ 'help_video_url' ] = ''; /* Remove on Shield 9.0 */
 			}
 		}
 
 		return $aOptions;
+	}
+
+	/**
+	 * @param string $sSectionSlug
+	 * @return array
+	 */
+	protected function getSectionNotices( $sSectionSlug ) {
+		return [];
+	}
+
+	/**
+	 * @param string $sSection
+	 * @return array
+	 */
+	protected function getSectionWarnings( $sSection ) {
+		return [];
 	}
 
 	/**
@@ -943,7 +1158,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 			case 'array':
 
 				if ( empty( $mCurrent ) || !is_array( $mCurrent ) ) {
-					$mCurrent = array();
+					$mCurrent = [];
 				}
 
 				$aOptParams[ 'rows' ] = count( $mCurrent ) + 2;
@@ -953,7 +1168,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 
 			case 'comma_separated_lists':
 
-				$aNewValues = array();
+				$aNewValues = [];
 				if ( !empty( $mCurrent ) && is_array( $mCurrent ) ) {
 
 					foreach ( $mCurrent as $sPage => $aParams ) {
@@ -967,7 +1182,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 
 			case 'multiple_select':
 				if ( !is_array( $mCurrent ) ) {
-					$mCurrent = array();
+					$mCurrent = [];
 				}
 				break;
 
@@ -976,27 +1191,24 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 				break;
 		}
 
-		$aOptParams[ 'value' ] = is_scalar( $mCurrent ) ? esc_attr( $mCurrent ) : $mCurrent;
-		$aOptParams[ 'disabled' ] = !$this->isPremium() && ( isset( $aOptParams[ 'premium' ] ) && $aOptParams[ 'premium' ] );
-		$aOptParams[ 'enabled' ] = !$aOptParams[ 'disabled' ];
+		$aParams = [
+			'value'    => is_scalar( $mCurrent ) ? esc_attr( $mCurrent ) : $mCurrent,
+			'disabled' => !$this->isPremium() && ( isset( $aOptParams[ 'premium' ] ) && $aOptParams[ 'premium' ] ),
+		];
+		$aParams[ 'enabled' ] = !$aParams[ 'disabled' ];
+		$aOptParams = array_merge( [ 'rows' => 2 ], $aOptParams, $aParams );
+
 		// add strings
-		return $this->loadStrings_Options( $aOptParams );
-	}
-
-	/**
-	 * @param array $aOptionsParams
-	 * @return array
-	 */
-	protected function loadStrings_Options( $aOptionsParams ) {
-		return $aOptionsParams;
-	}
-
-	/**
-	 * @param array $aOptionsParams
-	 * @return array
-	 */
-	protected function loadStrings_SectionTitles( $aOptionsParams ) {
-		return $aOptionsParams;
+		try {
+			$aOptStrings = $this->getStrings()->getOptionStrings( $aOptParams[ 'key' ] );
+			if ( is_array( $aOptStrings[ 'description' ] ) ) {
+				$aOptStrings[ 'description' ] = implode( "<br/>", $aOptStrings[ 'description' ] );
+			}
+			$aOptParams = Services::DataManipulation()->mergeArraysRecursive( $aOptParams, $aOptStrings );
+		}
+		catch ( \Exception $oE ) {
+		}
+		return $aOptParams;
 	}
 
 	/**
@@ -1005,211 +1217,162 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	protected function doPrePluginOptionsSave() {
 	}
 
+	public function onPluginDeactivate() {
+	}
+
+	public function onPluginDelete() {
+		foreach ( $this->getDbHandlers( true ) as $oDbh ) {
+			if ( !empty( $oDbh ) ) {
+				$oDbh->deleteTable();
+			}
+		}
+		$this->getOptions()->deleteStorage();
+	}
+
 	/**
-	 * Deletes all the options including direct save.
+	 * @return array - map of each option to its option type
 	 */
-	public function deletePluginOptions() {
-		if ( self::getConn()->getHasPermissionToManage() ) {
-			$this->getOptionsVo()->doOptionsDelete();
-			$this->bPluginDeleting = true;
+	protected function getAllFormOptionsAndTypes() {
+		$aOpts = [];
+
+		foreach ( $this->buildOptions() as $aOptionsSection ) {
+			if ( !empty( $aOptionsSection ) ) {
+				foreach ( $aOptionsSection[ 'options' ] as $aOption ) {
+					$aOpts[ $aOption[ 'key' ] ] = $aOption[ 'type' ];
+				}
+			}
+		}
+
+		return $aOpts;
+	}
+
+	/**
+	 * @param string $sAction
+	 */
+	protected function handleModAction( $sAction ) {
+	}
+
+	/**
+	 * @throws \Exception
+	 */
+	public function saveOptionsSubmit() {
+		if ( !$this->getCon()->isPluginAdmin() ) {
+			throw new \Exception( __( "You don't currently have permission to save settings.", 'wp-simple-firewall' ) );
+		}
+
+		$this->doSaveStandardOptions();
+
+		$this->saveModOptions( true );
+
+		// only use this flag when the options are being updated with a MANUAL save.
+		if ( isset( $this->bImportExportWhitelistNotify ) && $this->bImportExportWhitelistNotify ) {
+			if ( !wp_next_scheduled( $this->prefix( 'importexport_notify' ) ) ) {
+				wp_schedule_single_event( Services::Request()->ts() + 15, $this->prefix( 'importexport_notify' ) );
+			}
 		}
 	}
 
 	/**
-	 * @return string
+	 * @param string $sMsg
+	 * @param bool   $bError
+	 * @param bool   $bShowOnLogin
+	 * @return $this
 	 */
-	protected function collateAllFormInputsForAllOptions() {
-
-		$aOptions = $this->buildOptions();
-
-		$aToJoin = array();
-		foreach ( $aOptions as $aOptionsSection ) {
-
-			if ( empty( $aOptionsSection ) ) {
-				continue;
-			}
-			foreach ( $aOptionsSection[ 'options' ] as $aOption ) {
-				$aToJoin[] = $aOption[ 'type' ].':'.$aOption[ 'key' ];
-			}
-		}
-		return implode( self::CollateSeparator, $aToJoin );
-	}
-
-	public function ajaxOptionsFormSave() {
-
-		if ( $this->getModSlug() != $this->loadDP()->post( 'mod_slug' ) ) {
-			return;
-		}
-
-		$oCon = self::getConn();
-		$bSuccess = false;
-		$sName = $oCon->getHumanName();
-		$sMessage = sprintf( _wpsf__( 'Failed up to update %s plugin options.' ), $sName );
-
-		if ( $oCon->getIsValidAdminArea() ) {
-			$bSuccess = $this->handleFormSubmit();
-			if ( $bSuccess ) {
-				$sMessage = sprintf( _wpsf__( '%s Plugin options updated successfully.' ), $sName );
-			}
-		}
-		else {
-			$sMessage = sprintf( _wpsf__( 'Failed to update %s options as you are not authenticated with %s as a Security Admin.' ), $sName, $sName );
-		}
-
-		$this->sendAjaxResponse(
-			$bSuccess,
-			array(
-				'options_form' => $this->renderOptionsForm(),
-				'message'      => $sMessage
-			)
-		);
+	public function setFlashAdminNotice( $sMsg, $bError = false, $bShowOnLogin = false ) {
+		$this->getCon()
+			 ->getAdminNotices()
+			 ->addFlash(
+				 sprintf( '[%s] %s', $this->getCon()->getHumanName(), $sMsg ),
+				 $bError,
+				 $bShowOnLogin
+			 );
+		return $this;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function handleFormSubmit() {
-		$bVerified = $this->verifyFormSubmit();
-		if ( $bVerified ) {
-			$this->doSaveStandardOptions();
-			$this->doExtraSubmitProcessing();
-			$this->setSaveUserResponse();
-		}
-		return $bVerified;
-	}
-
-	protected function verifyFormSubmit() {
-		if ( !self::getConn()->getHasPermissionToManage() ) {
-//				TODO: manage how we react to prohibited submissions
-			return false;
-		}
-
-		// Now verify this is really a valid submission.
-		return check_admin_referer( self::getConn()->getPluginPrefix() );
-	}
-
-	/**
-	 * @return void
-	 */
-	protected function doSaveStandardOptions() {
-		$sAllOptions = $this->loadDP()->post( 'all_options_input' );
-		if ( !empty( $sAllOptions ) ) {
-			$this->updatePluginOptionsFromSubmit( $sAllOptions );
-		}
-	}
-
-	protected function doExtraSubmitProcessing() {
-	}
-
-	protected function setSaveUserResponse() {
-		if ( !$this->loadWp()->isAjax() && $this->isModulePage() ) {
-			$this->loadAdminNoticesProcessor()
-				 ->addFlashMessage( sprintf( _wpsf__( '%s Plugin options updated successfully.' ), self::getConn()
-																									   ->getHumanName() ) );
-		}
+	protected function isAdminOptionsPage() {
+		return ( is_admin() && !Services::WpGeneral()->isAjax() && $this->isThisModulePage() );
 	}
 
 	/**
 	 * @return bool
 	 */
 	public function isPremium() {
-		return $this->hasValidPremiumLicense();
+		return $this->getCon()->isPremiumActive();
 	}
 
 	/**
-	 * UNUSED
-	 * Ensure that if an option is premium, it is never changed unless we have premium access
+	 * @throws \Exception
 	 */
-	protected function resetPremiumOptions() {
-		if ( !$this->isPremium() ) {
-			$this->getOptionsVo()->resetPremiumOptsToDefault();
-		}
-	}
+	private function doSaveStandardOptions() {
+		$aForm = $this->getAjaxFormParams( 'b64' ); // standard options use b64 and failover to lz-string
 
-	/**
-	 * @param bool $bBypass
-	 * @return $this
-	 */
-	protected function setBypassAdminProtection( $bBypass ) {
-		$this->bBypassAdminAccess = (bool)$bBypass;
-		return $this;
-	}
+		foreach ( $this->getAllFormOptionsAndTypes() as $sKey => $sOptType ) {
 
-	/**
-	 * @param string $sAllOptionsInput - comma separated list of all the input keys to be processed from the $_POST
-	 * @return void
-	 */
-	protected function updatePluginOptionsFromSubmit( $sAllOptionsInput ) {
-		if ( empty( $sAllOptionsInput ) ) {
-			return;
-		}
-		$oDp = $this->loadDataProcessor();
-
-		$aAllInputOptions = explode( self::CollateSeparator, $sAllOptionsInput );
-		foreach ( $aAllInputOptions as $sInputKey ) {
-			$aInput = explode( ':', $sInputKey );
-			list( $sOptionType, $sOptionKey ) = $aInput;
-
-			$sOptionValue = $oDp->post( $sOptionKey );
+			$sOptionValue = isset( $aForm[ $sKey ] ) ? $aForm[ $sKey ] : null;
 			if ( is_null( $sOptionValue ) ) {
 
-				if ( $sOptionType == 'text' || $sOptionType == 'email' ) { //if it was a text box, and it's null, don't update anything
+				if ( in_array( $sOptType, [ 'text', 'email' ] ) ) { //text box, and it's null, don't update
 					continue;
 				}
-				else if ( $sOptionType == 'checkbox' ) { //if it was a checkbox, and it's null, it means 'N'
+				elseif ( $sOptType == 'checkbox' ) { //if it was a checkbox, and it's null, it means 'N'
 					$sOptionValue = 'N';
 				}
-				else if ( $sOptionType == 'integer' ) { //if it was a integer, and it's null, it means '0'
+				elseif ( $sOptType == 'integer' ) { //if it was a integer, and it's null, it means '0'
 					$sOptionValue = 0;
+				}
+				elseif ( $sOptType == 'multiple_select' ) {
+					$sOptionValue = [];
 				}
 			}
 			else { //handle any pre-processing we need to.
 
-				if ( $sOptionType == 'text' || $sOptionType == 'email' ) {
+				if ( $sOptType == 'text' || $sOptType == 'email' ) {
 					$sOptionValue = trim( $sOptionValue );
 				}
-				if ( $sOptionType == 'integer' ) {
+				if ( $sOptType == 'integer' ) {
 					$sOptionValue = intval( $sOptionValue );
 				}
-				else if ( $sOptionType == 'password' && $this->hasEncryptOption() ) { //md5 any password fields
+				elseif ( $sOptType == 'password' ) {
 					$sTempValue = trim( $sOptionValue );
 					if ( empty( $sTempValue ) ) {
 						continue;
 					}
+
+					$sConfirm = isset( $aForm[ $sKey.'_confirm' ] ) ? $aForm[ $sKey.'_confirm' ] : null;
+					if ( $sTempValue !== $sConfirm ) {
+						throw new \Exception( __( 'Password values do not match.', 'wp-simple-firewall' ) );
+					}
+
 					$sOptionValue = md5( $sTempValue );
 				}
-				else if ( $sOptionType == 'array' ) { //arrays are textareas, where each is separated by newline
+				elseif ( $sOptType == 'array' ) { //arrays are textareas, where each is separated by newline
 					$sOptionValue = array_filter( explode( "\n", esc_textarea( $sOptionValue ) ), 'trim' );
 				}
-				else if ( $sOptionType == 'email' && !$oDp->validEmail( $sOptionValue ) ) {
-					$sOptionValue = '';
+				elseif ( $sOptType == 'comma_separated_lists' ) {
+					$sOptionValue = Services::Data()->extractCommaSeparatedList( $sOptionValue );
 				}
-				else if ( $sOptionType == 'comma_separated_lists' ) {
-					$sOptionValue = $oDp->extractCommaSeparatedList( $sOptionValue );
-				}
-				else if ( $sOptionType == 'multiple_select' ) {
-				}
+				/* elseif ( $sOptType == 'multiple_select' ) { } */
 			}
 
 			// Prevent overwriting of non-editable fields
-			if ( !in_array( $sOptionType, array( 'noneditable_text' ) ) ) {
-				$this->setOpt( $sOptionKey, $sOptionValue );
+			if ( !in_array( $sOptType, [ 'noneditable_text' ] ) ) {
+				$this->setOpt( $sKey, $sOptionValue );
 			}
 		}
-		$this->savePluginOptions();
+
+		// Handle Import/Export exclusions
+		if ( $this->isPremium() ) {
+			( new Shield\Modules\Plugin\Lib\ImportExport\Options\SaveExcludedOptions() )
+				->setMod( $this )
+				->save( $aForm );
+		}
 	}
 
-	/**
-	 * Should be over-ridden by each new class to handle upgrades.
-	 * Called upon construction and after plugin options are initialized.
-	 */
-	protected function updateHandler() {
-	}
-
-	/**
-	 */
 	protected function runWizards() {
-		if ( $this->canRunWizards() && $this->isWizardPage() && $this->hasWizard() ) {
+		if ( $this->isWizardPage() && $this->hasWizard() ) {
 			$oWiz = $this->getWizardHandler();
 			if ( $oWiz instanceof ICWP_WPSF_Wizard_Base ) {
 				$oWiz->init();
@@ -1220,39 +1383,38 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	/**
 	 * @return bool
 	 */
-	protected function isModulePage() {
-		return $this->loadDP()->query( 'page' ) == $this->getModSlug();
+	public function isThisModulePage() {
+		return $this->getCon()->isModulePage()
+			   && Services::Request()->query( 'page' ) == $this->getModSlug();
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isPage_Insights() {
+		return Services::Request()->query( 'page' ) == $this->getCon()->getModule_Insights()->getModSlug();
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isPage_InsightsThisModule() {
+		return $this->isPage_Insights()
+			   && Services::Request()->query( 'subnav' ) == $this->getSlug();
 	}
 
 	/**
 	 * @return bool
 	 */
 	protected function isModuleOptionsRequest() {
-		return $this->loadDP()->post( 'mod_slug' ) === $this->getModSlug();
+		return Services::Request()->post( 'mod_slug' ) === $this->getModSlug();
 	}
 
 	/**
 	 * @return bool
 	 */
 	protected function isWizardPage() {
-		return ( $this->loadDP()->query( 'shield_action' ) == 'wizard' && $this->isModulePage() );
-	}
-
-	/**
-	 * @return boolean
-	 */
-	public function hasEncryptOption() {
-		return function_exists( 'md5' );
-		//	return extension_loaded( 'mcrypt' );
-	}
-
-	/**
-	 * Prefixes an option key only if it's needed
-	 * @param $sKey
-	 * @return string
-	 */
-	public function prefixOptionKey( $sKey ) {
-		return $this->prefix( $sKey, '_' );
+		return ( $this->getCon()->getShieldAction() == 'wizard' && $this->isThisModulePage() );
 	}
 
 	/**
@@ -1262,33 +1424,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	public function prefix( $sSuffix = '', $sGlue = '-' ) {
-		return self::getConn()->doPluginPrefix( $sSuffix, $sGlue );
-	}
-
-	/**
-	 * @param string $sSuffix
-	 * @return string
-	 */
-	public function prefixWpAjax( $sSuffix = '' ) {
-		return sprintf( '%s%s',
-			'wp_ajax_',
-			$this->prefix( $sSuffix )
-		);
-	}
-
-	/**
-	 * @param $oUser WP_User
-	 * @return ICWP_UserMeta
-	 */
-	public function getUserMeta( $oUser ) {
-		return $this->loadWpUsers()->metaVoForUser( $this->prefix(), $oUser->ID );
-	}
-
-	/**
-	 * @return ICWP_UserMeta
-	 */
-	public function getCurrentUserMeta() {
-		return $this->loadWpUsers()->metaVoForUser( $this->prefix() );
+		return $this->getCon()->prefix( $sSuffix, $sGlue );
 	}
 
 	/**
@@ -1296,146 +1432,184 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	public function getOptionStoragePrefix() {
-		return self::getConn()->getOptionStoragePrefix();
+		return $this->getCon()->getOptionStoragePrefix();
 	}
 
 	/**
+	 * @uses echo()
 	 */
 	public function displayModuleAdminPage() {
-		if ( $this->canDisplayOptionsForm() ) {
-			$this->displayModulePage();
-		}
-		else {
-			$this->displayRestrictedPage();
-		}
+		echo $this->renderModulePage();
 	}
 
 	/**
 	 * Override this to customize anything with the display of the page
+	 * @param array $aData
+	 * @return string
 	 */
-	protected function displayModulePage() {
-		$this->display();
-	}
+	protected function renderModulePage( $aData = [] ) {
+		// Get Base Data
+		$aData = Services::DataManipulation()
+						 ->mergeArraysRecursive( $this->getBaseDisplayData(), $aData );
+		$aData[ 'content' ][ 'options_form' ] = $this->renderOptionsForm();
 
-	protected function displayRestrictedPage() {
-		$this->display(
-			array( 'flags' => array( 'show_summary' => false ) ),
-			'subfeature-access_restricted.php'
-		);
+		return $this->renderTemplate( 'index.php', $aData );
 	}
 
 	/**
 	 * @return array
 	 */
-	protected function getBaseDisplayData() {
-		$oCon = self::getConn();
-		self::$sActivelyDisplayedModuleOptions = $this->getFeatureSlug();
+	public function getBaseDisplayData() {
+		$oCon = $this->getCon();
 
-		$aData = array(
-			'sPluginName'     => $oCon->getHumanName(),
-			'sFeatureName'    => $this->getMainFeatureName(),
-			'bFeatureEnabled' => $this->getIsMainFeatureEnabled(),
-			'sTagline'        => $this->getOptionsVo()->getFeatureTagline(),
-			'nonce_field'     => wp_nonce_field( $oCon->getPluginPrefix(), '_wpnonce', true, false ), //don't echo!
-			'form_action'     => 'admin.php?page='.$this->getModSlug(),
-			'nOptionsPerRow'  => 1,
-			'aPluginLabels'   => $oCon->getPluginLabels(),
-			'help_video'      => array(
+		return [
+			'sPluginName'   => $oCon->getHumanName(),
+			'sTagline'      => $this->getOptions()->getFeatureTagline(),
+			'nonce_field'   => wp_nonce_field( $oCon->getPluginPrefix(), '_wpnonce', true, false ), //don't echo!
+			'form_action'   => 'admin.php?page='.$this->getModSlug(),
+			'aPluginLabels' => $oCon->getLabels(),
+			'help_video'    => [
 				'auto_show'   => $this->getIfAutoShowHelpVideo(),
 				'iframe_url'  => $this->getHelpVideoUrl( $this->getHelpVideoId() ),
-				'display_id'  => 'ShieldHelpVideo'.$this->getFeatureSlug(),
+				'display_id'  => 'ShieldHelpVideo'.$this->getSlug(),
 				'options'     => $this->getHelpVideoOptions(),
 				'displayable' => $this->isHelpVideoDisplayable(),
 				'show'        => $this->isHelpVideoDisplayable() && !$this->getHelpVideoHasBeenClosed(),
 				'width'       => 772,
 				'height'      => 454,
-			),
-			'sAjaxNonce'      => wp_create_nonce( 'icwp_ajax' ),
+			],
+			'aSummaryData'  => $this->getModulesSummaryData(),
 
-			'aSummaryData' => apply_filters( $this->prefix( 'get_feature_summary_data' ), array() ),
-
-			'sPageTitle' => sprintf( '%s: %s', $oCon->getHumanName(), $this->getMainFeatureName() ),
-			'data'       => array(
-				'form_nonce'        => $this->genNonce( '' ),
-				'mod_slug'          => $this->getModSlug(),
-				'all_options'       => $this->buildOptions(),
-				'all_options_input' => $this->collateAllFormInputsForAllOptions(),
-				'hidden_options'    => $this->getOptionsVo()->getHiddenOptions()
-			),
-			'strings'    => array(
-				'go_to_settings'                    => __( 'Settings' ),
-				'on'                                => __( 'On' ),
-				'off'                               => __( 'Off' ),
-				'more_info'                         => __( 'More Info' ),
-				'blog'                              => __( 'Blog' ),
-				'plugin_activated_features_summary' => __( 'Plugin Activated Features Summary:' ),
-				'save_all_settings'                 => __( 'Save All Settings' ),
-				'see_help_video'                    => __( 'Watch Help Video' ),
-			),
-			'flags'      => array(
+			//			'sPageTitle' => sprintf( '%s: %s', $oCon->getHumanName(), $this->getMainFeatureName() ),
+			'sPageTitle'    => $this->getMainFeatureName(),
+			'data'          => [
+				'mod_slug'       => $this->getModSlug( true ),
+				'mod_slug_short' => $this->getModSlug( false ),
+				'all_options'    => $this->buildOptions(),
+				'xferable_opts'  => ( new Shield\Modules\Plugin\Lib\ImportExport\Options\BuildTransferableOptions() )
+					->setMod( $this )
+					->build(),
+				'hidden_options' => $this->getOptions()->getHiddenOptions()
+			],
+			'ajax'          => [
+				'mod_options' => $this->getAjaxActionData( 'mod_options' ),
+			],
+			'vendors'       => [
+				'widget_freshdesk' => '3000000081' /* TODO: plugin spec config */
+			],
+			'strings'       => $this->getStrings()->getDisplayStrings(),
+			'flags'         => [
+				'access_restricted'     => !$this->canDisplayOptionsForm(),
 				'show_ads'              => $this->getIsShowMarketing(),
-				'show_summary'          => false,
 				'wrap_page_content'     => true,
 				'show_standard_options' => true,
-				'show_content_actions'  => $this->hasCustomActions(),
 				'show_content_help'     => true,
 				'show_alt_content'      => false,
-				'can_wizard'            => $this->canRunWizards(),
 				'has_wizard'            => $this->hasWizard(),
-			),
-			'hrefs'      => array(
-				'go_pro'          => 'http://icwp.io/shieldgoprofeature',
-				'img_wizard_wand' => $oCon->getPluginUrl_Image( 'wand.png' ),
-				'wizard_link'     => $this->getUrl_WizardLanding(),
-				'wizard_landing'  => $this->getUrl_WizardLanding(),
-				'primary_wizard'  => $this->getUrl_WizardPrimary(),
-			),
-			'content'    => array(
-				'options_form' => 'no form',
-				'alt'          => '',
-				'actions'      => $this->getContentCustomActions(),
-				'help'         => $this->getContentHelp()
-			)
-		);
-		$aData[ 'flags' ][ 'show_content_help' ] = strpos( $aData[ 'content' ][ 'help' ], 'Error:' ) !== 0;
-		return $aData;
-	}
+				'is_premium'            => $this->isPremium(),
+				'show_transfer_switch'  => $this->isPremium()
+			],
+			'hrefs'         => [
+				'go_pro'         => 'https://shsec.io/shieldgoprofeature',
+				'goprofooter'    => 'https://shsec.io/goprofooter',
+				'wizard_link'    => $this->getUrl_WizardLanding(),
+				'wizard_landing' => $this->getUrl_WizardLanding(),
 
-	/**
-	 * @return string
-	 */
-	protected function getContentCustomActions() {
-		return '<h3 style="margin: 10px 0 100px">'._wpsf__( 'No Actions For This Module' ).'</h3>';
+				'form_action'      => Services::Request()->getUri(),
+				'css_bootstrap'    => $oCon->getPluginUrl_Css( 'bootstrap4.min' ),
+				'css_pages'        => $oCon->getPluginUrl_Css( 'pages' ),
+				'css_steps'        => $oCon->getPluginUrl_Css( 'jquery.steps' ),
+				'css_fancybox'     => $oCon->getPluginUrl_Css( 'jquery.fancybox.min' ),
+				'css_globalplugin' => $oCon->getPluginUrl_Css( 'global-plugin' ),
+				'css_wizard'       => $oCon->getPluginUrl_Css( 'wizard' ),
+				'js_jquery'        => Services::Includes()->getUrl_Jquery(),
+				'js_bootstrap'     => $oCon->getPluginUrl_Js( 'bootstrap4.bundle.min' ),
+				'js_fancybox'      => $oCon->getPluginUrl_Js( 'jquery.fancybox.min' ),
+				'js_globalplugin'  => $oCon->getPluginUrl_Js( 'global-plugin' ),
+				'js_steps'         => $oCon->getPluginUrl_Js( 'jquery.steps.min' ),
+				'js_wizard'        => $oCon->getPluginUrl_Js( 'wizard' ),
+			],
+			'imgs'          => [
+				'favicon'       => $oCon->getPluginUrl_Image( 'pluginlogo_24x24.png' ),
+				'plugin_banner' => $oCon->getPluginUrl_Image( 'banner-1500x500-transparent.png' ),
+			],
+			'content'       => [
+				'options_form'   => '',
+				'alt'            => '',
+				'actions'        => '',
+				'help'           => '',
+				'wizard_landing' => ''
+			]
+		];
 	}
 
 	/**
 	 * @return string
 	 */
 	protected function getContentHelp() {
-		return $this->renderTemplate( 'snippets/module-help-template.php', array( 'slug' => $this->getFeatureSlug() ) );
+		return $this->renderTemplate( 'snippets/module-help-template.php', $this->getBaseDisplayData() );
 	}
 
 	/**
-	 * @return string|null
-	 */
-	protected function getPrimaryWizard() {
-		return $this->hasWizard() ? key( $this->getWizardDefinitions() ) : null;
-	}
-
-	/**
-	 * @uses nonce
-	 * @param string $sWizardSlug
 	 * @return string
 	 */
+	protected function getContentWizardLanding() {
+		$aData = $this->getBaseDisplayData();
+		if ( $this->hasWizard() ) {
+			$aData[ 'content' ][ 'wizard_landing' ] = $this->getWizardHandler()->renderWizardLandingSnippet();
+		}
+		return $this->renderTemplate( 'snippets/module-wizard-template.php', $aData );
+	}
+
+	protected function buildContextualHelp() {
+		if ( !function_exists( 'get_current_screen' ) ) {
+			require_once( ABSPATH.'wp-admin/includes/screen.php' );
+		}
+		$screen = get_current_screen();
+		//$screen->remove_help_tabs();
+		$screen->add_help_tab( [
+			'id'      => 'my-plugin-default',
+			'title'   => __( 'Default' ),
+			'content' => 'This is where I would provide tabbed help to the user on how everything in my admin panel works. Formatted HTML works fine in here too'
+		] );
+		//add more help tabs as needed with unique id's
+
+		// Help sidebars are optional
+		$screen->set_help_sidebar(
+			'<p><strong>'.__( 'For more information:' ).'</strong></p>'.
+			'<p><a href="http://wordpress.org/support/" target="_blank">'._( 'Support Forums' ).'</a></p>'
+		);
+	}
+
+	/**
+	 * @return array[]
+	 */
+	protected function getModulesSummaryData() {
+		return apply_filters( $this->prefix( 'collect_mod_summary' ), [] );
+	}
+
+	/**
+	 * @param string $sWizardSlug
+	 * @return string
+	 * @uses nonce
+	 */
 	public function getUrl_Wizard( $sWizardSlug ) {
+		$aDef = $this->getWizardDefinition( $sWizardSlug );
+		if ( empty( $aDef[ 'min_user_permissions' ] ) ) { // i.e. no login/minimum perms
+			$sUrl = Services::WpGeneral()->getHomeUrl();
+		}
+		else {
+			$sUrl = Services::WpGeneral()->getAdminUrl( 'admin.php' );
+		}
+
 		return add_query_arg(
-			array(
+			[
 				'page'          => $this->getModSlug(),
 				'shield_action' => 'wizard',
 				'wizard'        => $sWizardSlug,
 				'nonwizard'     => wp_create_nonce( 'wizard'.$sWizardSlug )
-			),
-			$this->loadWp()->getHomeUrl()
+			],
+			$sUrl
 		);
 	}
 
@@ -1447,11 +1621,16 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	}
 
 	/**
-	 * @return string
+	 * @param string $sWizardSlug
+	 * @return array
 	 */
-	protected function getUrl_WizardPrimary() {
-		$sPrimary = $this->getPrimaryWizard();
-		return $this->getUrl_Wizard( $sPrimary );
+	public function getWizardDefinition( $sWizardSlug ) {
+		$aDef = null;
+		if ( $this->hasWizardDefinition( $sWizardSlug ) ) {
+			$aW = $this->getWizardDefinitions();
+			$aDef = $aW[ $sWizardSlug ];
+		}
+		return $aDef;
 	}
 
 	/**
@@ -1459,7 +1638,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 */
 	public function getWizardDefinitions() {
 		$aW = $this->getDef( 'wizards' );
-		return is_array( $aW ) ? $aW : array();
+		return is_array( $aW ) ? $aW : [];
 	}
 
 	/**
@@ -1470,104 +1649,99 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	}
 
 	/**
+	 * @param string $sWizardSlug
 	 * @return bool
 	 */
-	protected function hasCustomActions() {
-		return (bool)$this->getOptionsVo()->getFeatureProperty( 'has_custom_actions' );
+	public function hasWizardDefinition( $sWizardSlug ) {
+		$aW = $this->getWizardDefinitions();
+		return !empty( $aW[ $sWizardSlug ] );
 	}
 
 	/**
-	 * @return boolean
+	 * @return bool
 	 */
 	protected function getIsShowMarketing() {
-		return false && apply_filters( $this->prefix( 'show_marketing' ), !$this->isPremium() );
+		return apply_filters( $this->prefix( 'show_marketing' ), !$this->isPremium() );
 	}
 
 	/**
 	 * @return string
-	 * @throws Exception
 	 */
-	protected function renderOptionsForm() {
+	public function renderOptionsForm() {
 
 		if ( $this->canDisplayOptionsForm() ) {
-			$sTemplate = 'snippets/options_form.php';
+			$sTemplate = 'components/options_form/main.twig';
 		}
 		else {
 			$sTemplate = 'subfeature-access_restricted';
 		}
 
-		// Get the same Base Data as normal display
-		$aData = $this->getBaseDisplayData();
-		$aData[ 'strings' ] = array_merge( $aData[ 'strings' ], $this->getDisplayStrings() );
-		return $this->loadRenderer( self::getConn()->getPath_Templates() )
-					->setTemplate( $sTemplate )
-					->setRenderVars( $aData )
-					->render();
+		try {
+			return $this->getCon()
+						->getRenderer()
+						->setTemplate( $sTemplate )
+						->setRenderVars( $this->getBaseDisplayData() )
+						->setTemplateEngineTwig()
+						->render();
+		}
+		catch ( \Exception $oE ) {
+			return 'Error rendering options form: '.$oE->getMessage();
+		}
 	}
 
 	/**
 	 * @return bool
 	 */
 	protected function canDisplayOptionsForm() {
-		return $this->getOptionsVo()->isAccessRestricted() ? self::getConn()
-																 ->getHasPermissionToView() : true;
+		return $this->getOptions()->isAccessRestricted() ? $this->getCon()->isPluginAdmin() : true;
+	}
+
+	public function onWpEnqueueAdminJs() {
+		$this->insertCustomJsVars_Admin();
 	}
 
 	/**
-	 * @return bool
+	 * Override this with custom JS vars for your particular module.
 	 */
-	public function canRunWizards() {
-		return $this->loadDP()->getPhpVersionIsAtLeast( '5.4.0' );
+	public function insertCustomJsVars_Admin() {
+
+		if ( $this->isThisModulePage() ) {
+			wp_localize_script(
+				$this->prefix( 'plugin' ),
+				'icwp_wpsf_vars_base',
+				[
+					'ajax' => [
+						'mod_options'          => $this->getAjaxActionData( 'mod_options' ),
+						'mod_opts_form_render' => $this->getAjaxActionData( 'mod_opts_form_render' ),
+					]
+				]
+			);
+		}
 	}
 
 	/**
 	 * @param array  $aData
 	 * @param string $sSubView
 	 */
-	protected function display( $aData = array(), $sSubView = '' ) {
-		$oRndr = $this->loadRenderer( self::getConn()->getPath_Templates() );
-		$oDp = $this->loadDataProcessor();
-
-		// Get Base Data
-		$aData = $oDp->mergeArraysRecursive( $this->getBaseDisplayData(), $aData );
-		if ( empty( $sSubView ) || !$oRndr->getTemplateExists( $sSubView ) ) {
-			$sModuleView = 'feature-'.$this->getFeatureSlug();
-			$sSubView = $oRndr->getTemplateExists( $sModuleView ) ? $sModuleView : 'feature-default';
-		}
-
-		$aData[ 'sFeatureInclude' ] = $this->loadDP()->addExtensionToFilePath( $sSubView, '.php' );
-		$aData[ 'strings' ] = array_merge( $aData[ 'strings' ], $this->getDisplayStrings() );
-		$aData[ 'content' ][ 'options_form' ] = $this->renderOptionsForm();
-		try {
-			echo $oRndr
-				->setTemplate( 'index.php' )
-				->setRenderVars( $aData )
-				->render();
-		}
-		catch ( Exception $oE ) {
-			echo $oE->getMessage();
-		}
+	protected function display( $aData = [], $sSubView = '' ) {
 	}
 
 	/**
 	 * @param array $aData
 	 * @return string
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function renderAdminNotice( $aData ) {
 		if ( empty( $aData[ 'notice_attributes' ] ) ) {
-			throw new Exception( 'notice_attributes is empty' );
+			throw new \Exception( 'notice_attributes is empty' );
 		}
 
-		if ( !isset( $aData[ 'icwp_ajax_nonce' ] ) ) {
-			$aData[ 'icwp_ajax_nonce' ] = wp_create_nonce( 'icwp_ajax' );
-		}
 		if ( !isset( $aData[ 'icwp_admin_notice_template' ] ) ) {
 			$aData[ 'icwp_admin_notice_template' ] = $aData[ 'notice_attributes' ][ 'notice_id' ];
 		}
 
 		if ( !isset( $aData[ 'notice_classes' ] ) ) {
-			$aData[ 'notice_classes' ] = array();
+			$aData[ 'notice_classes' ] = [];
 		}
 		if ( is_array( $aData[ 'notice_classes' ] ) ) {
 			$aData[ 'notice_classes' ][] = $aData[ 'notice_attributes' ][ 'type' ];
@@ -1578,51 +1752,42 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 		}
 		$aData[ 'notice_classes' ] = implode( ' ', $aData[ 'notice_classes' ] );
 
-		return $this->renderTemplate( 'notices'.DIRECTORY_SEPARATOR.'admin-notice-template', $aData );
+		$aAjaxData = $this->getAjaxActionData( 'dismiss_admin_notice' );
+		$aAjaxData[ 'hide' ] = 1;
+		$aAjaxData[ 'notice_id' ] = $aData[ 'notice_attributes' ][ 'notice_id' ];
+		$aData[ 'ajax' ][ 'dismiss_admin_notice' ] = json_encode( $aAjaxData );
+
+		$bTwig = $aData[ 'notice_attributes' ][ 'twig' ];
+		$sTemplate = $bTwig ? '/notices/'.$aAjaxData[ 'notice_id' ] : 'notices/admin-notice-template';
+		return $this->renderTemplate( $sTemplate, $aData, $bTwig );
 	}
 
 	/**
 	 * @param string $sTemplate
 	 * @param array  $aData
+	 * @param bool   $bUseTwig
 	 * @return string
 	 */
-	public function renderTemplate( $sTemplate, $aData = array() ) {
+	public function renderTemplate( $sTemplate, $aData = [], $bUseTwig = false ) {
 		if ( empty( $aData[ 'unique_render_id' ] ) ) {
-			$aData[ 'unique_render_id' ] = substr( md5( mt_rand() ), 0, 5 );
+			$aData[ 'unique_render_id' ] = 'noticeid-'.substr( md5( mt_rand() ), 0, 5 );
 		}
 		try {
-			$sOutput = $this
-				->loadRenderer( self::getConn()->getPath_Templates() )
-				->setTemplate( $sTemplate )
-				->setRenderVars( $aData )
-				->render();
+			$oRndr = $this->getCon()->getRenderer();
+			if ( $bUseTwig || preg_match( '#^.*\.twig$#i', $sTemplate ) ) {
+				$oRndr->setTemplateEngineTwig();
+			}
+
+			$sOutput = $oRndr->setTemplate( $sTemplate )
+							 ->setRenderVars( $aData )
+							 ->render();
 		}
-		catch ( Exception $oE ) {
+		catch ( \Exception $oE ) {
 			$sOutput = $oE->getMessage();
+			error_log( $oE->getMessage() );
 		}
 
 		return $sOutput;
-	}
-
-	/**
-	 * @return array
-	 */
-	protected function getDisplayStrings() {
-		return array();
-	}
-
-	/**
-	 * @return ICWP_WPSF_Plugin_Controller
-	 */
-	static public function getConn() {
-		return self::$oPluginController;
-	}
-
-	/**
-	 * @return ICWP_WPSF_Plugin_Controller
-	 */
-	static public function getController() {
-		return self::getConn();
 	}
 
 	/**
@@ -1631,9 +1796,9 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 */
 	public function exportTransferableOptions( $aTransferableOptions ) {
 		if ( !is_array( $aTransferableOptions ) ) {
-			$aTransferableOptions = array();
+			$aTransferableOptions = [];
 		}
-		$aTransferableOptions[ $this->getOptionsStorageKey() ] = $this->getOptionsVo()->getTransferableOptions();
+		$aTransferableOptions[ $this->getOptionsStorageKey() ] = $this->getOptions()->getTransferableOptions();
 		return $aTransferableOptions;
 	}
 
@@ -1641,8 +1806,8 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	public function collectOptionsForTracking() {
-		$oVO = $this->getOptionsVo();
-		$aOptionsData = $this->getOptionsVo()->getOptionsMaskSensitive();
+		$oVO = $this->getOptions();
+		$aOptionsData = $this->getOptions()->getOptionsForTracking();
 		foreach ( $aOptionsData as $sOption => $mValue ) {
 			unset( $aOptionsData[ $sOption ] );
 			// some cleaning to ensure we don't have disallowed characters
@@ -1658,19 +1823,36 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 		return $aOptionsData;
 	}
 
-	/** Help Video options */
-
 	/**
+	 * See plugin controller for the nature of $aData wpPrivacyExport()
+	 * @param array  $aExportItems
+	 * @param string $sEmail
+	 * @param int    $nPage
 	 * @return array
 	 */
+	public function onWpPrivacyExport( $aExportItems, $sEmail, $nPage = 1 ) {
+		return $aExportItems;
+	}
+
+	/**
+	 * See plugin controller for the nature of $aData wpPrivacyErase()
+	 * @param array  $aData
+	 * @param string $sEmail
+	 * @param int    $nPage
+	 * @return array
+	 */
+	public function onWpPrivacyErase( $aData, $sEmail, $nPage = 1 ) {
+		return $aData;
+	}
+
 	protected function getHelpVideoOptions() {
-		$aOptions = $this->getOpt( 'help_video_options', array() );
+		$aOptions = $this->getOpt( 'help_video_options', [] );
 		if ( is_null( $aOptions ) || !is_array( $aOptions ) ) {
-			$aOptions = array(
+			$aOptions = [
 				'closed'    => false,
 				'displayed' => false,
 				'played'    => false,
-			);
+			];
 			$this->setOpt( 'help_video_options', $aOptions );
 		}
 		return $aOptions;
@@ -1717,7 +1899,7 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	protected function getHelpVideoId() {
-		return $this->getDefinition( 'help_video_id' );
+		return $this->getDef( 'help_video_id' );
 	}
 
 	/**
@@ -1733,45 +1915,130 @@ abstract class ICWP_WPSF_FeatureHandler_Base extends ICWP_WPSF_Foundation {
 	 */
 	protected function isHelpVideoDisplayable() {
 		$sId = $this->getHelpVideoId();
+		return false;
 		return !empty( $sId );
 	}
 
 	/**
-	 * @return $this
+	 * @return null|Shield\Modules\Base\ShieldOptions|mixed
 	 */
-	protected function resetHelpVideoOptions() {
-		return $this->setOpt( 'help_video_options', array() );
+	public function getOptions() {
+		if ( !isset( $this->oOpts ) ) {
+			$oCon = $this->getCon();
+			$this->oOpts = $this->loadOptions()->setMod( $this );
+			$this->oOpts->setPathToConfig( $oCon->getPath_ConfigFile( $this->getSlug() ) )
+						->setRebuildFromFile( $oCon->getIsRebuildOptionsFromFile() )
+						->setOptionsStorageKey( $this->getOptionsStorageKey() )
+						->setIfLoadOptionsFromStorage( !$oCon->getIsResetPlugin() );
+		}
+		return $this->oOpts;
+	}
+
+	/**
+	 * The primary DB for the
+	 * @return null|Shield\Databases\Base\Handler|mixed
+	 */
+	public function getPrimaryDbHandler() {
+		$aDBs = $this->getAllDbClasses();
+		return empty( $aDBs ) ? null : $this->getDbH( key( $aDBs ) );
+	}
+
+	/**
+	 * @return null|Shield\Modules\Base\Strings
+	 */
+	public function getStrings() {
+		if ( !isset( $this->oStrings ) ) {
+			$this->oStrings = $this->loadStrings()->setMod( $this );
+		}
+		return $this->oStrings;
+	}
+
+	/**
+	 * @return Shield\Modules\Base\BaseReporting|mixed|false
+	 */
+	public function getReportingHandler() {
+		if ( !isset( $this->oReporting ) ) {
+			$this->oReporting = $this->loadClass( 'Reporting' );
+			if ( $this->oReporting instanceof Shield\Modules\Base\BaseReporting ) {
+				$this->oReporting->setMod( $this );
+			}
+		}
+		return $this->oReporting;
 	}
 
 	/**
 	 * @return $this
 	 */
-	protected function setHelpVideoClosed() {
-		return $this->setHelpVideoOption( 'closed', true );
+	protected function loadAdminNotices() {
+		$oNotices = $this->loadClass( 'AdminNotices' );
+		if ( $oNotices instanceof Shield\Modules\Base\AdminNotices ) {
+			$oNotices->setMod( $this )->run();
+		}
+		return $this;
 	}
 
 	/**
 	 * @return $this
 	 */
-	protected function setHelpVideoDisplayed() {
-		return $this->setHelpVideoOption( 'displayed', true );
+	protected function loadAjaxHandler() {
+		$oAj = $this->loadClass( 'AjaxHandler' );
+		if ( !$oAj instanceof Shield\Modules\Base\AjaxHandlerBase ) {
+			$oAj = new Shield\Modules\Base\AjaxHandlerShield();
+		}
+		$oAj->setMod( $this );
+		return $this;
 	}
 
 	/**
-	 * @return $this
+	 * @return Shield\Modules\Base\ShieldOptions|mixed
 	 */
-	protected function setHelpVideoPlayed() {
-		return $this->setHelpVideoOption( 'played', true );
+	protected function loadOptions() {
+		return $this->loadClass( 'Options' );
 	}
 
 	/**
-	 * @param string          $sKey
-	 * @param string|bool|int $mValue
-	 * @return $this
+	 * @return Shield\Modules\Base\Strings|mixed
 	 */
-	protected function setHelpVideoOption( $sKey, $mValue ) {
-		$aOpts = $this->getHelpVideoOptions();
-		$aOpts[ $sKey ] = $mValue;
-		return $this->setOpt( 'help_video_options', $aOpts );
+	protected function loadStrings() {
+		return $this->loadClass( 'Strings' );
+	}
+
+	/**
+	 * @param $sClass
+	 * @return \stdClass|mixed|false
+	 */
+	private function loadClass( $sClass ) {
+		$sC = $this->getNamespace().$sClass;
+		return @class_exists( $sC ) ? new $sC() : false;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function getNamespace() {
+		return '\FernleafSystems\Wordpress\Plugin\Shield\Modules\\'.$this->getNamespaceBase().'\\';
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function getNamespaceBase() {
+		return 'Base';
+	}
+
+	/**
+	 * Saves the options to the WordPress Options store.
+	 * @return void
+	 * @deprecated 8.4
+	 */
+	public function savePluginOptions() {
+		$this->saveModOptions();
+	}
+
+	/**
+	 * @deprecated 9.0
+	 */
+	protected function doExtraSubmitProcessing() {
+		$this->preProcessOptions();
 	}
 }
