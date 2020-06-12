@@ -1,0 +1,813 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2019-08-26 13:00+0530\n"
+"PO-Revision-Date: 2019-08-26 13:05+0530\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: hi_IN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.1\n"
+"X-Poedit-Basepath: .\n"
+"Plural-Forms: nplurals=2; plural=(n==0 || n==1);\n"
+"X-Poedit-KeywordsList: __;_e;esc_html__;esc_html_e;esc_attr__;esc_attr_e\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: banner.php:11
+msgid "Twitter Tweets Pro Features"
+msgstr ""
+
+#: banner.php:13 our_product.php:38
+msgid "Multiple Twitter feeds with no limitations"
+msgstr ""
+
+#: banner.php:14
+msgid "Feeds of multiple Users, hashtags or search terms"
+msgstr ""
+
+#: banner.php:15
+msgid "Filter Tweets by hashtag or words"
+msgstr ""
+
+#: banner.php:16 our_product.php:58
+msgid "Display Tweets in Slider"
+msgstr ""
+
+#: banner.php:17 our_product.php:68
+msgid "Configurable number of tweets to display"
+msgstr ""
+
+#: banner.php:18 our_product.php:78
+msgid "Load more Tweets"
+msgstr ""
+
+#: banner.php:19 our_product.php:88
+#, fuzzy
+#| msgid "Settings"
+msgid "Style Settings"
+msgstr "सेटिंग"
+
+#: banner.php:20 our_product.php:98
+msgid "Google Fonts"
+msgstr ""
+
+#: banner.php:21 our_product.php:108
+msgid "Tweet Actions (reply, retweet, like)"
+msgstr ""
+
+#: banner.php:22 our_product.php:118
+msgid "Share Tweets on Social Media"
+msgstr ""
+
+#: banner.php:23 our_product.php:128
+msgid "Update Twitter Status"
+msgstr ""
+
+#: banner.php:24 our_product.php:28 twiiter_help.php:583 twiiter_help.php:588
+msgid "Twitter Tweets Widget"
+msgstr ""
+
+#: banner.php:27 our_product.php:16
+msgid "View Demo"
+msgstr ""
+
+#: banner.php:28
+msgid "Buy Now"
+msgstr ""
+
+#: banner.php:28
+msgid "$19"
+msgstr ""
+
+#: load-tweets.php:32
+msgid "Connection Error"
+msgstr ""
+
+#: load-tweets.php:109
+msgid "Can't connect to Twitter API. Check your internet connection."
+msgstr ""
+
+#: our_product.php:14
+msgid "Twitter Tweets Pro!"
+msgstr ""
+
+#: our_product.php:15
+msgid ""
+"Twitter Tweets Pro is an advanced twitter plugin which can display twitter "
+"feeds on your WordPress website in an elegant and customizable manner. It "
+"supports multiple twitter accounts without any limitations."
+msgstr ""
+
+#: our_product.php:17
+msgid "Buy Now  $19"
+msgstr ""
+
+#: our_product.php:48
+msgid "Feeds of multiple users, hashtags or search terms"
+msgstr ""
+
+#: our_product.php:138
+#, fuzzy
+#| msgid "Settings"
+msgid "Feed Settings"
+msgstr "सेटिंग"
+
+#: our_product.php:153
+msgid "Buy Now $19"
+msgstr ""
+
+#: twiiter_help.php:170
+msgid "Twitter Shortcode Settings"
+msgstr ""
+
+#: twiiter_help.php:213
+msgid "Twitter Account Username"
+msgstr ""
+
+#: twiiter_help.php:214 twitter-tweets.php:135
+msgid "Enter Your Twitter Account Username"
+msgstr ""
+
+#: twiiter_help.php:218 twitter-tweets.php:138
+msgid "Enter Your Twitter Widget ID"
+msgstr ""
+
+#: twiiter_help.php:221 twitter-tweets.php:141
+msgid "Theme"
+msgstr ""
+
+#: twiiter_help.php:223 twitter-tweets.php:143
+msgid "Light"
+msgstr ""
+
+#: twiiter_help.php:224 twitter-tweets.php:144
+msgid "Dark"
+msgstr ""
+
+#: twiiter_help.php:230 twitter-tweets.php:148
+msgid "Height"
+msgstr ""
+
+#: twiiter_help.php:237 twitter-tweets.php:152
+msgid "URL Link Color:"
+msgstr ""
+
+#: twiiter_help.php:245 twitter-tweets.php:157
+msgid "Exclude Replies on Tweets"
+msgstr ""
+
+#: twiiter_help.php:253 twitter-tweets.php:164
+msgid "Auto Expand Photos in Tweets"
+msgstr ""
+
+#: twiiter_help.php:262 twitter-tweets.php:173
+#, fuzzy
+#| msgid "Parent Map:"
+msgid "Select Language"
+msgstr "पैरेंट मैप:"
+
+#: twiiter_help.php:264 twitter-tweets.php:175
+msgid "Automatic"
+msgstr ""
+
+#: twiiter_help.php:265 twitter-tweets.php:176
+msgid "English (default)"
+msgstr ""
+
+#: twiiter_help.php:266 twitter-tweets.php:177
+msgid "Arabic"
+msgstr ""
+
+#: twiiter_help.php:267 twitter-tweets.php:178
+msgid "Bengali"
+msgstr ""
+
+#: twiiter_help.php:268 twitter-tweets.php:179
+msgid "Czech"
+msgstr ""
+
+#: twiiter_help.php:269 twitter-tweets.php:180
+msgid "Danish"
+msgstr ""
+
+#: twiiter_help.php:270 twitter-tweets.php:181
+msgid "German"
+msgstr ""
+
+#: twiiter_help.php:271 twitter-tweets.php:182
+msgid "Greek"
+msgstr ""
+
+#: twiiter_help.php:272 twitter-tweets.php:183
+msgid "Spanish"
+msgstr ""
+
+#: twiiter_help.php:273 twitter-tweets.php:184
+msgid "Persian"
+msgstr ""
+
+#: twiiter_help.php:274 twitter-tweets.php:185
+msgid "Finnish"
+msgstr ""
+
+#: twiiter_help.php:275 twitter-tweets.php:186
+msgid "Filipino"
+msgstr ""
+
+#: twiiter_help.php:276 twitter-tweets.php:187
+msgid "French"
+msgstr ""
+
+#: twiiter_help.php:277 twitter-tweets.php:188
+msgid "Hebrew"
+msgstr ""
+
+#: twiiter_help.php:278 twitter-tweets.php:189
+msgid "Hindi"
+msgstr ""
+
+#: twiiter_help.php:279
+msgid "EHungarian"
+msgstr ""
+
+#: twiiter_help.php:280 twitter-tweets.php:191
+msgid "Indonesian"
+msgstr ""
+
+#: twiiter_help.php:281 twitter-tweets.php:192
+msgid "Italian"
+msgstr ""
+
+#: twiiter_help.php:282 twitter-tweets.php:193
+msgid "Japanese"
+msgstr ""
+
+#: twiiter_help.php:283 twitter-tweets.php:194
+msgid "Korean"
+msgstr ""
+
+#: twiiter_help.php:284 twitter-tweets.php:195
+msgid "Malay"
+msgstr ""
+
+#: twiiter_help.php:285
+msgid "Dutch)"
+msgstr ""
+
+#: twiiter_help.php:286 twitter-tweets.php:197
+msgid "Norwegian"
+msgstr ""
+
+#: twiiter_help.php:287 twitter-tweets.php:198
+msgid "Polish"
+msgstr ""
+
+#: twiiter_help.php:288 twitter-tweets.php:199
+msgid "Portuguese"
+msgstr ""
+
+#: twiiter_help.php:289 twitter-tweets.php:200
+msgid "Romanian"
+msgstr ""
+
+#: twiiter_help.php:290 twitter-tweets.php:201
+msgid "Russian"
+msgstr ""
+
+#: twiiter_help.php:291 twitter-tweets.php:202
+msgid "Swedish"
+msgstr ""
+
+#: twiiter_help.php:292 twitter-tweets.php:203
+msgid "Thai"
+msgstr ""
+
+#: twiiter_help.php:293 twitter-tweets.php:204
+msgid "Turkish"
+msgstr ""
+
+#: twiiter_help.php:294 twitter-tweets.php:205
+msgid "Ukrainian"
+msgstr ""
+
+#: twiiter_help.php:295 twitter-tweets.php:206
+msgid "Urdu"
+msgstr ""
+
+#: twiiter_help.php:296 twitter-tweets.php:207
+msgid "Vietnamese"
+msgstr ""
+
+#: twiiter_help.php:297 twitter-tweets.php:208
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: twiiter_help.php:298
+msgid "Chinese"
+msgstr ""
+
+#: twiiter_help.php:309 twiiter_help.php:418
+msgid ""
+"Settings successfully saved. Reloading page for generating preview right "
+"side of setting."
+msgstr ""
+
+#: twiiter_help.php:317
+msgid "Preview"
+msgstr ""
+
+#: twiiter_help.php:327 twiiter_help.php:412
+msgid "Please copy the twitter shortcode"
+msgstr ""
+
+#: twiiter_help.php:327 twiiter_help.php:412
+msgid "and paste it to on the Page/Post"
+msgstr ""
+
+#: twiiter_help.php:350
+msgid "Twitter API Setting"
+msgstr ""
+
+#: twiiter_help.php:356
+msgid "Consumer Key"
+msgstr ""
+
+#: twiiter_help.php:357
+msgid "Enter Your Twitter Consumer Key"
+msgstr ""
+
+#: twiiter_help.php:359
+msgid "Visit this link to "
+msgstr ""
+
+#: twiiter_help.php:359
+msgid "Generate Twitter API key"
+msgstr ""
+
+#: twiiter_help.php:364
+msgid "Consumer Secret"
+msgstr ""
+
+#: twiiter_help.php:365
+msgid "Enter Your Twitter Consumer Secret"
+msgstr ""
+
+#: twiiter_help.php:371
+msgid "Access Token"
+msgstr ""
+
+#: twiiter_help.php:372
+msgid "Enter Your Twitter Access Token"
+msgstr ""
+
+#: twiiter_help.php:378
+msgid "Access Token Secret"
+msgstr ""
+
+#: twiiter_help.php:379
+msgid "Enter Your Twitter Token Secret"
+msgstr ""
+
+#: twiiter_help.php:384
+msgid "No. Of tweets Show"
+msgstr ""
+
+#: twiiter_help.php:392
+msgid "Layout"
+msgstr ""
+
+#: twiiter_help.php:394
+#, fuzzy
+#| msgid "Parent Map:"
+msgid "Select"
+msgstr "पैरेंट मैप:"
+
+#: twiiter_help.php:538 twitter-tweets_shortcode.php:196
+msgid "Retweet"
+msgstr ""
+
+#: twiiter_help.php:549 twitter-tweets_shortcode.php:207
+msgid "Like"
+msgstr ""
+
+#: twiiter_help.php:557 twitter-tweets_shortcode.php:215
+msgid "Reply"
+msgstr ""
+
+#: twiiter_help.php:561 twitter-tweets_shortcode.php:219
+msgid "ago"
+msgstr ""
+
+#: twiiter_help.php:578
+msgid "Twitter Tweet Widget & Shortcode Help Section"
+msgstr ""
+
+#: twiiter_help.php:580
+msgid "Twitter Tweet By Weblizar plugin comes with 2 major feature."
+msgstr ""
+
+#: twiiter_help.php:584 twiiter_help.php:602
+msgid "Twitter Tweets Shortcode"
+msgstr ""
+
+#: twiiter_help.php:585
+msgid "Note: Protected tweets will not view"
+msgstr ""
+
+#: twiiter_help.php:585
+msgid "Help"
+msgstr ""
+
+#: twiiter_help.php:591
+msgid ""
+"You can use the widget to display your Twitter Tweets in any theme Widget "
+"Sections."
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Simple go to your"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Widgets"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid " section and activate available"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Twitter By Weblizar"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid ""
+"widget in any sidebar section, like in left sidebar, right sidebar or footer "
+"sidebar."
+msgstr ""
+
+#: twiiter_help.php:595
+msgid "Twitter Tweets Shortcode "
+msgstr ""
+
+#: twiiter_help.php:597
+msgid ""
+"shortcode give ability to display Twitter Tweets Box in any Page / Post with "
+"content"
+msgstr ""
+
+#: twiiter_help.php:598 twiiter_help.php:605
+msgid "To use shortcode, just copy"
+msgstr ""
+
+#: twiiter_help.php:598
+msgid "shortcode and paste into content editor of any Page / Post."
+msgstr ""
+
+#: twiiter_help.php:604
+msgid ""
+"shortcode, another shortcode, using API Key to login, give ability to "
+"display Twitter Tweets Box in any Page / Post with content."
+msgstr ""
+
+#: twiiter_help.php:605
+msgid " shortcode and paste into content editor of any Page / Post."
+msgstr ""
+
+#: twiiter_help.php:609
+msgid "How to generate Twitter API Key"
+msgstr ""
+
+#: twiiter_help.php:610
+msgid ""
+"We have created a blog post on this topic. It is very easy to understand."
+msgstr ""
+
+#: twiiter_help.php:610
+msgid "Click here"
+msgstr ""
+
+#: twiiter_help.php:610
+msgid " to visit the blog."
+msgstr ""
+
+#: twiiter_help.php:614
+msgid "Q. What is Twitter Widget ID?"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid "Ans. Twitter Widget ID"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid ""
+"used to authenticate your TWITTER Page data & settings. To get your own "
+"TWITTER ID please read our very simple and easy"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid "Tutorial"
+msgstr ""
+
+#: twiiter_help.php:625
+msgid "If you are enjoying using our"
+msgstr ""
+
+#: twiiter_help.php:625 twitter-tweets.php:29
+#, fuzzy
+#| msgid "Advanced Google Map"
+msgid "Weblizar Twitter Widget"
+msgstr "गूगल मैप्स"
+
+#: twiiter_help.php:625
+msgid ""
+"plugin and find it useful, then please consider writing a positive feedback. "
+"Your feedback will help us to encourage and support the plugin continued "
+"development and better user support."
+msgstr ""
+
+#: twiiter_help_body.php:4 twitter-tweets.php:263
+msgid "Weblizar Twitter Tweets"
+msgstr ""
+
+#: twiiter_help_body.php:8
+msgid "Support Forum"
+msgstr ""
+
+#: twiiter_help_body.php:9
+msgid "Plugin Change Log"
+msgstr ""
+
+#: twiiter_help_body.php:20
+msgid "Twitter Widget"
+msgstr ""
+
+#: twiiter_help_body.php:25
+msgid "Twitter Tweets"
+msgstr ""
+
+#: twiiter_help_body.php:30
+msgid "Need Help"
+msgstr ""
+
+#: twiiter_help_body.php:35
+msgid "Upgrade To Pro"
+msgstr ""
+
+#: twitter-tweets.php:30
+msgid "Display latest tweets from your Twitter account"
+msgstr ""
+
+#: twitter-tweets.php:127
+msgid "Tweets"
+msgstr ""
+
+#: twitter-tweets.php:130
+msgid "Title:"
+msgstr ""
+
+#: twitter-tweets.php:131
+msgid "Enter Widget Title"
+msgstr ""
+
+#: twitter-tweets.php:134
+msgid "Twitter Username"
+msgstr ""
+
+#: twitter-tweets.php:154
+msgid "Find More Color Codes"
+msgstr ""
+
+#: twitter-tweets.php:154
+msgid "HERE"
+msgstr ""
+
+#: twitter-tweets.php:159 twitter-tweets.php:166
+msgid "Yes"
+msgstr ""
+
+#: twitter-tweets.php:160 twitter-tweets.php:167
+msgid "No"
+msgstr ""
+
+#: twitter-tweets.php:190
+msgid "Hungarian"
+msgstr ""
+
+#: twitter-tweets.php:196
+msgid "Dutch"
+msgstr ""
+
+#: twitter-tweets.php:209
+msgid "Chinese (Traditional)"
+msgstr ""
+
+#: twitter-tweets.php:293
+msgid "Go Pro"
+msgstr ""
+
+#: twitter-tweets.php:294
+msgid "Settings"
+msgstr "सेटिंग"
+
+#: twitter-tweets_shortcode.php:54
+msgid "Widget Title Here"
+msgstr ""
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Weblizar for Google Maps Lite"
+#~ msgstr "गूगल मैप्स"
+
+#~ msgid "Dashboard"
+#~ msgstr "डैशबोर्ड"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "Locations"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "Location"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#~ msgid "Maps"
+#~ msgstr "मानचित्र"
+
+#, fuzzy
+#~| msgid "Maps"
+#~ msgid "Map"
+#~ msgstr "मानचित्र"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "Add Location"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "New Location"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#~ msgid "No Locations Found"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "No Locations Found in Trash"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "Parent Map:"
+#~ msgid "Parent Location:"
+#~ msgstr "पैरेंट मैप:"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "All Locations"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Advanced Google Maps Lite Shortcode"
+#~ msgstr "गूगल मैप्स"
+
+#~ msgid "No Maps Found"
+#~ msgstr "कोई मानचित्र नहीं मिला"
+
+#, fuzzy
+#~| msgid "No Maps Found"
+#~ msgid "No Maps Found in Trash"
+#~ msgstr "कोई मानचित्र नहीं मिला"
+
+#~ msgid "Parent Map:"
+#~ msgstr "पैरेंट मैप:"
+
+#, fuzzy
+#~| msgid "Maps"
+#~ msgid "All Maps"
+#~ msgstr "मानचित्र"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "No Routes Found"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#, fuzzy
+#~| msgid "Parent Map:"
+#~ msgid "Parent Route:"
+#~ msgstr "पैरेंट मैप:"
+
+#, fuzzy
+#~| msgid "Please enter Region Name here."
+#~ msgid "Please enter map's description here."
+#~ msgstr "कृपया यहां क्षेत्र का नाम दर्ज करें ।"
+
+#~ msgid "Map Background Color"
+#~ msgstr "मानचित्र पृष्ठभूमि रंग"
+
+#~ msgid "Please enter Region Name here."
+#~ msgstr "कृपया यहां क्षेत्र का नाम दर्ज करें ।"
+
+#~ msgid "Select 'Color' for Region."
+#~ msgstr "क्षेत्र के लिए ' रंग ' का चयन करें ।"
+
+#~ msgid "Please enter Tooltip Value here."
+#~ msgstr "कृपया टूल टिप मान यहां दर्ज करें ।"
+
+#~ msgid "Please enter click action value here."
+#~ msgstr "कृपया यहां क्लिक करें कार्रवाई मूल्य दर्ज करें ।"
+
+#, fuzzy
+#~| msgid "Address"
+#~ msgid "Location Address"
+#~ msgstr "पता"
+
+#~ msgid "Please select Map Type."
+#~ msgstr "कृपया मानचित्र प्रकार का चयन करें ।"
+
+#, fuzzy
+#~| msgid "No Locations Found"
+#~ msgid "Choose Locations"
+#~ msgstr "कोई स्थान नहीं मिला"
+
+#~ msgid "Border Color"
+#~ msgstr "सीमा रंग"
+
+#~ msgid "Border Radius"
+#~ msgstr "सीमा त्रिज्या"
+
+#~ msgid "Background Color"
+#~ msgstr "पृष्ठभूमि का रंग "
+
+#, fuzzy
+#~| msgid "Border Color"
+#~ msgid "Text Color"
+#~ msgstr "सीमा रंग"
+
+#~ msgid "Address"
+#~ msgstr "पता"
+
+#~ msgid "City"
+#~ msgstr "शहर"
+
+#, fuzzy
+#~| msgid "Please select Map Type."
+#~ msgid "Please Select Route Unit System."
+#~ msgstr "कृपया मानचित्र प्रकार का चयन करें ।"
+
+#, fuzzy
+#~| msgid "Please select Map Type."
+#~ msgid "Please Select Map Style Theme."
+#~ msgstr "कृपया मानचित्र प्रकार का चयन करें ।"
+
+#, fuzzy
+#~| msgid "Border Color"
+#~ msgid "Stroke Color"
+#~ msgstr "सीमा रंग"
+
+#, fuzzy
+#~| msgid "Please enter Tooltip Value here."
+#~ msgid "Please enter Google Api Key"
+#~ msgstr "कृपया टूल टिप मान यहां दर्ज करें ।"
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Google Map API"
+#~ msgstr "गूगल मैप्स"
+
+#, fuzzy
+#~| msgid "Settings"
+#~ msgid "General Settings"
+#~ msgstr "सेटिंग"
+
+#~ msgid "Advanced Google Map"
+#~ msgstr "गूगल मैप्स"
+
+#, fuzzy
+#~| msgid "Address"
+#~ msgid "Add"
+#~ msgstr "पता"
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Advanced Google Maps Pro Features"
+#~ msgstr "गूगल मैप्स"
+
+#, fuzzy
+#~| msgid "Dashboard"
+#~ msgid "Centralized Dashboard"
+#~ msgstr "डैशबोर्ड"
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Advanced G-Maps"
+#~ msgstr "गूगल मैप्स"
+
+#, fuzzy
+#~| msgid "Advanced Google Map"
+#~ msgid "Advance Google Map Lite Widget"
+#~ msgstr "गूगल मैप्स"

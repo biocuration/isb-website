@@ -1,0 +1,623 @@
+# Copyright (C) 2019 Weblizar
+# This file is distributed under the same license as the Custom Tweets For Twitter plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Custom Tweets For Twitter 1.8.6\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/twitter-tweets\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2019-08-26T09:48:42+02:00\n"
+"PO-Revision-Date: 2019-08-26 13:19+0530\n"
+"X-Generator: Poedit 2.2.1\n"
+"X-Domain: twitter-tweets\n"
+"Last-Translator: \n"
+"Plural-Forms: nplurals=2; plural=(n==0 || n==1);\n"
+"Language: hi_IN\n"
+
+#. Plugin Name of the plugin
+msgid "Custom Tweets For Twitter"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://www.weblizar.com/plugins/"
+msgstr ""
+
+#. Description of the plugin
+msgid ""
+"Custom Tweets For Twitter  plugin for WordPress. You can use this to display "
+"real time Twitter feeds on any where on your webiste by using shortcode or "
+"widgets"
+msgstr ""
+
+#. Author of the plugin
+msgid "Weblizar"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://www.weblizar.com/"
+msgstr ""
+
+#: banner.php:11
+msgid "Twitter Tweets Pro Features"
+msgstr ""
+
+#: banner.php:13 our_product.php:38
+msgid "Multiple Twitter feeds with no limitations"
+msgstr ""
+
+#: banner.php:14
+msgid "Feeds of multiple Users, hashtags or search terms"
+msgstr ""
+
+#: banner.php:15
+msgid "Filter Tweets by hashtag or words"
+msgstr ""
+
+#: banner.php:16 our_product.php:58
+msgid "Display Tweets in Slider"
+msgstr ""
+
+#: banner.php:17 our_product.php:68
+msgid "Configurable number of tweets to display"
+msgstr ""
+
+#: banner.php:18 our_product.php:78
+msgid "Load more Tweets"
+msgstr ""
+
+#: banner.php:20 our_product.php:98
+msgid "Google Fonts"
+msgstr ""
+
+#: banner.php:21 our_product.php:108
+msgid "Tweet Actions (reply, retweet, like)"
+msgstr ""
+
+#: banner.php:22 our_product.php:118
+msgid "Share Tweets on Social Media"
+msgstr ""
+
+#: banner.php:23 our_product.php:128
+msgid "Update Twitter Status"
+msgstr ""
+
+#: banner.php:24 our_product.php:28 twiiter_help.php:583 twiiter_help.php:588
+msgid "Twitter Tweets Widget"
+msgstr ""
+
+#: banner.php:27 our_product.php:16
+msgid "View Demo"
+msgstr ""
+
+#: banner.php:28
+msgid "Buy Now"
+msgstr ""
+
+#: banner.php:28
+msgid "$19"
+msgstr ""
+
+#: load-tweets.php:32
+msgid "Connection Error"
+msgstr ""
+
+#: load-tweets.php:109
+msgid "Can't connect to Twitter API. Check your internet connection."
+msgstr ""
+
+#: our_product.php:14
+msgid "Twitter Tweets Pro!"
+msgstr ""
+
+#: our_product.php:15
+msgid ""
+"Twitter Tweets Pro is an advanced twitter plugin which can display twitter "
+"feeds on your WordPress website in an elegant and customizable manner. It "
+"supports multiple twitter accounts without any limitations."
+msgstr ""
+
+#: our_product.php:17
+msgid "Buy Now  $19"
+msgstr ""
+
+#: our_product.php:48
+msgid "Feeds of multiple users, hashtags or search terms"
+msgstr ""
+
+#: our_product.php:88
+msgid "Style Settings"
+msgstr ""
+
+#: our_product.php:138
+msgid "Feed Settings"
+msgstr ""
+
+#: our_product.php:153
+msgid "Buy Now $19"
+msgstr ""
+
+#: twiiter_help.php:170
+msgid "Twitter Shortcode Settings"
+msgstr ""
+
+#: twiiter_help.php:213
+msgid "Twitter Account Username"
+msgstr ""
+
+#: twiiter_help.php:214 twitter-tweets.php:134
+msgid "Enter Your Twitter Account Username"
+msgstr ""
+
+#: twiiter_help.php:218 twitter-tweets.php:137
+msgid "Enter Your Twitter Widget ID"
+msgstr ""
+
+#: twiiter_help.php:221 twitter-tweets.php:140
+msgid "Theme"
+msgstr ""
+
+#: twiiter_help.php:223 twitter-tweets.php:142
+msgid "Light"
+msgstr ""
+
+#: twiiter_help.php:224 twitter-tweets.php:143
+msgid "Dark"
+msgstr ""
+
+#: twiiter_help.php:230 twitter-tweets.php:147
+msgid "Height"
+msgstr ""
+
+#: twiiter_help.php:237
+msgid "URL Link Color:"
+msgstr ""
+
+#: twiiter_help.php:245 twitter-tweets.php:156
+msgid "Exclude Replies on Tweets"
+msgstr ""
+
+#: twiiter_help.php:253 twitter-tweets.php:163
+msgid "Auto Expand Photos in Tweets"
+msgstr ""
+
+#: twiiter_help.php:262
+msgid "Select Language"
+msgstr ""
+
+#: twiiter_help.php:264 twitter-tweets.php:174
+msgid "Automatic"
+msgstr ""
+
+#: twiiter_help.php:265 twitter-tweets.php:175
+msgid "English (default)"
+msgstr ""
+
+#: twiiter_help.php:266 twitter-tweets.php:176
+msgid "Arabic"
+msgstr ""
+
+#: twiiter_help.php:267 twitter-tweets.php:177
+msgid "Bengali"
+msgstr ""
+
+#: twiiter_help.php:268 twitter-tweets.php:178
+msgid "Czech"
+msgstr ""
+
+#: twiiter_help.php:269 twitter-tweets.php:179
+msgid "Danish"
+msgstr ""
+
+#: twiiter_help.php:270 twitter-tweets.php:180
+msgid "German"
+msgstr ""
+
+#: twiiter_help.php:271 twitter-tweets.php:181
+msgid "Greek"
+msgstr ""
+
+#: twiiter_help.php:272 twitter-tweets.php:182
+msgid "Spanish"
+msgstr ""
+
+#: twiiter_help.php:273 twitter-tweets.php:183
+msgid "Persian"
+msgstr ""
+
+#: twiiter_help.php:274 twitter-tweets.php:184
+msgid "Finnish"
+msgstr ""
+
+#: twiiter_help.php:275 twitter-tweets.php:185
+msgid "Filipino"
+msgstr ""
+
+#: twiiter_help.php:276 twitter-tweets.php:186
+msgid "French"
+msgstr ""
+
+#: twiiter_help.php:277 twitter-tweets.php:187
+msgid "Hebrew"
+msgstr ""
+
+#: twiiter_help.php:278 twitter-tweets.php:188
+msgid "Hindi"
+msgstr ""
+
+#: twiiter_help.php:279
+msgid "EHungarian"
+msgstr ""
+
+#: twiiter_help.php:280 twitter-tweets.php:190
+msgid "Indonesian"
+msgstr ""
+
+#: twiiter_help.php:281 twitter-tweets.php:191
+msgid "Italian"
+msgstr ""
+
+#: twiiter_help.php:282 twitter-tweets.php:192
+msgid "Japanese"
+msgstr ""
+
+#: twiiter_help.php:283 twitter-tweets.php:193
+msgid "Korean"
+msgstr ""
+
+#: twiiter_help.php:284 twitter-tweets.php:194
+msgid "Malay"
+msgstr ""
+
+#: twiiter_help.php:285
+msgid "Dutch)"
+msgstr ""
+
+#: twiiter_help.php:286 twitter-tweets.php:196
+msgid "Norwegian"
+msgstr ""
+
+#: twiiter_help.php:287 twitter-tweets.php:197
+msgid "Polish"
+msgstr ""
+
+#: twiiter_help.php:288 twitter-tweets.php:198
+msgid "Portuguese"
+msgstr ""
+
+#: twiiter_help.php:289 twitter-tweets.php:199
+msgid "Romanian"
+msgstr ""
+
+#: twiiter_help.php:290 twitter-tweets.php:200
+msgid "Russian"
+msgstr ""
+
+#: twiiter_help.php:291 twitter-tweets.php:201
+msgid "Swedish"
+msgstr ""
+
+#: twiiter_help.php:292 twitter-tweets.php:202
+msgid "Thai"
+msgstr ""
+
+#: twiiter_help.php:293 twitter-tweets.php:203
+msgid "Turkish"
+msgstr ""
+
+#: twiiter_help.php:294 twitter-tweets.php:204
+msgid "Ukrainian"
+msgstr ""
+
+#: twiiter_help.php:295 twitter-tweets.php:205
+msgid "Urdu"
+msgstr ""
+
+#: twiiter_help.php:296 twitter-tweets.php:206
+msgid "Vietnamese"
+msgstr ""
+
+#: twiiter_help.php:297 twitter-tweets.php:207
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: twiiter_help.php:298
+msgid "Chinese"
+msgstr ""
+
+#: twiiter_help.php:309 twiiter_help.php:418
+msgid ""
+"Settings successfully saved. Reloading page for generating preview right "
+"side of setting."
+msgstr ""
+
+#: twiiter_help.php:317
+msgid "Preview"
+msgstr ""
+
+#: twiiter_help.php:327 twiiter_help.php:412
+msgid "Please copy the twitter shortcode"
+msgstr ""
+
+#: twiiter_help.php:327 twiiter_help.php:412
+msgid "and paste it to on the Page/Post"
+msgstr ""
+
+#: twiiter_help.php:350
+msgid "Twitter API Setting"
+msgstr ""
+
+#: twiiter_help.php:356
+msgid "Consumer Key"
+msgstr ""
+
+#: twiiter_help.php:357
+msgid "Enter Your Twitter Consumer Key"
+msgstr ""
+
+#: twiiter_help.php:359
+msgid "Visit this link to "
+msgstr ""
+
+#: twiiter_help.php:359
+msgid "Generate Twitter API key"
+msgstr ""
+
+#: twiiter_help.php:364
+msgid "Consumer Secret"
+msgstr ""
+
+#: twiiter_help.php:365
+msgid "Enter Your Twitter Consumer Secret"
+msgstr ""
+
+#: twiiter_help.php:371
+msgid "Access Token"
+msgstr ""
+
+#: twiiter_help.php:372
+msgid "Enter Your Twitter Access Token"
+msgstr ""
+
+#: twiiter_help.php:378
+msgid "Access Token Secret"
+msgstr ""
+
+#: twiiter_help.php:379
+msgid "Enter Your Twitter Token Secret"
+msgstr ""
+
+#: twiiter_help.php:384
+msgid "No. Of tweets Show"
+msgstr ""
+
+#: twiiter_help.php:392
+msgid "Layout"
+msgstr ""
+
+#: twiiter_help.php:394
+msgid "Select"
+msgstr ""
+
+#: twiiter_help.php:538 twitter-tweets_shortcode.php:196
+msgid "Retweet"
+msgstr ""
+
+#: twiiter_help.php:549 twitter-tweets_shortcode.php:207
+msgid "Like"
+msgstr ""
+
+#: twiiter_help.php:557 twitter-tweets_shortcode.php:215
+msgid "Reply"
+msgstr ""
+
+#: twiiter_help.php:561 twitter-tweets_shortcode.php:219
+msgid "ago"
+msgstr ""
+
+#: twiiter_help.php:578
+msgid "Twitter Tweet Widget & Shortcode Help Section"
+msgstr ""
+
+#: twiiter_help.php:580
+msgid "Twitter Tweet By Weblizar plugin comes with 2 major feature."
+msgstr ""
+
+#: twiiter_help.php:584 twiiter_help.php:602
+msgid "Twitter Tweets Shortcode"
+msgstr ""
+
+#: twiiter_help.php:585
+msgid "Note: Protected tweets will not view"
+msgstr ""
+
+#: twiiter_help.php:585
+msgid "Help"
+msgstr ""
+
+#: twiiter_help.php:591
+msgid ""
+"You can use the widget to display your Twitter Tweets in any theme Widget "
+"Sections."
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Simple go to your"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Widgets"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid " section and activate available"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid "Twitter By Weblizar"
+msgstr ""
+
+#: twiiter_help.php:592
+msgid ""
+"widget in any sidebar section, like in left sidebar, right sidebar or footer "
+"sidebar."
+msgstr ""
+
+#: twiiter_help.php:595
+msgid "Twitter Tweets Shortcode "
+msgstr ""
+
+#: twiiter_help.php:597
+msgid ""
+"shortcode give ability to display Twitter Tweets Box in any Page / Post with "
+"content"
+msgstr ""
+
+#: twiiter_help.php:598 twiiter_help.php:605
+msgid "To use shortcode, just copy"
+msgstr ""
+
+#: twiiter_help.php:598
+msgid "shortcode and paste into content editor of any Page / Post."
+msgstr ""
+
+#: twiiter_help.php:604
+msgid ""
+"shortcode, another shortcode, using API Key to login, give ability to "
+"display Twitter Tweets Box in any Page / Post with content."
+msgstr ""
+
+#: twiiter_help.php:605
+msgid " shortcode and paste into content editor of any Page / Post."
+msgstr ""
+
+#: twiiter_help.php:609
+msgid "How to generate Twitter API Key"
+msgstr ""
+
+#: twiiter_help.php:610
+msgid ""
+"We have created a blog post on this topic. It is very easy to understand."
+msgstr ""
+
+#: twiiter_help.php:610
+msgid "Click here"
+msgstr ""
+
+#: twiiter_help.php:610
+msgid " to visit the blog."
+msgstr ""
+
+#: twiiter_help.php:614
+msgid "Q. What is Twitter Widget ID?"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid "Ans. Twitter Widget ID"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid ""
+"used to authenticate your TWITTER Page data & settings. To get your own "
+"TWITTER ID please read our very simple and easy"
+msgstr ""
+
+#: twiiter_help.php:616
+msgid "Tutorial"
+msgstr ""
+
+#: twiiter_help.php:625
+msgid "If you are enjoying using our"
+msgstr ""
+
+#: twiiter_help.php:625 twitter-tweets.php:28
+msgid "Weblizar Twitter Widget"
+msgstr ""
+
+#: twiiter_help.php:625
+msgid ""
+"plugin and find it useful, then please consider writing a positive feedback. "
+"Your feedback will help us to encourage and support the plugin continued "
+"development and better user support."
+msgstr ""
+
+#: twiiter_help_body.php:4 twitter-tweets.php:262
+msgid "Weblizar Twitter Tweets"
+msgstr ""
+
+#: twiiter_help_body.php:8
+msgid "Support Forum"
+msgstr ""
+
+#: twiiter_help_body.php:9
+msgid "Plugin Change Log"
+msgstr ""
+
+#: twiiter_help_body.php:20
+msgid "Twitter Widget"
+msgstr ""
+
+#: twiiter_help_body.php:25
+msgid "Twitter Tweets"
+msgstr ""
+
+#: twiiter_help_body.php:30
+msgid "Need Help"
+msgstr ""
+
+#: twiiter_help_body.php:35
+msgid "Upgrade To Pro"
+msgstr ""
+
+#: twitter-tweets.php:29
+msgid "Display latest tweets from your Twitter account"
+msgstr ""
+
+#: twitter-tweets.php:130
+msgid "Enter Widget Title"
+msgstr ""
+
+#: twitter-tweets.php:133
+msgid "Twitter Username"
+msgstr ""
+
+#: twitter-tweets.php:153
+msgid "Find More Color Codes"
+msgstr ""
+
+#: twitter-tweets.php:153
+msgid "HERE"
+msgstr ""
+
+#: twitter-tweets.php:158 twitter-tweets.php:165
+msgid "Yes"
+msgstr ""
+
+#: twitter-tweets.php:159 twitter-tweets.php:166
+msgid "No"
+msgstr ""
+
+#: twitter-tweets.php:189
+msgid "Hungarian"
+msgstr ""
+
+#: twitter-tweets.php:195
+msgid "Dutch"
+msgstr ""
+
+#: twitter-tweets.php:208
+msgid "Chinese (Traditional)"
+msgstr ""
+
+#: twitter-tweets.php:292
+msgid "Go Pro"
+msgstr ""
+
+#: twitter-tweets.php:293
+msgid "Settings"
+msgstr ""
+
+#: twitter-tweets_shortcode.php:54
+msgid "Widget Title Here"
+msgstr ""
