@@ -1,5 +1,13 @@
 (function($) {
 	$(document).ready( function() {
+		$( '#cntctfrm_gdpr' ).on( 'change', function() {
+			if( $( this).is( ':checked' ) ) {
+				$( '#cntctfrm_gdpr_link_options' ).show();
+			} else {
+				$( '#cntctfrm_gdpr_link_options' ).hide();
+			}
+		} ).trigger( 'change' );
+
 		$( '#cntctfrm_show_multi_notice' ).removeAttr('href title').css('cursor', 'pointer');
 
 		$( '#cntctfrm_change_label' ).change( function() {
@@ -37,6 +45,13 @@
 				$( '.cntctfrm_display_add_info_block' ).show();
 			} else {
 				$( '.cntctfrm_display_add_info_block' ).hide();
+			}
+		});
+		$( '#cntctfrm_attachment' ).change( function() {
+			if ( $( this ).is( ':checked' ) ) {
+				$( '.cntctfrm-multi-attachment' ).show();
+			} else {
+				$( '.cntctfrm-multi-attachment' ).hide();
 			}
 		});
 		$( '#cntctfrm_add_language_button' ).click( function( event ) {
