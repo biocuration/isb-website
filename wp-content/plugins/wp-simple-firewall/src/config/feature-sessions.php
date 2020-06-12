@@ -1,51 +1,61 @@
 {
-  "properties": {
-    "slug": "sessions",
-    "name": "Sessions",
-    "show_feature_menu_item": false,
-    "storage_key": "sessions",
-    "tagline": "User Sessions",
-    "auto_enabled": true,
-    "show_central": false,
-    "premium": false,
-    "access_restricted": true
+  "properties":  {
+    "slug":                  "sessions",
+    "name":                  "Sessions",
+    "show_module_menu_item": false,
+    "storage_key":           "sessions",
+    "tagline":               "User Sessions",
+    "auto_enabled":          true,
+    "show_central":          false,
+    "premium":               false,
+    "access_restricted":     true,
+    "auto_load_processor":   true,
+    "run_if_whitelisted":    true,
+    "run_if_verified_bot":   true,
+    "run_if_wpcli":          false,
+    "tracking_exclude":      true
   },
-  "sections": [
+  "sections":    [
     {
-      "slug": "section_enable_plugin_feature_sessions",
-      "primary": true,
-      "title": "Enable Plugin Feature: Sessions",
-      "title_short": "Enable / Disable",
-      "summary": [
+      "slug":        "section_enable_plugin_feature_sessions",
+      "primary":     true,
+      "title":       "Enable Module: Sessions",
+      "title_short": "Disable Module",
+      "summary":     [
         "Purpose - Creates and Manages User Sessions.",
         "Recommendation - Keep the Sessions feature turned on."
       ]
     },
     {
-      "slug": "section_non_ui",
+      "slug":   "section_non_ui",
       "hidden": true
     }
   ],
-  "options": [
+  "options":     [
     {
-      "key": "enable_sessions",
-      "section": "section_enable_plugin_feature_sessions",
-      "default": "Y",
-      "type": "checkbox",
-      "link_info": "",
-      "link_blog": "",
-      "name": "Enable Sessions",
-      "summary": "Enable (or Disable) The Sessions Feature",
-      "description": "Checking/Un-Checking this option will completely turn on/off the whole Sessions feature"
+      "key":         "enable_sessions",
+      "section":     "section_enable_plugin_feature_sessions",
+      "default":     "Y",
+      "type":        "checkbox",
+      "link_info":   "",
+      "link_blog":   "",
+      "name":        "Enable Sessions",
+      "summary":     "Enable (or Disable) The Sessions module",
+      "description": "Un-Checking this option will completely disable the Sessions module"
     },
     {
       "key":          "autoadd_sessions_started_at",
+      "section":      "section_non_ui",
+      "type":         "integer",
       "transferable": false,
-      "section":      "section_non_ui"
+      "default":      0
     }
   ],
   "definitions": {
-    "sessions_table_name": "sessions",
+    "db_classes":             {
+      "session": "\\FernleafSystems\\Wordpress\\Plugin\\Shield\\Databases\\Session\\Handler"
+    },
+    "sessions_table_name":    "sessions",
     "sessions_table_columns": [
       "id",
       "session_id",
@@ -55,9 +65,20 @@
       "logged_in_at",
       "last_activity_at",
       "last_activity_uri",
+      "li_code_email",
+      "login_intent_expires_at",
       "secadmin_at",
       "created_at",
       "deleted_at"
-    ]
+    ],
+    "events":               {
+      "session_start":             {
+        "audit":  false
+      },
+      "session_terminate":             {
+        "audit":  false,
+        "recent": true
+      }
+    }
   }
 }

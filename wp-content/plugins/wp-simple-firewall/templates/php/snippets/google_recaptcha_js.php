@@ -2,36 +2,43 @@
 
 	var iCWP_WPSF_Recaptcha = new function () {
 
-		this.setupForm = function ( form ) {
+		var bInvisible = <?php echo $invis ? 'true' : 'false'; ?>;
 
-			var recaptchaContainer = form.querySelector('.icwpg-recaptcha');
+		this.setupForm = function ( oForm ) {
+
+			var recaptchaContainer = oForm.querySelector( '.icwpg-recaptcha' );
 
 			if ( recaptchaContainer !== null ) {
 
 				var recaptchaContainerSpec = grecaptcha.render(
 					recaptchaContainer,
 					{
-						'sitekey': '<?php echo $sitekey;?>',
-						'size': '<?php echo $size;?>',
-						'theme': '<?php echo $theme;?>',
+						'sitekey': '<?php echo $sitekey; ?>',
+						'size': '<?php echo $size; ?>',
+						'theme': '<?php echo $theme; ?>',
 						'badge': 'bottomright',
-						'callback' : function ( reCaptchaToken ) {
+						'callback': function ( reCaptchaToken ) {
 							<?php if ( $invis ) : ?>
-							HTMLFormElement.prototype.submit.call( form );
+							HTMLFormElement.prototype.submit.call( oForm );
 							<?php endif;?>
 						},
-						'expired-callback' : function() {
+						'expired-callback': function () {
 							grecaptcha.reset( recaptchaContainerSpec );
 						}
 					}
 				);
 
-				jQuery( 'input[type=submit]', form ).on( 'click', function( event ) {
-					<?php if ( $invis ) : ?>
-					event.preventDefault();
-					grecaptcha.execute( recaptchaContainerSpec );
-					<?php endif;?>
-				});
+				<?php if ( $invis ) : ?>
+				var aSubmitInputs = oForm.querySelectorAll( 'input, button' );
+				for ( var i = 0; i < aSubmitInputs.length; i++ ) {
+					if ( aSubmitInputs[ i ].type.toLowerCase() === 'submit' ) {
+						aSubmitInputs[ i ].onclick = function ( event ) {
+							event.preventDefault();
+							grecaptcha.execute( recaptchaContainerSpec );
+						};
+					}
+				}
+				<?php endif;?>
 			}
 		};
 
@@ -40,11 +47,18 @@
 				for ( var i = 0; i < document.forms.length; i++ ) {
 					this.setupForm( document.forms[ i ] );
 				}
+				/**
+				 * For some crazy reason invisible recaptcha badge attaches to div with this class.
+				 * Fortunately removing the class at this stage doesn't interrupt normal behaviour.
+				 */
+				if ( bInvisible ) {
+					document.querySelector( 'form' ).classList.remove( 'shake' );
+				}
 			}
 		};
 	}();
 
-	var onLoadIcwpRecaptchaCallback = function() {
+	var onLoadIcwpRecaptchaCallback = function () {
 		iCWP_WPSF_Recaptcha.initialise();
 	};
 </script>

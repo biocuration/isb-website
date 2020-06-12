@@ -1,14 +1,15 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_Wizard_Base', false ) ) {
-	return;
-}
+use FernleafSystems\Wordpress\Plugin\Shield;
+use FernleafSystems\Wordpress\Services\Services;
 
 /**
  * @uses php 5.4+
  * Class ICWP_WPSF_Wizard_Base
  */
-abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
+abstract class ICWP_WPSF_Wizard_Base {
+
+	use Shield\Modules\ModConsumer;
 
 	/**
 	 * @var string
@@ -16,73 +17,62 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	private $sCurrentWizard;
 
 	/**
-	 * @var ICWP_WPSF_FeatureHandler_Base
-	 */
-	protected $oModule;
-
-	/**
-	 * @param ICWP_WPSF_FeatureHandler_Base $oFeatureOptions
-	 */
-	public function __construct( ICWP_WPSF_FeatureHandler_Base $oFeatureOptions ) {
-		$this->oModule = $oFeatureOptions;
-	}
-
-	/**
 	 */
 	public function init() {
-		add_action( 'wp_loaded', array( $this, 'onWpLoaded' ), 0 );
+		add_action( 'wp_loaded', [ $this, 'onWpLoaded' ], 0 );
 	}
 
 	/**
 	 * Ensure to only ever process supported wizards
 	 */
-	public function ajaxWizardRenderStep() {
-		$oDP = $this->loadDP();
+	public function ajaxExec_WizRenderStep() {
+		$oReq = Services::Request();
+
+		$aResponse = [
+			'success'   => false,
+			'next_step' => [],
+		];
 
 		try {
-			$this->setCurrentWizard( $oDP->post( 'wizard_slug' ) );
+			$this->setCurrentWizard( $oReq->post( 'wizard_slug' ) );
 			if ( $this->getUserCan() ) {
 				$aNextStep = $this->buildNextStep(
-					$oDP->post( 'wizard_steps' ),
-					(int)$oDP->post( 'current_index' )
+					$oReq->post( 'wizard_steps' ),
+					(int)$oReq->post( 'current_index' )
 				);
-				$this->getModCon()
-					 ->sendAjaxResponse(
-						 true,
-						 array( 'next_step' => $aNextStep )
-					 );
+				$aResponse[ 'success' ] = true;
+				$aResponse[ 'next_step' ] = $aNextStep;
 			}
 			else {
-				$this->loadWp()
-					 ->wpDie( 'Please login to run this wizard.' );
+				$aResponse[ 'message' ] = 'Please login to run this wizard.';
 			}
 		}
 		catch ( Exception $oE ) {
 		}
+
+		return $aResponse;
 	}
 
+	/**
+	 * TODO: does not honour 'min_user_permissions' from the wizard definition
+	 */
 	public function onWpLoaded() {
-		$sWizard = $this->loadDP()->query( 'wizard' );
+		$sWizard = Services::Request()->query( 'wizard' );
 		try {
 			$this->setCurrentWizard( $sWizard );
 
 			$sDieMessage = 'Not Permitted';
 			if ( $this->getUserCan() ) {
-				if ( $this->verifyNonce() ) {
-					$this->loadWizard();
-				}
-				else {
-					$sDieMessage = 'Sorry, this link has expired.';
-				}
+				$this->loadWizard();
 			}
 			else {
 				$sDieMessage = 'Please login to run this wizard';
 			}
-			$this->loadWp()
-				 ->wpDie( $sDieMessage );
+
+			Services::WpGeneral()->wpDie( $sDieMessage );
 		}
 		catch ( Exception $oE ) {
-			if ( $sWizard == 'landing' && $this->verifyNonce( 'landing' ) ) {
+			if ( $sWizard == 'landing' ) {
 				$this->loadWizardLanding();
 			}
 		}
@@ -103,20 +93,46 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	}
 
 	/**
-	 * @uses echo()
+	 * @return string
 	 */
-	protected function loadWizardLanding() {
+	public function renderWizardLandingPage() {
 		try {
-			$sContent = $this->loadRenderer( $this->getModCon()->getController()->getPath_Templates() )
-							 ->setTemplate( 'wizard/pages/landing.twig' )
-							 ->setRenderVars( $this->getRenderData_PageWizardLanding() )
-							 ->setTemplateEngineTwig()
-							 ->render();
+			$sContent = $this->getMod()
+							 ->renderTemplate(
+								 'wizard/pages/landing.twig',
+								 $this->getRenderData_PageWizardLanding(),
+								 true
+							 );
 		}
 		catch ( Exception $oE ) {
 			$sContent = $oE->getMessage();
 		}
-		echo $sContent;
+		return $sContent;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function renderWizardLandingSnippet() {
+		try {
+			$sContent = $this->getMod()
+							 ->renderTemplate(
+								 'wizard/snippets/wizard_landing.twig',
+								 $this->getRenderData_PageWizardLanding(),
+								 true
+							 );
+		}
+		catch ( Exception $oE ) {
+			$sContent = $oE->getMessage();
+		}
+		return $sContent;
+	}
+
+	/**
+	 * @uses echo()
+	 */
+	protected function loadWizardLanding() {
+		echo $this->renderWizardLandingPage();
 		die();
 	}
 
@@ -151,15 +167,21 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return string[] the array of wizard slugs supported
 	 */
 	protected function getSupportedWizards() {
-		return array_keys( $this->getModCon()->getWizardDefinitions() );
+		return array_keys( $this->getMod()->getWizardDefinitions() );
 	}
 
-	public function ajaxWizardProcessStepSubmit() {
-		$this->loadAutoload(); // for Response
-		$oResponse = $this->processWizardStep( $this->loadDP()->post( 'wizard-step' ) );
+	/**
+	 * @return array
+	 */
+	public function ajaxExec_WizProcessStep() {
+		$oResponse = $this->processWizardStep( Services::Request()->post( 'wizard-step' ) );
 		if ( !empty( $oResponse ) ) {
-			$this->sendWizardResponse( $oResponse );
+			$this->buildWizardResponse( $oResponse );
 		}
+
+		$aData = $oResponse->getData();
+		$aData[ 'success' ] = $oResponse->successful();
+		return $aData;
 	}
 
 	/**
@@ -177,8 +199,9 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 
 	/**
 	 * @param \FernleafSystems\Utilities\Response $oResponse
+	 * @return \FernleafSystems\Utilities\Response
 	 */
-	protected function sendWizardResponse( $oResponse ) {
+	protected function buildWizardResponse( $oResponse ) {
 
 		$sMessage = $oResponse->getMessageText();
 		if ( $oResponse->successful() ) {
@@ -191,9 +214,7 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 		$aData = $oResponse->getData();
 		$aData[ 'message' ] = $sMessage;
 		$oResponse->setData( $aData );
-
-		$this->getModCon()
-			 ->sendAjaxResponse( $oResponse->successful(), $aData );
+		return $oResponse;
 	}
 
 	/**
@@ -201,11 +222,9 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @throws Exception
 	 */
 	protected function renderWizard() {
-		return $this->loadRenderer( $this->getModCon()->getController()->getPath_Templates() )
-					->setTemplate( 'wizard/pages/wizard.twig' )
-					->setRenderVars( $this->getRenderData_PageWizard() )
-					->setTemplateEngineTwig()
-					->render();
+		remove_all_actions( 'wp_footer' ); // FIX: nextgen gallery forces this to run.
+		return $this->getMod()
+					->renderTemplate( 'wizard/pages/wizard.twig', $this->getRenderData_PageWizard(), true );
 	}
 
 	/**
@@ -213,46 +232,56 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 */
 	protected function getModuleWizardsForRender() {
 		/** @var ICWP_WPSF_FeatureHandler_Base $oFO */
-		$oFO = $this->getModCon();
+		$oFO = $this->getMod();
 		$aWizards = $oFO->getWizardDefinitions();
 		foreach ( $aWizards as $sKey => &$aWizard ) {
-			$aWizard[ 'has_perm' ] = $this->getUserCan( $aWizard[ 'min_user_permissions' ] );
+			$aWizard[ 'has_perm' ] = empty( $aWizard[ 'min_user_permissions' ] ) || $this->getUserCan( $aWizard[ 'min_user_permissions' ] );
 			$aWizard[ 'url' ] = $oFO->getUrl_Wizard( $sKey );
 			$aWizard[ 'has_premium' ] = isset( $aWizard[ 'has_premium' ] ) && $aWizard[ 'has_premium' ];
+			$aWizard[ 'available' ] = $this->getWizardAvailability( $sKey );
 		}
 		return $aWizards;
+	}
+
+	/**
+	 * Override this to provide custom logic for wizard availability - e.g. isPremium() etc.
+	 * @param string $sKey
+	 * @return bool
+	 */
+	protected function getWizardAvailability( $sKey ) {
+		return true;
 	}
 
 	/**
 	 * @return array[]
 	 */
 	protected function getRenderData_PageWizardLanding() {
-		/** @var ICWP_WPSF_FeatureHandler_Base $oFO */
-		$oFO = $this->getModCon();
+		/** @var ICWP_WPSF_FeatureHandler_Base $oMod */
+		$oMod = $this->getMod();
 
 		$aWizards = $this->getModuleWizardsForRender();
 
-		return $this->loadDP()->mergeArraysRecursive(
-			$this->getRenderData_TwigPageBase(),
-			array(
-				'strings' => array(
+		return Services::DataManipulation()->mergeArraysRecursive(
+			$oMod->getBaseDisplayData(),
+			[
+				'strings' => [
 					'page_title'   => 'Select Your Wizard',
 					'premium_note' => 'Note: This uses features only available to Pro-licensed installations.'
-				),
-				'data'    => array(
+				],
+				'data'    => [
 					'mod_wizards_count' => count( $aWizards ),
 					'mod_wizards'       => $aWizards
-				),
-				'hrefs'   => array(
-					'dashboard'   => $oFO->getUrl_AdminPage(),
-					'goprofooter' => 'http://icwp.io/goprofooter',
-				),
-				'ajax'    => array(
-					'content'       => $oFO->getBaseAjaxActionRenderData( 'WizardProcessStepSubmit' ),
-					'steps'         => $oFO->getBaseAjaxActionRenderData( 'WizardRenderStep' ),
-					'steps_as_json' => $oFO->getBaseAjaxActionRenderData( 'WizardRenderStep', true ),
-				)
-			)
+				],
+				'hrefs'   => [
+					'dashboard'   => $oMod->getUrl_AdminPage(),
+					'goprofooter' => 'https://shsec.io/goprofooter',
+				],
+				'ajax'    => [
+					'content'       => $oMod->getAjaxActionData( 'wiz_process_step' ),
+					'steps'         => $oMod->getAjaxActionData( 'wiz_render_step' ),
+					'steps_as_json' => $oMod->getAjaxActionData( 'wiz_render_step', true ),
+				]
+			]
 		);
 	}
 
@@ -261,63 +290,38 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	protected function getRenderData_TwigPageBase() {
-		$oCon = $this->getModCon()->getController();
-		return array(
-			'strings' => array(
-				'page_title' => 'Twig Page'
-			),
-			'data'    => array(),
-			'hrefs'   => array(
-				'form_action'      => $this->loadDP()->getRequestUri(),
-				'css_bootstrap'    => $oCon->getPluginUrl_Css( 'bootstrap3.min.css' ),
-				'css_pages'        => $oCon->getPluginUrl_Css( 'pages.css' ),
-				'css_steps'        => $oCon->getPluginUrl_Css( 'jquery.steps.css' ),
-				'css_fancybox'     => $oCon->getPluginUrl_Css( 'jquery.fancybox.min.css' ),
-				'css_globalplugin' => $oCon->getPluginUrl_Css( 'global-plugin.css' ),
-				'css_wizard'       => $oCon->getPluginUrl_Css( 'wizard.css' ),
-				'js_jquery'        => $this->loadWpIncludes()->getUrl_Jquery(),
-				'js_bootstrap'     => $oCon->getPluginUrl_Js( 'bootstrap3.min.js' ),
-				'js_fancybox'      => $oCon->getPluginUrl_Js( 'jquery.fancybox.min.js' ),
-				'js_globalplugin'  => $oCon->getPluginUrl_Js( 'global-plugin.js' ),
-				'js_steps'         => $oCon->getPluginUrl_Js( 'jquery.steps.min.js' ),
-				'js_wizard'        => $oCon->getPluginUrl_Js( 'wizard.js' ),
-				'plugin_banner'    => $oCon->getPluginUrl_Image( 'banner-1500x500-transparent.png' ),
-				'favicon'          => $oCon->getPluginUrl_Image( 'pluginlogo_24x24.png' ),
-			),
-			'ajax'    => array(),
-			'flags'   => array(
-				'is_premium' => $this->getModCon()->isPremium(),
-			)
-		);
+		return $this->getMod()->getBaseDisplayData();
 	}
 
 	/**
 	 * @return array
 	 */
 	protected function getRenderData_PageWizard() {
-		/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-		$oFO = $this->getModCon();
-		return $this->loadDP()->mergeArraysRecursive(
-			$this->getRenderData_TwigPageBase(),
-			array(
-				'strings' => array(
-					'page_title' => $this->getPageTitle()
-				),
-				'data'    => array(
+		$oCon = $this->getMod()->getCon();
+		/** @var \ICWP_WPSF_FeatureHandler_Plugin $oMod */
+		$oMod = $this->getMod();
+		return Services::DataManipulation()->mergeArraysRecursive(
+			$oMod->getBaseDisplayData(),
+			[
+				'strings' => [
+					'page_title'  => $this->getPageTitle(),
+					'plugin_name' => $oCon->getHumanName()
+				],
+				'data'    => [
 					'wizard_slug'       => $this->getWizardSlug(),
 					'wizard_steps'      => json_encode( $this->buildSteps() ),
 					'wizard_first_step' => json_encode( $this->getWizardFirstStep() ),
-				),
-				'hrefs'   => array(
-					'dashboard'   => $oFO->getUrl_AdminPage(),
-					'goprofooter' => 'http://icwp.io/goprofooter',
-				),
-				'ajax'    => array(
-					'content'       => $oFO->getBaseAjaxActionRenderData( 'WizardProcessStepSubmit' ),
-					'steps'         => $oFO->getBaseAjaxActionRenderData( 'WizardRenderStep' ),
-					'steps_as_json' => $oFO->getBaseAjaxActionRenderData( 'WizardRenderStep', true ),
-				)
-			)
+				],
+				'hrefs'   => [
+					'dashboard'   => $oMod->getUrl_AdminPage(),
+					'goprofooter' => 'https://shsec.io/goprofooter',
+				],
+				'ajax'    => [
+					'content'       => $oMod->getAjaxActionData( 'wiz_process_step' ),
+					'steps'         => $oMod->getAjaxActionData( 'wiz_render_step' ),
+					'steps_as_json' => $oMod->getAjaxActionData( 'wiz_render_step', true ),
+				]
+			]
 		);
 	}
 
@@ -325,14 +329,14 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return string
 	 */
 	protected function getPageTitle() {
-		return sprintf( _wpsf__( '%s Wizard' ), $this->getModCon()->getController()->getHumanName() );
+		return sprintf( __( '%s Wizard', 'wp-simple-firewall' ), $this->getMod()->getCon()->getHumanName() );
 	}
 
 	/**
 	 * @return string[]
 	 */
 	protected function buildSteps() {
-		return $this->getUserCan() ? $this->determineWizardSteps() : array( 'no_access' );
+		return $this->getUserCan() ? $this->determineWizardSteps() : [ 'no_access' ];
 	}
 
 	/**
@@ -386,7 +390,7 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	protected function getRenderData_Slide( $sStep ) {
-		return $this->loadDP()->mergeArraysRecursive(
+		return Services::DataManipulation()->mergeArraysRecursive(
 			$this->getRenderData_SlideBase(),
 			$this->getRenderData_SlideExtra( $sStep )
 		);
@@ -396,23 +400,25 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	protected function getRenderData_SlideBase() {
-		$oFO = $this->getModCon();
+		$oMod = $this->getMod();
 		$aWizards = $this->getModuleWizardsForRender();
-		return array(
-			'flags' => array(
-				'is_premium'        => $oFO->isPremium(),
+		return [
+			'strings' => $oMod->getStrings()->getDisplayStrings()
+			,
+			'flags'   => [
+				'is_premium'        => $oMod->isPremium(),
 				'has_other_wizards' => false
-			),
-			'hrefs' => array(
-				'dashboard' => $oFO->getUrl_AdminPage(),
-				'gopro'     => 'http://icwp.io/ap',
-			),
-			'imgs'  => array(),
-			'data'  => array(
+			],
+			'hrefs'   => [
+				'dashboard' => $oMod->getUrl_AdminPage(),
+				'gopro'     => 'https://shsec.io/ap',
+			],
+			'imgs'    => [],
+			'data'    => [
 				'mod_wizards_count' => count( $aWizards ),
 				'mod_wizards'       => $aWizards
-			),
-		);
+			],
+		];
 	}
 
 	/**
@@ -420,7 +426,7 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	protected function getRenderData_SlideExtra( $sStep ) {
-		return array();
+		return [];
 	}
 
 	/**
@@ -436,11 +442,12 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 			$sTemplateSlug = sprintf( '%s/%s', $sBase, $sSlug );
 		}
 
-		return $this->loadRenderer( $this->getModCon()->getController()->getPath_Templates() )
-					->setTemplate( sprintf( 'wizard/slides/%s.twig', $sTemplateSlug ) )
-					->setRenderVars( $this->getRenderData_Slide( $sSlug ) )
-					->setTemplateEngineTwig()
-					->render();
+		return $this->getMod()
+					->renderTemplate(
+						sprintf( 'wizard/slides/%s.twig', $sTemplateSlug ),
+						$this->getRenderData_Slide( $sSlug ),
+						true
+					);
 	}
 
 	/**
@@ -462,11 +469,11 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array[]
 	 */
 	protected function getStepsDefinition() {
-		$aNoAccess = array(
-			'no_access' => array(
-				'title' => _wpsf__( 'No Access' ),
-			)
-		);
+		$aNoAccess = [
+			'no_access' => [
+				'title' => __( 'No Access', 'wp-simple-firewall' ),
+			]
+		];
 		$aSteps = array_merge( $this->getAllDefinedSteps(), $aNoAccess );
 		foreach ( $aSteps as $sSlug => $aStep ) {
 			$aSteps[ $sSlug ][ 'slug' ] = $sSlug;
@@ -486,7 +493,7 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 	 * @return array
 	 */
 	public function getWizard() {
-		return $this->getModCon()->getWizardDefinitions()[ $this->getWizardSlug() ];
+		return $this->getMod()->getWizardDefinitions()[ $this->getWizardSlug() ];
 	}
 
 	/**
@@ -509,29 +516,5 @@ abstract class ICWP_WPSF_Wizard_Base extends ICWP_WPSF_Foundation {
 		}
 		$this->sCurrentWizard = $sCurrentWizard;
 		return $this;
-	}
-
-	/**
-	 * @return ICWP_WPSF_FeatureHandler_Base
-	 */
-	protected function getModCon() {
-		return $this->oModule;
-	}
-
-	/**
-	 * @return ICWP_WPSF_Plugin_Controller
-	 */
-	protected function getPluginCon() {
-		return $this->getModCon()->getConn();
-	}
-
-	/**
-	 * @return false|int
-	 */
-	protected function verifyNonce( $sWizard = null ) {
-		if ( is_null( $sWizard ) ) {
-			$sWizard = $this->getWizardSlug();
-		}
-		return wp_verify_nonce( $this->loadDP()->query( 'nonwizard' ), 'wizard'.$sWizard );
 	}
 }

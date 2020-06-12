@@ -48,7 +48,6 @@ body.wait {
 	margin-bottom: 20px;
 }
 .wizard p {
-	margin-bottom: 20px;
 }
 .wizard .body ol,
 .wizard .body ul {
@@ -59,7 +58,7 @@ body.wait {
 	list-style: square inside none;
 }
 .wizard p.wizard-response {
-	padding: 10px 15px;
+	/*padding: 10px 15px;*/
 }
 
 .wizard .slide-body img {
@@ -95,6 +94,12 @@ body.wait {
 	font-weight: bolder;
 	letter-spacing: -0.4px;
 }
+.wizard form .form-check-label {
+	margin-bottom: 10px;
+}
+.wizard form .form-check-inline .form-check-label {
+	margin-bottom: 0;
+}
 
 #GoProBtn {
 	width: 128px;
@@ -126,4 +131,33 @@ body.wait {
 	margin: 0;
 	line-height: 20px;
 	text-align: left;
+}
+
+.more_details {
+	margin-bottom: 12px;
+}
+.more_details:hover {
+	cursor: pointer;
+}
+.more_details_body {
+	margin-bottom: 12px;
+}
+
+.scan-results-accordian {
+}
+.scan-results-accordian .card {
+	margin-bottom: 24px;
+}
+.scan-results-accordian .card-header {
+	padding: .5rem 1.25rem;
+}
+.scan-results-accordian .card-header button:hover,
+.scan-results-accordian .card-header button {
+	color: #f1f1f1
+}
+
+.embed-vimeo {
+	margin-bottom: 20px;
+	border-radius: 3px;
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
 }
