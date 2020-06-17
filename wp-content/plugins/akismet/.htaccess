@@ -1,3 +1,4 @@
+#wpe-fpm: php_values must be changed in .user.ini file. For more details please see https://wpengine.com/support/about-the-user-ini-file
 # Only allow direct access to specific Web-available files.
 
 # Apache 2.2

@@ -164,6 +164,9 @@ if ( ! class_exists( 'TwentyTwenty_SVG_Icons' ) ) {
 			'pocket'    => array(
 				'getpocket.com',
 			),
+			'tiktok'    => array(
+				'tiktok.com',
+			),
 			'twitch'    => array(
 				'twitch.tv',
 			),
