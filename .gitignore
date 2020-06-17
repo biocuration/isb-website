@@ -72,7 +72,7 @@ wp-content/mysql.sql
 /wp-content/themes/twentytwenty/
 /wp-content/themes/index.php
 /wp-content/plugins/index.php
-/wp-content/plugins/akismet/
+/wp-content/plugins/akismet*
 
 # large/disallowed file types
 # a CDN should be used for these
