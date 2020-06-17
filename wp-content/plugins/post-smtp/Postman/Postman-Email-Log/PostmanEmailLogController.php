@@ -1,4 +1,9 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
+require_once dirname(__DIR__) . '/PostmanLogFields.php';
 require_once 'PostmanEmailLogService.php';
 require_once 'PostmanEmailLogView.php';
 
@@ -67,18 +72,57 @@ class PostmanEmailLogController {
 				PostmanViewController::JQUERY_SCRIPT,
 				PostmanViewController::POSTMAN_SCRIPT,
 		), $pluginData ['version'] );
+		$this->handleCsvExport();
 	}
+
+	function handleCsvExport() {
+        if ( ! empty( $_POST ) && ! wp_verify_nonce( $_REQUEST['post-smtp-log'], 'post-smtp' ) )
+            die( 'Security check' );
+
+        if ( isset( $_POST['postman_export_csv'] ) && current_user_can( Postman::MANAGE_POSTMAN_CAPABILITY_LOGS ) ) {
+            $args = array(
+                'post_type' => PostmanEmailLogPostType::POSTMAN_CUSTOM_POST_TYPE_SLUG,
+                'post_status' => PostmanEmailLogService::POSTMAN_CUSTOM_POST_STATUS_PRIVATE,
+                'posts_per_page' => -1,
+            );
+            $logs = new WP_Query($args);
+
+            if ( empty( $logs->posts ) ) {
+                return;
+            }
+
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="email-logs.csv"');
+
+            $fp = fopen('php://output', 'wb');
+
+            $headers = array_keys( PostmanLogFields::get_instance()->get_fields() );
+            fputcsv($fp, $headers);
+
+            foreach ( $logs->posts as $log ) {
+                $meta = PostmanLogFields::get_instance()->get($log->ID);
+                $data = [];
+                foreach ( $meta as $header => $line ) {
+                    $data[] = $line[0];
+                }
+                fputcsv($fp, $data);
+            }
+
+            fclose($fp);
+            die();
+
+        }
+    }
 
 	/**
 	 */
 	public function resendMail() {
-		check_ajax_referer( 'resend', 'security' );
+        check_admin_referer( 'resend', 'security' );
 
 		// get the email address of the recipient from the HTTP Request
 		$postid = $this->getRequestParameter( 'email' );
 		if ( ! empty( $postid ) ) {
-			$post = get_post( $postid );
-			$meta_values = get_post_meta( $postid );
+			$meta_values = PostmanLogFields::get_instance()->get( $postid );
 
 			if ( isset( $_POST['mail_to'] ) && ! empty( $_POST['mail_to'] ) ) {
 				$emails = explode( ',', $_POST['mail_to'] );
@@ -97,7 +141,7 @@ class PostmanEmailLogController {
 			if ( $success ) {
 				$this->logger->debug( 'Email was successfully re-sent' );
 				// the message was sent successfully, generate an appropriate message for the user
-				$statusMessage = sprintf( __( 'Your message was delivered (%d ms) to the SMTP server! Congratulations :)', Postman::TEXT_DOMAIN ), $result ['time'] );
+				$statusMessage = sprintf( __( 'Your message was delivered (%d ms) to the SMTP server! Congratulations :)', 'post-smtp' ), $result ['time'] );
 
 				// compose the JSON response for the caller
 				$response = array(
@@ -134,8 +178,8 @@ class PostmanEmailLogController {
 	/**
 	 * TODO move this somewhere reusable
 	 *
-	 * @param unknown $parameterName
-	 * @return unknown
+	 * @param mixed $parameterName
+	 * @return mixed
 	 */
 	private function getRequestParameter( $parameterName ) {
 		if ( isset( $_POST [ $parameterName ] ) ) {
@@ -154,21 +198,21 @@ class PostmanEmailLogController {
 		if ( PostmanUtils::isAdmin() && isset( $_REQUEST ['email_log_entry'] ) ) {
 			$this->logger->trace( 'handling bulk action' );
 			if ( wp_verify_nonce( $_REQUEST ['_wpnonce'], 'bulk-email_log_entries' ) ) {
-				$this->logger->trace( sprintf( 'nonce "%s" passed validation', $_REQUEST ['_wpnonce'] ) );
+				$this->logger->trace( sprintf( 'nonce "%s" passed validation', sanitize_text_field($_REQUEST ['_wpnonce']) ) );
 				if ( isset( $_REQUEST ['action'] ) && ($_REQUEST ['action'] == 'bulk_delete' || $_REQUEST ['action2'] == 'bulk_delete') ) {
 					$this->logger->trace( sprintf( 'handling bulk delete' ) );
 					$purger = new PostmanEmailLogPurger();
-					$postids = $_REQUEST ['email_log_entry'];
+					$postids = array_map( 'absint', $_REQUEST ['email_log_entry'] );
 					foreach ( $postids as $postid ) {
 						$purger->verifyLogItemExistsAndRemove( $postid );
 					}
 					$mh = new PostmanMessageHandler();
-					$mh->addMessage( __( 'Mail Log Entries were deleted.', Postman::TEXT_DOMAIN ) );
+					$mh->addMessage( __( 'Mail Log Entries were deleted.', 'post-smtp' ) );
 				} else {
-					$this->logger->warn( sprintf( 'action "%s" not recognized', $_REQUEST ['action'] ) );
+					$this->logger->warn( sprintf( 'action "%s" not recognized', sanitize_text_field($_REQUEST ['action']) ) );
 				}
 			} else {
-				$this->logger->warn( sprintf( 'nonce "%s" failed validation', $_REQUEST ['_wpnonce'] ) );
+				$this->logger->warn( sprintf( 'nonce "%s" failed validation', sanitize_text_field($_REQUEST ['_wpnonce']) ) );
 			}
 			$this->redirectToLogPage();
 		}
@@ -180,15 +224,15 @@ class PostmanEmailLogController {
 		// only do this for administrators
 		if ( PostmanUtils::isAdmin() ) {
 			$this->logger->trace( 'handling delete item' );
-			$postid = $_REQUEST ['email'];
+			$postid = absint($_REQUEST ['email']);
 			if ( wp_verify_nonce( $_REQUEST ['_wpnonce'], 'delete_email_log_item_' . $postid ) ) {
-				$this->logger->trace( sprintf( 'nonce "%s" passed validation', $_REQUEST ['_wpnonce'] ) );
+				$this->logger->trace( sprintf( 'nonce "%s" passed validation', sanitize_text_field($_REQUEST ['_wpnonce']) ) );
 				$purger = new PostmanEmailLogPurger();
 				$purger->verifyLogItemExistsAndRemove( $postid );
 				$mh = new PostmanMessageHandler();
-				$mh->addMessage( __( 'Mail Log Entry was deleted.', Postman::TEXT_DOMAIN ) );
+				$mh->addMessage( __( 'Mail Log Entry was deleted.', 'post-smtp' ) );
 			} else {
-				$this->logger->warn( sprintf( 'nonce "%s" failed validation', $_REQUEST ['_wpnonce'] ) );
+				$this->logger->warn( sprintf( 'nonce "%s" failed validation', sanitize_text_field($_REQUEST ['_wpnonce']) ) );
 			}
 			$this->redirectToLogPage();
 		}
@@ -200,9 +244,14 @@ class PostmanEmailLogController {
 		// only do this for administrators
 		if ( PostmanUtils::isAdmin() ) {
 			$this->logger->trace( 'handling view item' );
-			$postid = $_REQUEST ['email'];
+			$postid = absint( $_REQUEST ['email'] );
 			$post = get_post( $postid );
-			$meta_values = get_post_meta( $postid );
+
+			if ( $post->post_type !== 'postman_sent_mail' ) {
+			    return;
+            }
+
+			$meta_values = PostmanLogFields::get_instance()->get( $postid );
 			// https://css-tricks.com/examples/hrs/
 			print '<html><head><style>body {font-family: monospace;} hr {
     border: 0;
@@ -211,29 +260,29 @@ class PostmanEmailLogController {
 }</style></head><body>';
 			print '<table>';
 			if ( ! empty( $meta_values ['from_header'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'From', 'Who is this message From?', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['from_header'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'From', 'Who is this message From?', 'post-smtp' ), esc_html( $meta_values ['from_header'] [0] ) );
 			}
 			// show the To header (it's optional)
 			if ( ! empty( $meta_values ['to_header'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'To', 'Who is this message To?', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['to_header'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'To', 'Who is this message To?', 'post-smtp' ), esc_html( $meta_values ['to_header'] [0] ) );
 			}
 			// show the Cc header (it's optional)
 			if ( ! empty( $meta_values ['cc_header'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Cc', 'Who is this message Cc\'d to?', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['cc_header'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Cc', 'Who is this message Cc\'d to?', 'post-smtp' ), esc_html( $meta_values ['cc_header'] [0] ) );
 			}
 			// show the Bcc header (it's optional)
 			if ( ! empty( $meta_values ['bcc_header'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Bcc', 'Who is this message Bcc\'d to?', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['bcc_header'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Bcc', 'Who is this message Bcc\'d to?', 'post-smtp' ), esc_html( $meta_values ['bcc_header'] [0] ) );
 			}
 			// show the Reply-To header (it's optional)
 			if ( ! empty( $meta_values ['reply_to_header'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', __( 'Reply-To', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['reply_to_header'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', __( 'Reply-To', 'post-smtp' ), esc_html( $meta_values ['reply_to_header'] [0] ) );
 			}
-			printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Date', 'What is the date today?', Postman::TEXT_DOMAIN ), $post->post_date );
-			printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Subject', 'What is the subject of this message?', Postman::TEXT_DOMAIN ), esc_html( $post->post_title ) );
+			printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Date', 'What is the date today?', 'post-smtp' ), $post->post_date );
+			printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Subject', 'What is the subject of this message?', 'post-smtp' ), esc_html( $post->post_title ) );
 			// The Transport UI is always there, in more recent versions that is
 			if ( ! empty( $meta_values ['transport_uri'] [0] ) ) {
-				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Delivery-URI', 'What is the unique URI of the configuration?', Postman::TEXT_DOMAIN ), esc_html( $meta_values ['transport_uri'] [0] ) );
+				printf( '<tr><th style="text-align:right">%s:</th><td>%s</td></tr>', _x( 'Delivery-URI', 'What is the unique URI of the configuration?', 'post-smtp' ), esc_html( $meta_values ['transport_uri'] [0] ) );
 			}
 			print '</table>';
 			print '<hr/>';
@@ -258,23 +307,23 @@ class PostmanEmailLogController {
 		// only do this for administrators
 		if ( PostmanUtils::isAdmin() ) {
 			$this->logger->trace( 'handling view transcript item' );
-			$postid = $_REQUEST ['email'];
+			$postid = absint($_REQUEST ['email']);
 			$post = get_post( $postid );
-			$meta_values = get_post_meta( $postid );
+			$meta_values = PostmanLogFields::get_instance()->get( $postid );
 			// https://css-tricks.com/examples/hrs/
 			print '<html><head><style>body {font-family: monospace;} hr {
     border: 0;
     border-bottom: 1px dashed #ccc;
     background: #bbb;
 }</style></head><body>';
-			printf( '<p>%s</p>', __( 'This is the conversation between Postman and the mail server. It can be useful for diagnosing problems. <b>DO NOT</b> post it on-line, it may contain your account password.', Postman::TEXT_DOMAIN ) );
+			printf( '<p>%s</p>', __( 'This is the conversation between Postman and the mail server. It can be useful for diagnosing problems. <b>DO NOT</b> post it on-line, it may contain your account password.', 'post-smtp' ) );
 			print '<hr/>';
 			print '<pre>';
 			if ( ! empty( $meta_values ['session_transcript'] [0] ) ) {
 				print esc_html( $meta_values ['session_transcript'] [0] );
 			} else {
 				/* Translators: Meaning "Not Applicable" */
-				print __( 'n/a', Postman::TEXT_DOMAIN );
+				print __( 'n/a', 'post-smtp' );
 			}
 			print '</pre>';
 			print '</body></html>';
@@ -299,10 +348,10 @@ class PostmanEmailLogController {
 			$this->logger->trace( 'created PostmanEmailLog admin menu item' );
 			/*
 			Translators where (%s) is the name of the plugin */
-			$pageTitle = sprintf( __( '%s Email Log', Postman::TEXT_DOMAIN ), __( 'Post SMTP', Postman::TEXT_DOMAIN ) );
-			$pluginName = _x( 'Email Log', 'The log of Emails that have been delivered', Postman::TEXT_DOMAIN );
+			$pageTitle = sprintf( __( '%s Email Log', 'post-smtp' ), __( 'Post SMTP', 'post-smtp' ) );
+			$pluginName = _x( 'Email Log', 'The log of Emails that have been delivered', 'post-smtp' );
 
-			$page = add_submenu_page( PostmanViewController::POSTMAN_MENU_SLUG, $pageTitle, $pluginName, 'read_private_posts', 'postman_email_log', array( $this, 'postman_render_email_page' ) );
+			$page = add_submenu_page( PostmanViewController::POSTMAN_MENU_SLUG, $pageTitle, $pluginName, Postman::MANAGE_POSTMAN_CAPABILITY_LOGS, 'postman_email_log', array( $this, 'postman_render_email_page' ) );
 
 			// When the plugin options page is loaded, also load the stylesheet
 			add_action( 'admin_print_styles-' . $page, array(
@@ -311,16 +360,17 @@ class PostmanEmailLogController {
 			) );
 		}
 	}
+
 	function postman_email_log_enqueue_resources() {
 		$pluginData = apply_filters( 'postman_get_plugin_metadata', null );
 		wp_register_style( 'postman_email_log', plugins_url( 'style/postman-email-log.css', $this->rootPluginFilenameAndPath ), null, $pluginData ['version'] );
 		wp_enqueue_style( 'postman_email_log' );
 		wp_enqueue_script( 'postman_resend_email_script' );
 		wp_enqueue_script( 'sprintf' );
-		wp_localize_script( 'postman_resend_email_script', 'postman_js_email_was_resent', __( 'Email was successfully resent (but without attachments)', Postman::TEXT_DOMAIN ) );
+		wp_localize_script( 'postman_resend_email_script', 'postman_js_email_was_resent', __( 'Email was successfully resent (but without attachments)', 'post-smtp' ) );
 		/* Translators: Where %s is an error message */
-		wp_localize_script( 'postman_resend_email_script', 'postman_js_email_not_resent', __( 'Email could not be resent. Error: %s', Postman::TEXT_DOMAIN ) );
-		wp_localize_script( 'postman_resend_email_script', 'postman_js_resend_label', __( 'Resend', Postman::TEXT_DOMAIN ) );
+		wp_localize_script( 'postman_resend_email_script', 'postman_js_email_not_resent', __( 'Email could not be resent. Error: %s', 'post-smtp' ) );
+		wp_localize_script( 'postman_resend_email_script', 'postman_js_resend_label', __( 'Resend', 'post-smtp' ) );
 	}
 
 	/**
@@ -349,13 +399,15 @@ class PostmanEmailLogController {
 	</div>
 	<h2><?php
 	/* Translators where (%s) is the name of the plugin */
-		echo sprintf( __( '%s Email Log', Postman::TEXT_DOMAIN ), __( 'Post SMTP', Postman::TEXT_DOMAIN ) )?></h2>
+		echo sprintf( __( '%s Email Log', 'post-smtp' ), __( 'Post SMTP', 'post-smtp' ) )?></h2>
+
+    <?php include_once POST_SMTP_PATH . '/Postman/extra/donation.php'; ?>
 
 	<div
 		style="background: #ECECEC; border: 1px solid #CCC; padding: 0 10px; margin-top: 5px; border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;">
 		<p><?php
 
-		echo __( 'This is a record of deliveries made to the mail server. It does not neccessarily indicate sucessful delivery to the recipient.', Postman::TEXT_DOMAIN )?></p>
+		echo __( 'This is a record of deliveries made to the mail server. It does not neccessarily indicate sucessful delivery to the recipient.', 'post-smtp' )?></p>
 	</div>
 
 	<?php
@@ -367,21 +419,24 @@ class PostmanEmailLogController {
 	?>
 
 	<form id="postman-email-log-filter" method="post">
+        <input type="hidden" action="post-smtp-filter" value="1">
+        <?php wp_nonce_field('post-smtp', 'post-smtp-log'); ?>
+
 		<div id="email-log-filter" class="postman-log-row">
 			<div class="form-control">
-				<label for="from_date"><?php _e( 'From Date', Postman::TEXT_DOMAIN ); ?></label>
-				<input id="from_date" class="email-log-date" value="<?php echo $from_date; ?>" type="text" name="from_date" placeholder="<?php _e( 'From Date', Postman::TEXT_DOMAIN ); ?>">
+				<label for="from_date"><?php _e( 'From Date', 'post-smtp' ); ?></label>
+				<input id="from_date" class="email-log-date" value="<?php echo esc_attr($from_date); ?>" type="text" name="from_date" placeholder="<?php _e( 'From Date', 'post-smtp' ); ?>">
 			</div>
 			<div class="form-control">
-				<label for="to_date"><?php _e( 'To Date', Postman::TEXT_DOMAIN ); ?></label>		
-				<input id="to_date" class="email-log-date" value="<?php echo $to_date; ?>" type="text" name="to_date" placeholder="<?php _e( 'To Date', Postman::TEXT_DOMAIN ); ?>">
+				<label for="to_date"><?php _e( 'To Date', 'post-smtp' ); ?></label>		
+				<input id="to_date" class="email-log-date" value="<?php echo esc_attr($to_date); ?>" type="text" name="to_date" placeholder="<?php _e( 'To Date', 'post-smtp' ); ?>">
 			</div>
 			<div class="form-control">
-				<label for="search"><?php _e( 'Search', Postman::TEXT_DOMAIN ); ?></label>		
-				<input id="search" type="text" name="search" value="<?php echo $search; ?>" placeholder="<?php _e( 'Search', Postman::TEXT_DOMAIN ); ?>">
+				<label for="search"><?php _e( 'Search', 'post-smtp' ); ?></label>		
+				<input id="search" type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php _e( 'Search', 'post-smtp' ); ?>">
 			</div>
 			<div class="form-control">
-				<label id="postman_page_records"><?php _e( 'Records per page', Postman::TEXT_DOMAIN ); ?></label>
+				<label id="postman_page_records"><?php _e( 'Records per page', 'post-smtp' ); ?></label>
 				<select id="postman_page_records" name="postman_page_records">
 					<?php
 					foreach ( $page_records as $value ) {
@@ -390,14 +445,21 @@ class PostmanEmailLogController {
 					}
 					?>
 				</select>	
-			</div>		
-			<div class="form-control" style="padding: 0 5px 0 5px;">
-				<button type="submit" name="filter" class="button button-primary"><?php _e( 'Filter/Search', Postman::TEXT_DOMAIN ); ?></button>
-			</div>	
+			</div>
+
+            <div class="form-control">
+                <button type="submit" id="postman_export_csv" name="postman_export_csv" class="button button-primary"><?php _e( 'Export To CSV', 'post-smtp' ); ?></button>
+            </div>
+
+			<div class="form-control" style="padding: 0 5px 0 5px; margin-right: 50px;">
+				<button type="submit" name="filter" class="button button-primary"><?php _e( 'Filter/Search', 'post-smtp' ); ?></button>
+			</div>
+
 			<div class="form-control">
-				<button type="submit" id="postman_trash_all" name="postman_trash_all" class="button button-primary"><?php _e( 'Trash All', Postman::TEXT_DOMAIN ); ?></button>
-			</div>			
-		</div>
+				<button type="submit" id="postman_trash_all" name="postman_trash_all" class="button button-primary"><?php _e( 'Trash All', 'post-smtp' ); ?></button>
+			</div>
+
+        </div>
 		<div class="error">Please notice: when you select a date for example 11/20/2017, behind the scene the query select <b>11/20/2017 00:00:00</b>.<br>So if you searching for an email arrived that day at any hour you need to select 11/20/2017 as the <b>From Date</b> and 11/21/2017 as the <b>To Date</b>.</div>
 	</form>
 	

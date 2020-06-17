@@ -321,6 +321,22 @@ class File_X509
     var $challenge;
 
     /**
+     * Recursion Limit
+     *
+     * @var int
+     * @access private
+     */
+    var $recur_limit = 5;
+
+    /**
+     * URL fetch flag
+     *
+     * @var bool
+     * @access private
+     */
+    var $disable_url_fetch = false;
+
+    /**
      * Default Constructor.
      *
      * @return File_X509
@@ -960,6 +976,13 @@ class File_X509
         );
 
         $this->AuthorityInfoAccessSyntax = array(
+            'type'     => FILE_ASN1_TYPE_SEQUENCE,
+            'min'      => 1,
+            'max'      => -1,
+            'children' => $AccessDescription
+        );
+
+        $this->SubjectInfoAccessSyntax = array(
             'type'     => FILE_ASN1_TYPE_SEQUENCE,
             'min'      => 1,
             'max'      => -1,
@@ -1634,7 +1657,10 @@ class File_X509
                    corresponding to the extension type identified by extnID */
                 $map = $this->_getMapping($id);
                 if (!is_bool($map)) {
-                    $mapped = $asn1->asn1map($decoded[0], $map, array('iPAddress' => array($this, '_decodeIP')));
+                    $decoder = $id == 'id-ce-nameConstraints' ?
+                        array($this, '_decodeNameConstraintIP') :
+                        array($this, '_decodeIP');
+                    $mapped = $asn1->asn1map($decoded[0], $map, array('iPAddress' => $decoder));
                     $value = $mapped === false ? $decoded[0] : $mapped;
 
                     if ($id == 'id-ce-certificatePolicies') {
@@ -1903,6 +1929,8 @@ class File_X509
                 return $this->ExtKeyUsageSyntax;
             case 'id-pe-authorityInfoAccess':
                 return $this->AuthorityInfoAccessSyntax;
+            case 'id-pe-subjectInfoAccess':
+                return $this->SubjectInfoAccessSyntax;
             case 'id-ce-subjectAltName':
                 return $this->SubjectAltName;
             case 'id-ce-subjectDirectoryAttributes':
@@ -1942,6 +1970,9 @@ class File_X509
             // "Certificate Transparency"
             // https://tools.ietf.org/html/rfc6962
             case '1.3.6.1.4.1.11129.2.4.2':
+            // "Qualified Certificate statements"
+            // https://tools.ietf.org/html/rfc3739#section-3.2.6
+            case '1.3.6.1.5.5.7.1.3':
                 return true;
 
             // CSR attributes
@@ -2106,7 +2137,7 @@ class File_X509
      *
      * If $date isn't defined it is assumed to be the current date.
      *
-     * @param int $date optional
+     * @param \DateTime|int|string $date optional
      * @access public
      */
     function validateDate($date = null)
@@ -2117,7 +2148,7 @@ class File_X509
 
         if (!isset($date)) {
             $date = class_exists('DateTime') ?
-                new DateTime($date, new DateTimeZone(@date_default_timezone_get())) :
+                new DateTime(null, new DateTimeZone(@date_default_timezone_get())) :
                 time();
         }
 
@@ -2127,12 +2158,18 @@ class File_X509
         $notAfter = $this->currentCert['tbsCertificate']['validity']['notAfter'];
         $notAfter = isset($notAfter['generalTime']) ? $notAfter['generalTime'] : $notAfter['utcTime'];
 
-        if (class_exists('DateTime')) {
-            $notBefore = new DateTime($notBefore, new DateTimeZone(@date_default_timezone_get()));
-            $notAfter = new DateTime($notAfter, new DateTimeZone(@date_default_timezone_get()));
-        } else {
-            $notBefore = @strtotime($notBefore);
-            $notAfter = @strtotime($notAfter);
+        switch (true) {
+            case is_string($date) && class_exists('DateTime'):
+                $date = new DateTime($date, new DateTimeZone(@date_default_timezone_get()));
+            case is_object($date) && strtolower(get_class($date)) == 'datetime':
+                $notBefore = new DateTime($notBefore, new DateTimeZone(@date_default_timezone_get()));
+                $notAfter = new DateTime($notAfter, new DateTimeZone(@date_default_timezone_get()));
+                break;
+            case is_string($date):
+                $date = @strtotime($date);
+            default:
+                $notBefore = @strtotime($notBefore);
+                $notAfter = @strtotime($notAfter);
         }
 
         switch (true) {
@@ -2140,6 +2177,117 @@ class File_X509
             case $date > $notAfter:
                 return false;
         }
+
+        return true;
+    }
+
+    /**
+     * Fetches a URL
+     *
+     * @param string $url
+     * @access private
+     * @return bool|string
+     */
+    function _fetchURL($url)
+    {
+        if ($this->disable_url_fetch) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+        $data = '';
+        switch ($parts['scheme']) {
+            case 'http':
+                $fsock = @fsockopen($parts['host'], isset($parts['port']) ? $parts['port'] : 80);
+                if (!$fsock) {
+                    return false;
+                }
+                fputs($fsock, "GET $parts[path] HTTP/1.0\r\n");
+                fputs($fsock, "Host: $parts[host]\r\n\r\n");
+                $line = fgets($fsock, 1024);
+                if (strlen($line) < 3) {
+                    return false;
+                }
+                preg_match('#HTTP/1.\d (\d{3})#', $line, $temp);
+                if ($temp[1] != '200') {
+                    return false;
+                }
+
+                // skip the rest of the headers in the http response
+                while (!feof($fsock) && fgets($fsock, 1024) != "\r\n") {
+                }
+
+                while (!feof($fsock)) {
+                    $data.= fread($fsock, 1024);
+                }
+
+                break;
+            //case 'ftp':
+            //case 'ldap':
+            //default:
+        }
+
+        return $data;
+    }
+
+    /**
+     * Validates an intermediate cert as identified via authority info access extension
+     *
+     * See https://tools.ietf.org/html/rfc4325 for more info
+     *
+     * @param bool $caonly
+     * @param int $count
+     * @access private
+     * @return bool
+     */
+    function _testForIntermediate($caonly, $count)
+    {
+        $opts = $this->getExtension('id-pe-authorityInfoAccess');
+        if (!is_array($opts)) {
+            return false;
+        }
+        foreach ($opts as $opt) {
+            if ($opt['accessMethod'] == 'id-ad-caIssuers') {
+                // accessLocation is a GeneralName. GeneralName fields support stuff like email addresses, IP addresses, LDAP,
+                // etc, but we're only supporting URI's. URI's and LDAP are the only thing https://tools.ietf.org/html/rfc4325
+                // discusses
+                if (isset($opt['accessLocation']['uniformResourceIdentifier'])) {
+                    $url = $opt['accessLocation']['uniformResourceIdentifier'];
+                    break;
+                }
+            }
+        }
+
+        if (!isset($url)) {
+            return false;
+        }
+
+        $cert = $this->_fetchURL($url);
+        if (!is_string($cert)) {
+            return false;
+        }
+
+        $parent = new static();
+        $parent->CAs = $this->CAs;
+        /*
+         "Conforming applications that support HTTP or FTP for accessing
+          certificates MUST be able to accept .cer files and SHOULD be able
+          to accept .p7c files." -- https://tools.ietf.org/html/rfc4325
+
+         A .p7c file is 'a "certs-only" CMS message as specified in RFC 2797"
+
+         These are currently unsupported
+        */
+        if (!is_array($parent->loadX509($cert))) {
+            return false;
+        }
+
+        if (!$parent->_validateSignatureCountable($caonly, ++$count)) {
+            return false;
+        }
+
+        $this->CAs[] = $parent->currentCert;
+        //$this->loadCA($cert);
 
         return true;
     }
@@ -2161,8 +2309,27 @@ class File_X509
      */
     function validateSignature($caonly = true)
     {
+        return $this->_validateSignatureCountable($caonly, 0);
+    }
+
+    /**
+     * Validate a signature
+     *
+     * Performs said validation whilst keeping track of how many times validation method is called
+     *
+     * @param bool $caonly
+     * @param int $count
+     * @access private
+     * @return mixed
+     */
+    function _validateSignatureCountable($caonly, $count)
+    {
         if (!is_array($this->currentCert) || !isset($this->signatureSubject)) {
             return null;
+        }
+
+        if ($count == $this->recur_limit) {
+            return false;
         }
 
         /* TODO:
@@ -2181,7 +2348,8 @@ class File_X509
                         $subjectKeyID = $this->getExtension('id-ce-subjectKeyIdentifier');
                         switch (true) {
                             case !is_array($authorityKey):
-                            case is_array($authorityKey) && isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
+                            case !$subjectKeyID:
+                            case isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
                                 $signingCert = $this->currentCert; // working cert
                         }
                 }
@@ -2198,17 +2366,21 @@ class File_X509
                                 $subjectKeyID = $this->getExtension('id-ce-subjectKeyIdentifier', $ca);
                                 switch (true) {
                                     case !is_array($authorityKey):
-                                    case is_array($authorityKey) && isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
+                                    case !$subjectKeyID:
+                                    case isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
+                                        if (is_array($authorityKey) && isset($authorityKey['authorityCertSerialNumber']) && !$authorityKey['authorityCertSerialNumber']->equals($ca['tbsCertificate']['serialNumber'])) {
+                                            break 2; // serial mismatch - check other ca
+                                        }
                                         $signingCert = $ca; // working cert
                                         break 3;
                                 }
                         }
                     }
                     if (count($this->CAs) == $i && $caonly) {
-                        return false;
+                        return $this->_testForIntermediate($caonly, $count) && $this->validateSignature($caonly);
                     }
                 } elseif (!isset($signingCert) || $caonly) {
-                    return false;
+                    return $this->_testForIntermediate($caonly, $count) && $this->validateSignature($caonly);
                 }
                 return $this->_validateSignature(
                     $signingCert['tbsCertificate']['subjectPublicKeyInfo']['algorithm']['algorithm'],
@@ -2244,7 +2416,11 @@ class File_X509
                                 $subjectKeyID = $this->getExtension('id-ce-subjectKeyIdentifier', $ca);
                                 switch (true) {
                                     case !is_array($authorityKey):
-                                    case is_array($authorityKey) && isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
+                                    case !$subjectKeyID:
+                                    case isset($authorityKey['keyIdentifier']) && $authorityKey['keyIdentifier'] === $subjectKeyID:
+                                        if (is_array($authorityKey) && isset($authorityKey['authorityCertSerialNumber']) && !$authorityKey['authorityCertSerialNumber']->equals($ca['tbsCertificate']['serialNumber'])) {
+                                            break 2; // serial mismatch - check other ca
+                                        }
                                         $signingCert = $ca; // working cert
                                         break 3;
                                 }
@@ -2315,6 +2491,41 @@ class File_X509
     }
 
     /**
+     * Sets the recursion limit
+     *
+     * When validating a signature it may be necessary to download intermediate certs from URI's.
+     * An intermediate cert that linked to itself would result in an infinite loop so to prevent
+     * that we set a recursion limit. A negative number means that there is no recursion limit.
+     *
+     * @param int $count
+     * @access public
+     */
+    function setRecurLimit($count)
+    {
+        $this->recur_limit = $count;
+    }
+
+    /**
+     * Prevents URIs from being automatically retrieved
+     *
+     * @access public
+     */
+    function disableURLFetch()
+    {
+        $this->disable_url_fetch = true;
+    }
+
+    /**
+     * Allows URIs to be automatically retrieved
+     *
+     * @access public
+     */
+    function enableURLFetch()
+    {
+        $this->disable_url_fetch = false;
+    }
+
+    /**
      * Reformat public keys
      *
      * Reformats a public key to a format supported by phpseclib (if applicable)
@@ -2357,17 +2568,35 @@ class File_X509
     }
 
     /**
+     * Decodes an IP address in a name constraints extension
+     *
+     * Takes in a base64 encoded "blob" and returns a human readable IP address / mask
+     *
+     * @param string $ip
+     * @access private
+     * @return array
+     */
+    function _decodeNameConstraintIP($ip)
+    {
+        $ip = base64_decode($ip);
+        list(, $ip, $mask) = unpack('N2', $ip);
+        return [long2ip($ip), long2ip($mask)];
+    }
+
+    /**
      * Encodes an IP address
      *
      * Takes a human readable IP address into a base64-encoded "blob"
      *
-     * @param string $ip
+     * @param string|array $ip
      * @access private
      * @return string
      */
     function _encodeIP($ip)
     {
-        return base64_encode(pack('N', ip2long($ip)));
+        return is_string($ip) ?
+            base64_encode(pack('N', ip2long($ip))) :
+            base64_encode(pack('NN', ip2long($ip[0]), ip2long($ip[1])));
     }
 
     /**
@@ -2521,6 +2750,10 @@ class File_X509
         }
 
         $dn = array_values($dn);
+        // fix for https://bugs.php.net/75433 affecting PHP 7.2
+        if (!isset($dn[0])) {
+            $dn = array_splice($dn, 0, 0);
+        }
     }
 
     /**
@@ -2765,12 +2998,16 @@ class File_X509
                     $value = array_pop($value); // Always strip data type.
                 }
             } elseif (is_object($value) && strtolower(get_class($value)) == 'file_asn1_element') {
-                $callback = create_function('$x', 'return "\x" . bin2hex($x[0]);');
+                // @codingStandardsIgnoreStart
+                $callback = version_compare(PHP_VERSION, '5.3.0') >= 0 ?
+                    function ($x) { return "\x" . bin2hex($x[0]); } :
+                    create_function('$x', 'return "\x" . bin2hex($x[0]);');
+                // @codingStandardsIgnoreEnd
                 $value = strtoupper(preg_replace_callback('#[^\x20-\x7E]#', $callback, $value->element));
             }
             $output.= $desc . '=' . $value;
             $result[$desc] = isset($result[$desc]) ?
-                array_merge((array) $dn[$prop], array($value)) :
+                array_merge((array) $result[$desc], array($value)) :
                 $value;
             $start = false;
         }
@@ -3500,7 +3737,7 @@ class File_X509
                 'tbsCertificate' =>
                     array(
                         'version' => 'v3',
-                        'serialNumber' => $serialNumber, // $this->setserialNumber()
+                        'serialNumber' => $serialNumber, // $this->setSerialNumber()
                         'signature' => array('algorithm' => $signatureAlgorithm),
                         'issuer' => false, // this is going to be overwritten later
                         'validity' => array(
@@ -4153,6 +4390,10 @@ class File_X509
         }
 
         $extensions = array_values($extensions);
+        // fix for https://bugs.php.net/75433 affecting PHP 7.2
+        if (!isset($extensions[0])) {
+            $extensions = array_splice($extensions, 0, 0);
+        }
         return $result;
     }
 

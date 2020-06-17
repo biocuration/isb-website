@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 if (! class_exists ( 'PostmanAbstractAjaxHandler' )) {
 	
 	require_once ('PostmanPreRequisitesCheck.php');
@@ -15,8 +19,8 @@ if (! class_exists ( 'PostmanAbstractAjaxHandler' )) {
 		}
 		/**
 		 *
-		 * @param unknown $actionName        	
-		 * @param unknown $callbackName        	
+		 * @param mixed $actionName        	
+		 * @param mixed $callbackName        	
 		 */
 		protected function registerAjaxHandler($actionName, $class, $callbackName) {
 			if (is_admin ()) {
@@ -31,7 +35,7 @@ if (! class_exists ( 'PostmanAbstractAjaxHandler' )) {
 		
 		/**
 		 *
-		 * @param unknown $parameterName        	
+		 * @param mixed $parameterName        	
 		 * @return mixed
 		 */
 		protected function getBooleanRequestParameter($parameterName) {
@@ -40,14 +44,21 @@ if (! class_exists ( 'PostmanAbstractAjaxHandler' )) {
 		
 		/**
 		 *
-		 * @param unknown $parameterName        	
-		 * @return unknown
+		 * @param mixed $parameterName        	
+		 * @return mixed
 		 */
 		protected function getRequestParameter($parameterName) {
 			if (isset ( $_POST [$parameterName] )) {
-				$value = $_POST[$parameterName];
+			    if ( is_array($_POST [$parameterName] ) ) {
+                    array_walk_recursive( $_POST [$parameterName], 'sanitize_text_field' );
+                    $value = $_POST [$parameterName];
+                } else {
+                    $value = sanitize_text_field($_POST[$parameterName]);
+                }
+
 				$this->logger->trace ( sprintf ( 'Found parameter "%s"', $parameterName ) );
 				$this->logger->trace ( $value );
+
 				return $value;
 			}
 		}

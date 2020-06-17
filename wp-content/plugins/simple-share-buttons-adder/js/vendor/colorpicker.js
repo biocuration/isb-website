@@ -221,6 +221,7 @@ For usage and examples: colpick.com/plugin
 				$(document).off('mousemove touchmove',moveSelector);
 				return false;
 			},
+			
 			//Submit button
 			clickSubmit = function (ev) {
 				var cal = $(this).parent(),
@@ -294,7 +295,51 @@ For usage and examples: colpick.com/plugin
 
 					$( '#simple-share-buttons-adder-styles-inline-css' ).html( newStyle );
 				}
+
+				// Bar Button color.
+				if ( 'ssba_bar_button_color' === submitButton ) {
+					$( '#ssba-preview-2 .ssbp-list li' ).each( function() {
+						$( this ).find( 'a' ).css( 'background', '#' + hsbToHex( col ) );
+					} );
+				}
+
+				// Bar Icon color.
+				if ( 'ssba_bar_icon_color' === submitButton ) {
+					var iconSize = $( '#ssba_bar_icon_size' ).val(),
+						iconLineHeight = $( '#ssba_bar_height' ).val(),
+						iconColor = '#' + hsbToHex( col ),
+						iconColorHover = $( '#ssba_bar_icon_hover_color' ).val(),
+						buttonColorHover = $( '#ssba_bar_button_hover_color' ).val(),
+						newStyle = '#ssba-preview-2 .ssbp-btn:before { font-size: ' + iconSize + 'px; line-height: ' + iconLineHeight + 'px; color: ' + iconColor + '; } #ssba-preview-2 .ssbp-btn:hover::before { color: ' + iconColorHover + '; } #ssba-preview-2 .ssbp-btn:hover { background: ' + buttonColorHover + '!important; }';
+
+					$( '#simple-share-buttons-adder-styles-inline-css' ).html( newStyle );
+				}
+
+				// Bar Icon hover color
+				if ( 'ssba_bar_icon_hover_color' === submitButton ) {
+					var iconSize = $( '#ssba_bar_icon_size' ).val(),
+						iconLineHeight = $( '#ssba_bar_height' ).val(),
+						iconColor = $( '#ssba_bar_icon_color' ).val(),
+						iconColorHover = '#' + hsbToHex( col ),
+						buttonColorHover = $( '#ssba_bar_button_hover_color' ).val(),
+						newStyle = '#ssba-preview-2 .ssbp-btn:before{ font-size: ' + iconSize + 'px; line-height: ' + iconLineHeight + 'px; color: ' + iconColor + '; } #ssba-preview-2 .ssbp-btn:hover::before { color: ' + iconColorHover + '; } #ssba-preview-2 .ssbp-btn:hover { background: ' + buttonColorHover + '!important; }';
+
+					$( '#simple-share-buttons-adder-styles-inline-css' ).html( newStyle );
+				}
+
+				// Bar Button hover color
+				if ( 'ssba_bar_button_hover_color' === submitButton ) {
+					var iconSize = $( '#ssba_bar_icon_size' ).val(),
+						iconLineHeight = $( '#ssba_bar_height' ).val(),
+						iconColor = $( '#ssba_bar_icon_color' ).val(),
+						iconColorHover = $( '#ssba_bar_icon_hover_color' ).val(),
+						buttonColorHover = '#' + hsbToHex( col ),
+						newStyle = '#ssba-preview-2 .ssbp-btn:before{ font-size: ' + iconSize + 'px; line-height: ' + iconLineHeight + 'px; color: ' + iconColor + '; } #ssba-preview-2 .ssbp-btn:hover::before { color: ' + iconColorHover + '; } #ssba-preview-2 .ssbp-btn:hover { background: ' + buttonColorHover + '!important; }';
+
+					$( '#simple-share-buttons-adder-styles-inline-css' ).html( newStyle );
+				}
 			},
+
 			//Show/hide the color picker
 			show = function (ev) {
 				// Prevent the trigger of any direct parent

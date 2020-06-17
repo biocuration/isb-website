@@ -1,25 +1,30 @@
-=== Twitter ===
+	=== Customize Feeds for Twitter ===
 Contributors: weblizar
-Donate link: http://www.weblizar.com/
-Tags: twitter, twitter widget, twitter wordpress plugin,twitter feed
+Donate link: https://www.weblizar.com/
+Tags: twitter, tweets, twitter tweets, twitter widget, twitter wordPress plugin, twitter feed
 Requires at least: 3.8
-Tested up to: 4.9
-Stable tag: 1.7.1
+Tested up to: 5.4
+Stable tag: 1.9.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Display Twitter Tweets Using Widget On WordPress Blog With Follow Button
+Customize Feeds for Twitter plugin for WordPress. You can use this to display real time Twitter feeds on any where on your website by using shortcode or widgets.
 
 == Description ==
 
-Twitter tweets plugin is a twitter widget plugin display twitter accounts latest tweets on your WordPress blog.
+Customize Feeds for Twitter plugin is display the real time Twitter feeds on your WordPress website by using shortcode or widgetsg.
 
-Twitter tweets plugin allows you to set your twitter account widget Id & twitter username. You can customize twitter widget by apply custom height, auto expand tweets images, custom link URL color, On / Off tweets reply etc.
+It is completely customizable, responsive and search engine crawlable versions of your Twitter feed on your website. Completely match the look and feel of your site with tons of customization options!
+
+Customize Feeds for Twitter plugin allows you to set your twitter account widget Id & twitter username. You can customize twitter widget by apply custom height, auto expand tweets images, custom link URL color, On / Off tweets reply etc.
 
 Using **Twitter Tweets** widget display your least tweets on your WordPress blog site.
 
-**Features**
+= Free Features =
 
+* Twitter Tweets By Twitter API
+* Control number of tweets you want to show
+* Control layout
 * Twitter Tweets Widget
 * Widget Customization Settings
 * Widget Title
@@ -32,16 +37,43 @@ Using **Twitter Tweets** widget display your least tweets on your WordPress blog
 * Re tweet and choose your favourite tweets
 * Auto Expand Photos in Tweets
 
+= Twitter Tweets Premium Features: =
 
-== Features ==
-* Twitter Tweets Widget
-* Widget Customization Settings
-* Widget Title
-* Widget Theme Option
-* Set Widget Height
-* Tweets URL Link Color Option
-* Show/Hide Tweets Reply
-* Auto Expand Photos in Tweets
+* **Twitter Tweets Widget** - Display twitter tweets on a sidebar or footer using a widget.
+* **Multiple Twitter feeds with no limitations** - Display any number of twitter feeds on d
+ifferent pages or posts without any limitations.
+
+* **Feeds of multiple users, hashtags or search terms** - Twitter Feeds can be shown from multiple twitter accounts, or using hashtags, search terms etc.
+
+* **Display Tweets in Slider** - It is also possible to display tweets in a configurable Carousel Slider. You can enable or disable auto play or set its autoplay time.
+
+* **Configurable number of tweets to display** - You can also limit the number of tweets that is to be shown in your website.
+
+* **Load more Tweets options** - There is also a load more button to load the remaining tweets.
+
+* **Tweets Style Settings** - You can configure feed background color, tweet background color, font color, font size, font weight and many more options.
+
+* **Google Fonts** - You can also choose google font that is to be used in your twitter feed.
+
+* **Tweet Actions (reply, retweet, like)** - When showing twitter feeds, users can also reply, retweet or like a tweet.
+
+* **Share Tweets on Social Media** - Also, users can share tweets from your website to social media like Facebook, Google Plus etc.
+
+* **Update Twitter Status** - You can also directly post a tweet from your WordPress website to update your twitter status.
+
+* completely customizable, responsive design
+
+* For Premium Upgrade, Please go [here](https://weblizar.com/plugins/twitter-tweets-pro/)
+= Live Twitter Tweets Pro Demos =
+
+* [Twitter TweetsPro Demo](http://demo.weblizar.com/twitter-tweets-pro/wp-admin/)
+* [Twitter Tweets Pro Admin Demo](http://demo.weblizar.com/twitter-tweets-pro-admindemo/wp-admin/)
+* **Username:** userdemo
+* **Password:** userdemo
+
+= Premium Upgrade =
+
+* For premium upgrade, please go [here](https://weblizar.com/plugins/twitter-tweets-pro/)
 
 = Docs & Support =
 
@@ -68,16 +100,104 @@ Please use WordPress support forum to ask any query regarding any issue.
 
 == Screenshots ==
 
-1. Twitter Tweets Widget Preview
-2. Twitter Tweets Widget Settings
-3. Twitter Tweets Widget Preview On Site
-4. Twitter Tweets in Page
-5. Twitter Tweets in Post
+1. Twitter Tweets Feeds Widget Preview
+2. Twitter Tweets twitter Feeds
+3. Twitter Tweets need help
+4. Twitter Tweets widgets area
+5. Tweets( Feeds) in the sidebar view
+6. Twitter Tweets in Page
+7. Twitter Tweet Preview
+8. Twitter feeds(tweet) on the post
 
-== Changelog ==
+== Change-log ==
 
-For more information, see Weblizar(http://wwww.weblizar.com/).
+For more information, see Weblizar(https://weblizar.com/)
 
+= 1.9.4 =[01-06-2020]
+* Minor bug fix.
+
+= 1.9.3 =[13-03-2020]
+* Minor bug fix.
+* layout fix.
+
+= 1.9.2 =[28-01-2020]
+* Bootstrap library update.
+* Minor bug fixed and color picker added.
+
+= 1.9.1 =[11-11-2019]
+* Bootstrap and Fontawesome library update.
+
+= 1.9.0 =[21-10-2019]
+* version update compatible with wordpress 5.2.4
+* updated: some minor issues fixed.
+
+= 1.8.9 =[29/08/2019]
+* Nonce and permission check.
+* readme file text update.
+
+= 1.8.8 =[28/08/2019]
+* Some security issue fixed
+* readme file text update.
+
+= 1.8.7 =[27/08/2019]
+* Plugin name change
+* Some file text update
+
+= 1.8.6 =[26/08/2019]
+* Plugin name change
+* Updated bootstrap library.
+* Updated font awesome library.
+* Other minor changes
+
+= 1.8.5 =
+- Compatible with wp5.2.2
+- Plugin name changes
+- Banner and icons changes
+
+
+= 1.8.3 =
+- Compatible with wp5.1.1
+- Bug fixed related to widget ( internal server error 500 ).
+
+= 1.8.2 =
+- Compatible with wp5.1
+- Minor bug fixed.
+
+= 1.8.1 =
+- Update : change layout of Tweet block on both plugin setting dashboard and frontend
+
+= 1.8.0 =
+- Add : Fetch Tweets using API Key
+
+= 1.7.9 =
+- Add : Pro Features Layout Page
+- Update : Change layout of plugin setting dashboard
+
+
+= 1.7.8 =
+- Add : Upgrade to pro banner at plugin dashboard setting page
+- Add : Premium feature text added
+
+= 1.7.7 =
+- Add : about protected tweet link
+- Fix : minor changed
+
+= 1.7.6 =
+- ADD : WP Color Picker for url link
+- ADD : Range slider for feed height
+- ADD : Review link on Plugin Page
+- ADD : New Products in Product Page
+	  : Version update + WordPress 4.9.8 Compatible
+-
+= 1.7.5 =
+- Bug Fixed : First time activation twitter widget not open
+- ADD : Add product page
+      : Version update
+      : WordPress 4.9.6 Compatible
+
+= 1.7.4 - version update + WordPress 4.9.5 Compatible
+= 1.7.3 - Plugin readme and name change
+= 1.7.2 - plugin readme update
 = 1.7.1 - version update + WordPress 4.9 Compatible
 = 1.7 - version update + WordPress 4.8.1 Compatible
 = 1.6.0 - version update

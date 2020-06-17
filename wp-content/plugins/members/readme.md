@@ -23,7 +23,7 @@ If you need professional plugin support from me, the plugin author, you can acce
 
 This project is licensed under the [GNU GPL](http://www.gnu.org/licenses/old-licenses/gpl-2.0.html), version 2 or later.
 
-2009&thinsp;&ndash;&thinsp;2017 &copy; [Justin Tadlock](http://justintadlock.com).
+2009&thinsp;&ndash;&thinsp;2018 &copy; [Justin Tadlock](http://justintadlock.com).
 
 ## Documentation
 
@@ -67,9 +67,35 @@ Every capability can have one of three "states" for a role.  The role can be *gr
 * **Denying** a capability means that the role's users are explicitly denied permission.
 * A role that is neither granted nor denied a capability simply doesn't have that capability.
 
-**Note #1:** If you were using a pre-1.0.0 version of Members, the concept of denied capabilities was not built in.  In those versions, you could only grant or remove a capability.
+**Note:** When assigning multiple roles to a single user that have a conflicting capability (e.g., granted `publish_posts` and denied `published_posts` cap), it's best to enable the denied capabilities override via the Members Settings screen.  This will consistently make sure that denied capabilities always overrule granted capabilities.  With this setting disabled, WordPress will decide based on the *last* role given to the user, which can mean for extremely inconsistent behavior depending on the roles a user has.
 
-**Note #2:** When assigning multiple roles to a single user that have a conflicting capability (e.g., granted `publish_posts` and denied `published_posts` cap), it's best to enable the denied capabilities override via the Members Settings screen.  This will consistently make sure that denied capabilities always overrule granted capabilities.  With this setting disabled, WordPress will decide based on the *last* role given to the user, which can mean for extremely inconsistent behavior depending on the roles a user has.
+#### How denied capabilities work
+
+Suppose the **Super** role is *granted* these capabilities:
+
+* `edit_posts`
+
+Then, suppose the **Duper** role is *granted* these capabilities:
+
+- `publish_posts`
+- `edit_products`
+
+Now, further suppose **User A** has the **Super** role because you want them to edit posts.  However, you also want **User A** to be able to edit products so you assign them the **Duper** role.  Suddenly, **User A** is *granted* the following capabilities:
+
+- `edit_posts`
+- `publish_posts`
+- `edit_products`
+
+For whatever reason you don't ever want users with the **Super** role to be able to publish posts.  Now you have a problem.  One way to solve this is to create a third role with just the caps that you want and give that single role to **User A**.  However, that becomes cumbersome on larger sites with many roles.  
+
+Instead, you could explicitly *deny* the publish posts capability to the **Super** role.  When you do that, **User A** is only *granted* the following capabilities:
+
+- `edit_posts`
+- `edit_products`
+
+And is denied the following capabilities:
+
+- `publish_posts`
 
 ### Multiple user roles
 
@@ -98,6 +124,14 @@ There are several shortcodes that you can use in your post editor or any shortco
 The `[members_access]` shortcode is for hiding content from particular roles and capabilities.  You need to wrap your content when using this shortcode:
 
 	[members_access role="editor"]Hide this content from everyone but editors.[/members_access]
+
+The plugin accepts the following parameters (mixing and matching won't work):
+
+* `role` - A single or comma-separated list of roles.
+* `capability` - A single or comma-separated list of capabilities.
+* `user_name` - A single or comma-separated list of usernames.
+* `user_id` - A single or comma-separated list of user IDs.
+* `user_email` - A single or comma-separated list of user email addresses.
 
 **Parameters:**
 

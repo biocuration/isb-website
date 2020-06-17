@@ -7,11 +7,13 @@ function pmpro_cron_expire_memberships()
 {
 	global $wpdb;
 
-	//make sure we only run once a day
-	$today = date_i18n("Y-m-d", current_time("timestamp"));
+	//clean up errors in the memberships_users table that could cause problems
+	pmpro_cleanup_memberships_users_table();
+
+	$today = date("Y-m-d", current_time("timestamp"));
 
 	//look for memberships that expired before today
-	$sqlQuery = "SELECT mu.user_id, mu.membership_id, mu.startdate, mu.enddate FROM $wpdb->pmpro_memberships_users mu WHERE mu.status = 'active' AND mu.enddate IS NOT NULL AND mu.enddate <> '' AND mu.enddate <> '0000-00-00 00:00:00' AND DATE(mu.enddate) <= '" . $today . "' ORDER BY mu.enddate";
+	$sqlQuery = "SELECT mu.user_id, mu.membership_id, mu.startdate, mu.enddate FROM $wpdb->pmpro_memberships_users mu WHERE mu.status = 'active' AND mu.enddate IS NOT NULL AND mu.enddate <> '' AND mu.enddate <> '0000-00-00 00:00:00' AND DATE(mu.enddate) <= '" . esc_sql( $today ) . "' ORDER BY mu.enddate";
 
 	if(defined('PMPRO_CRON_LIMIT'))
 		$sqlQuery .= " LIMIT " . PMPRO_CRON_LIMIT;
@@ -23,7 +25,7 @@ function pmpro_cron_expire_memberships()
 		do_action("pmpro_membership_pre_membership_expiry", $e->user_id, $e->membership_id );
 
 		//remove their membership
-		pmpro_changeMembershipLevel(false, $e->user_id, 'expired');
+		pmpro_changeMembershipLevel(false, $e->user_id, 'expired', $e->membership_id);
 
 		do_action("pmpro_membership_post_membership_expiry", $e->user_id, $e->membership_id );
 
@@ -51,14 +53,16 @@ function pmpro_cron_expiration_warnings()
 {
 	global $wpdb;
 
-	//make sure we only run once a day
-	$today = date_i18n("Y-m-d 00:00:00", current_time("timestamp"));
+	//clean up errors in the memberships_users table that could cause problems
+	pmpro_cleanup_memberships_users_table();
+
+	$today = date("Y-m-d 00:00:00", current_time("timestamp"));
 
 	$pmpro_email_days_before_expiration = apply_filters("pmpro_email_days_before_expiration", 7);
 
 	// Configure the interval to select records from
 	$interval_start = $today;
-	$interval_end = date_i18n( 'Y-m-d 00:00:00', strtotime( "{$today} +{$pmpro_email_days_before_expiration} days", current_time( 'timestamp' ) ) );
+	$interval_end = date( 'Y-m-d 00:00:00', strtotime( "{$today} +{$pmpro_email_days_before_expiration} days", current_time( 'timestamp' ) ) );
 
 	//look for memberships that are going to expire within one week (but we haven't emailed them within a week)
 	$sqlQuery = $wpdb->prepare(
@@ -123,7 +127,10 @@ function pmpro_cron_credit_card_expiring_warnings()
 {
 	global $wpdb;
 
-	$next_month_date = date_i18n("Y-m-01", strtotime("+2 months", current_time("timestamp")));
+	//clean up errors in the memberships_users table that could cause problems
+	pmpro_cleanup_memberships_users_table();
+
+	$next_month_date = date("Y-m-01", strtotime("+2 months", current_time("timestamp")));
 
 	$sqlQuery = "SELECT mu.user_id
 					FROM  $wpdb->pmpro_memberships_users mu
@@ -134,8 +141,10 @@ function pmpro_cron_credit_card_expiring_warnings()
 						LEFT JOIN $wpdb->usermeta um3 ON mu.user_id = um3.user_id
 							AND um3.meta_key = 'pmpro_credit_card_expiring_warning'
 					WHERE mu.status =  'active'
-						AND mu.cycle_number >0
-						AND CONCAT(um2.meta_value, '-', um1.meta_value, '-01') < '" . $next_month_date . "'
+						AND mu.cycle_number > 0
+						AND um1.meta_value IS NOT NULL AND um2.meta_value IS NOT NULL
+						AND um1.meta_value <> '' AND um2.meta_value <> ''
+						AND CONCAT(um2.meta_value, '-', um1.meta_value, '-01') < '" . esc_sql( $next_month_date ) . "'
 						AND (um3.meta_value IS NULL OR CONCAT(um2.meta_value, '-', um1.meta_value, '-01') <> um3.meta_value)
 				";
 
@@ -172,7 +181,7 @@ function pmpro_cron_credit_card_expiring_warnings()
 				continue;
 
 			//okay send them an email
-			$send_email = apply_filters("pmpro_send_credit_card_expiring_email", true, $euser->user_id);
+			$send_email = apply_filters("pmpro_send_credit_card_expiring_email", true, $euser->ID);
 
 			if($send_email)
 			{
@@ -203,8 +212,10 @@ function pmpro_cron_trial_ending_warnings()
 {
 	global $wpdb;
 
-	//make sure we only run once a day
-	$today = date_i18n("Y-m-d 00:00:00", current_time("timestamp"));
+	//clean up errors in the memberships_users table that could cause problems
+	pmpro_cleanup_memberships_users_table();
+
+	$today = date("Y-m-d 00:00:00", current_time("timestamp"));
 
 	$pmpro_email_days_before_trial_end = apply_filters("pmpro_email_days_before_trial_end", 7);
 
@@ -215,10 +226,10 @@ function pmpro_cron_trial_ending_warnings()
 	WHERE
 		mu.status = 'active' AND mu.trial_limit IS NOT NULL AND mu.trial_limit > 0 AND
 		(
-			(cycle_period = 'Day' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Day) <= DATE_ADD('" . $today . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
-			(cycle_period = 'Week' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Week) <= DATE_ADD('" . $today . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
-			(cycle_period = 'Month' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Month) <= DATE_ADD('" . $today . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
-			(cycle_period = 'Year' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Year) <= DATE_ADD('" . $today . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day))
+			(cycle_period = 'Day' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Day) <= DATE_ADD('" . esc_sql( $today ) . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
+			(cycle_period = 'Week' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Week) <= DATE_ADD('" . esc_sql( $today ) . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
+			(cycle_period = 'Month' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Month) <= DATE_ADD('" . esc_sql( $today ) . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day)) OR
+			(cycle_period = 'Year' AND DATE_ADD(mu.startdate, INTERVAL mu.trial_limit Year) <= DATE_ADD('" . esc_sql( $today ) . "', INTERVAL " . $pmpro_email_days_before_trial_end . " Day))
 		)
 
 		AND (um.meta_value IS NULL OR um.meta_value = '' OR DATE_ADD(um.meta_value, INTERVAL " . $pmpro_email_days_before_trial_end . " Day) <= '" . $today . "')
@@ -244,5 +255,22 @@ function pmpro_cron_trial_ending_warnings()
 
 		//update user meta so we don't email them again
 		update_user_meta($e->user_id, "pmpro_trial_ending_notice", $today);
+	}
+}
+
+add_action( 'pmpro_cron_admin_activity_email', 'pmpro_cron_admin_activity_email' );
+function pmpro_cron_admin_activity_email() {
+	$frequency = pmpro_getOption( 'activity_email_frequency' );
+	if ( empty( $frequency ) ) {
+		$frequency = 'week';
+	}
+	// Send every day, Monday each week, or first Monday of every month.
+	if (
+		'day' === $frequency ||
+		( 'week' === $frequency && 'Mon' === date( 'D' ) ) ||
+		( 'month' === $frequency && 'Mon' === date( 'D' ) && 7 >= date( j ) )
+	) {
+		$pmproemail = new PMPro_Admin_Activity_Email();
+		$pmproemail->sendAdminActivity();
 	}
 }

@@ -1,0 +1,190 @@
+.wb-col-md-12{ 	width:100%; }
+.wb_plugin_feature{	color:#fff; }
+.wb-text-center{ text-align:center; }
+.wp-img-responsive{	max-width:100%; }
+.wb_plugin_feature_banner.default_pattern {
+	box-shadow: 0px 2px 20px #818181;
+    margin: 40px 0px;
+    background-color: #994681;
+    float: left;
+    display: block;
+    clear: right;
+    width: 98%;
+    position: relative;
+}
+.wb_banner_featurs-list ul {
+    list-style: decimal;
+	color:#fff;
+    display: inline-block;
+}
+
+.wb_button-primary {
+    padding: 15px 20px;
+    color: #fff;
+    text-decoration: none;
+    margin: 5px;
+    border-radius: 4px;
+    box-shadow: 2px 2px 5px #1111113d;
+    background-color: #3d9b3d;
+}
+.wp_btn-grup .wb_button-primary { width: 100%; }
+.plugin_vrsion {
+    position: absolute;
+    background: #55505a;
+    border-radius: 0px 0px 0px 52px;
+    padding: 15px 30px;
+    right: 0px;
+    /* border: 1px solid; */
+    font-size: 18px;
+    top: 0;
+    box-shadow: -6px 5px 7px hsla(187, 1%, 15%, 0.3);
+}
+.wb_banner_featurs-list ul li {
+    margin: 7px 20px;
+    font-size: 14px;
+
+}
+.wb_banner_featurs-list h2 {
+    border-bottom:2px solid #fff;
+}
+.wp_btn-grup {
+    display: flex;
+	text-align:center;
+}
+/*--media-responsive csss--*/
+@media (min-width: 901px){
+.wb_banner_featurs-list ul li {
+    float: left;
+    width: 42%
+}
+
+.wb-col-md-6{
+	float:left;
+	width:50%;
+}
+.wp_btn-grup {
+    margin: 0 auto;
+    width: 60%;
+}
+}
+
+@media (max-width: 900px){
+.wb-col-sm-12{
+	width:100%;
+}
+.wb_plugin_feature_banner.default_pattern {
+    background: linear-gradient(0deg, #994681 57%, rgba(4, 4, 4, 0.74) 39%), url(./img/bg.jpg);
+}
+.wb_plugin_feature_banner{
+	float:none;
+}
+.wb-col-sm-6{
+	float:left;
+	width:50%;
+}
+}
+
+.wb_plugin_feature_banner.pattern_2 {
+    background: linear-gradient(17deg, #663399 -16%, #ee3e3f 70%, #440e0e 93%), url(./img/bg.jpg);
+}
+
+.wb_plugin_feature_banner.pattern_3 {
+    background: linear-gradient(17deg, #6f3f9e -16%, #d63131de 93%), url(./img/bg-3.jpg);
+    background-repeat: repeat-x;
+}
+a.wb_button-primary:hover,
+	a.wb_button-primary:focus {
+    color: #f1f1f1;
+    text-decoration: none;
+}
+.twt_offer{
+	padding-top: 10px;
+    display: block;
+    margin-left: 0px;
+    font-size: 24px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.card {
+  height: 100%;
+  border:none !important;
+}
+.feature-div{
+		margin-bottom: 40px;
+	}
+	.twt_foot{
+	background-color: #466575 !important;
+    padding: 10px;
+    color: #fff;
+    border-radius: 5px;
+
+	}
+	.twt_anch{
+		color:#fff;
+		text-decoration: none;
+		font-size: 22px;
+	}
+	.twt_anch:hover{
+		color:#fff;
+		text-decoration: none;
+	}
+	h1.display-3 {
+    padding: 0px 0 20px;
+}
+/** twitter help body ***/
+.acl-rate-us  span.dashicons{
+	width: 30px;
+	height: 30px;
+	}
+	.acl-rate-us  span.dashicons-star-filled:before {
+	content: "\f155";
+	font-size: 30px;
+	}
+	.acl-rate-us {
+		color : #fff !important;
+		padding-top:3px !important;
+	}
+	
+	.acl-rate-us span{
+		display:inline-block;
+	}
+	.twt_star{
+		background:#994681;display:inline-block;border-radius: 4px;padding: 4px; margin: 0 auto;
+	}
+label {	margin-right:10px; }
+#fb-msg,
+#wl_twitter_preview {
+	border: 1px #888888 solid; background-color: #FFFAF0; padding: 10px; font-size: inherit; font-weight: bold; font-family: inherit; font-style: inherit; text-decoration: inherit;
+}
+.btn-group-lg>.btn, .btn-lg {
+    padding: .2rem 1rem !important;
+    line-height: 1.5;
+    border-radius: .3rem;
+ }
+ .twt_help{
+	    border-radius: 5px;
+	    background-color: #994681;
+	    padding: 10px;
+	    color: #fff;
+	    font-weight: 600;
+	}
+	.twt_save_btn {
+    padding-left: 25px;
+    background: #994681;
+    font-weight: 600;
+    color: #fff;
+    border-radius: 5px;
+    padding-right: 25px;
+ }
+ .well{
+    min-height: 20px;
+    padding: 19px;
+    margin-bottom: 20px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+ } 
+ 

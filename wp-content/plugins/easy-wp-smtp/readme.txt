@@ -3,8 +3,9 @@ Contributors: wpecommerce, wp.insider, alexanderfoxc
 Donate link: https://wp-ecommerce.net/easy-wordpress-smtp-send-emails-from-your-wordpress-site-using-a-smtp-server-2197
 Tags: mail, wordpress smtp, phpmailer, smtp, wp_mail, email, gmail, outgoing mail, privacy, security, sendmail, ssl, tls, wp-phpmailer, mail smtp, wp smtp
 Requires at least: 4.3
-Tested up to: 4.9
-Stable tag: 1.3.5
+Tested up to: 5.4
+Requires PHP: 5.6
+Stable tag: 1.3.9.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,6 +23,7 @@ Easy WP SMTP allows you to configure and send all outgoing emails via a SMTP ser
 * Securely deliver emails to your recipients.
 * Option to enable debug logging to see if the emails are getting sent out successfully or not.
 * Ability to specify a Reply-to email address.
+* Option to Export and Import the SMTP settings.
 
 = Easy WP SMTP Plugin Usage =
 
@@ -76,6 +78,41 @@ Inspired by [WP Mail SMTP](http://wordpress.org/plugins/wp-mail-smtp/) plugin
 
 
 == Changelog ==
+
+= 1.3.9.3 =
+* Removed the warning: Undefined index log_file_name
+* Added "substitute mode" option for the "Reply-To" field. Thanks to @idave2012
+
+= 1.3.9.2 =
+* Settings are exported in JSON format now.
+* Added additional sanitization to some actions on the settings page.
+* Regenerated .pot file.
+
+= 1.3.9.1 =
+* Fixed potential vulnerability in import\export settings.
+
+= 1.3.9 =
+* Added Export\Import settings functionality.
+* Added option to delete all settings and deactivate plugin.
+
+= 1.3.8.1 =
+* Fixed incompatibility with WP versions older than 4.7.0 (thanks to stevendigital for reporting).
+
+= 1.3.8 =
+* Set reasonable timeout for SMTP server connection attempt. This prevents admin area from being locked up for too long if your SMTP server refuses connections.
+* Added spinner to indicate that test email is being sent.
+* "Send Test Email" button is now disabled if there are unsaved settings changes.
+* Minor settings page adjustments.
+
+= 1.3.7 =
+* Renamed SSL and TLS to what they actually are.
+
+= 1.3.6 =
+* SMTP Username and SMTP Host fields are no longer multiplying slashes (thanks to jstepak for reporting).
+* Added option to encrypt password using AES-256 encryption. This requires PHP 5.3+ and OpenSSL PHP extension to be enabled on the server.
+* Added clear message to indicate if test email was successfully sent or not. Now you don't have to figure this out from debug log :-)
+* Disabled browser autocomplete for username and password fields to prevent them from being replaced by WP login credentials (if those were saved in browser).
+* Removed duplicate items IDs from settings page to comply with HTML standards.
 
 = 1.3.5 =
 * Added configurable option to force replace From Name. The plugin was force-replacing it regardless before, now you can configure this (thanks to daymobrew).
@@ -155,9 +192,6 @@ Inspired by [WP Mail SMTP](http://wordpress.org/plugins/wp-mail-smtp/) plugin
 = 1.1.7 =
 * Made some improvements to the encoding option.
 
-= 1.1.7 =
-* Made some improvements to the encoding option.
-
 = 1.1.6 =
 * Fixed some character encoding issues of test email functionality
 * Plugin will now force the from name and email address saved in the settings (just like version 1.1.1)
@@ -203,6 +237,7 @@ Inspired by [WP Mail SMTP](http://wordpress.org/plugins/wp-mail-smtp/) plugin
 
 = 1.0.3 =
 * Added a new option to the settings which allows a user to enable/disable SMTP debug
+
 = 1.0.2 =
 * Fixed a bug where the debug output was being displayed on the front end
 
@@ -210,4 +245,4 @@ Inspired by [WP Mail SMTP](http://wordpress.org/plugins/wp-mail-smtp/) plugin
 * First commit of the plugin
 
 == Upgrade Notice ==
-There were some major changes in version 1.0.8. So you will need to reconfigure the SMTP options after the upgrade.
+Upgrade to 1.3.9.2 is highly recommended as it adds additional CSRF protection for some admin-side functions.

@@ -40,6 +40,9 @@ jQuery(document).ready(
 					$('#pushover_cred').fadeOut('fast');
 					$('#slack_cred').fadeIn();
 				}
+
+				Hook.call( 'post_smtp_notification_change', selected );
+
 			});
 			
 
@@ -77,11 +80,13 @@ function reloadOauthSection() {
 	var hostname = jQuery(postman_hostname_element_name).val();
 	var transport = jQuery('#input_transport_type').val();
 	var authtype = jQuery('select#input_auth_type').val();
+	var security = jQuery('#security').val();
 	var data = {
 		'action' : 'manual_config',
 		'auth_type' : authtype,
 		'hostname' : hostname,
 		'transport' : transport,
+		'security' : security
 	};
 	jQuery.post(ajaxurl, data, function(response) {
 		if (response.success) {

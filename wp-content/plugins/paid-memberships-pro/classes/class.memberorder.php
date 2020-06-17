@@ -77,8 +77,7 @@
 			if(!$id)
 				return false;
 
-			$gmt_offset = get_option('gmt_offset');
-			$dbobj = $wpdb->get_row("SELECT *, UNIX_TIMESTAMP(timestamp) + " . ($gmt_offset * 3600) . "  as timestamp FROM $wpdb->pmpro_membership_orders WHERE id = '$id' LIMIT 1");
+			$dbobj = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_orders WHERE id = '$id' LIMIT 1");
 
 			if($dbobj)
 			{
@@ -141,6 +140,9 @@
 
 				$this->notes = $dbobj->notes;
 				$this->checkout_id = $dbobj->checkout_id;
+
+				// Fix the timestamp for local time
+				$this->timestamp = strtotime( get_date_from_gmt( $this->timestamp, 'Y-m-d H:i:s' ) );
 
 				//reset the gateway
 				if(empty($this->nogateway))
@@ -309,6 +311,57 @@
 		}
 
 		/**
+		 * Update the discount code used in this order.
+		 *
+		 * @param int $discount_code_id The ID of the discount code to update.
+		 *
+		 */
+		function updateDiscountCode( $discount_code_id ) {
+			global $wpdb;
+
+			// Assumes one discount code per order
+			$sqlQuery = $wpdb->prepare("
+				SELECT id FROM $wpdb->pmpro_discount_codes_uses
+				WHERE order_id = %d
+				LIMIT 1",
+				$this->id
+			);
+			$discount_codes_uses_id = $wpdb->get_var( $sqlQuery );
+
+			// INSTEAD: Delete the code use if found
+			if ( empty( $discount_code_id ) ) {
+				if ( ! empty( $discount_codes_uses_id ) ) {
+					$wpdb->delete(
+						$wpdb->pmpro_discount_codes_uses,
+						array( 'id' => $discount_codes_uses_id ),
+						array( '%d' )
+					);
+				}
+			} else {
+				if ( ! empty( $discount_codes_uses_id ) ) {
+					// Update existing row
+					$wpdb->update(
+						$wpdb->pmpro_discount_codes_uses,
+						array( 'code_id' => $discount_code_id, 'user_id' => $this->user_id, 'order_id' => $this->id ),
+						array( 'id' => $discount_codes_uses_id ),
+						array( '%d', '%d', '%d' ),
+						array( '%d' )
+					);
+				} else {
+					// Insert a new row
+					$wpdb->insert(
+						$wpdb->pmpro_discount_codes_uses,
+						array( 'code_id' => $discount_code_id, 'user_id' => $this->user_id, 'order_id' => $this->id ),
+						array( '%d', '%d', '%d' )
+					);
+				}
+			}
+
+			// Make sure to reset properties on this object
+			return $this->getDiscountCode( true );
+		}
+
+		/**
 		 * Get a user object for the user associated with this order.
 		 */
 		function getUser()
@@ -318,8 +371,14 @@
 			if(!empty($this->user))
 				return $this->user;
 
-			$gmt_offset = get_option('gmt_offset');
-			$this->user = $wpdb->get_row("SELECT *, UNIX_TIMESTAMP(user_registered) + " . ($gmt_offset * 3600) . "  as user_registered FROM $wpdb->users WHERE ID = '" . $this->user_id . "' LIMIT 1");
+			
+			$this->user = $wpdb->get_row("SELECT * FROM $wpdb->users WHERE ID = '" . $this->user_id . "' LIMIT 1");
+			
+			// Fix the timestamp for local time 
+			if ( ! empty( $this->user ) && ! empty( $this->user->user_registered ) ) {
+				$this->user->user_registered = strtotime( get_date_from_gmt( $this->user->user_registered, 'Y-m-d H:i:s' ) );
+			}
+
 			return $this->user;
 		}
 
@@ -364,7 +423,52 @@
 			{
 				$this->membership_level = $wpdb->get_row("SELECT l.* FROM $wpdb->pmpro_membership_levels l WHERE l.id = '" . $this->membership_id . "' LIMIT 1");
 			}
+			
+			// Round prices to avoid extra decimals.
+			if( ! empty( $this->membership_level ) ) {
+				$this->membership_level->initial_payment = pmpro_round_price( $this->membership_level->initial_payment );
+				$this->membership_level->billing_amount = pmpro_round_price( $this->membership_level->billing_amount );
+				$this->membership_level->trial_amount = pmpro_round_price( $this->membership_level->trial_amount );
+			}
 
+			return $this->membership_level;
+		}
+		
+		/**
+		 * Get a membership level object at checkout
+		 * for the level associated with this order.
+		 *
+		 * @since 2.0.2
+		 * @param bool $force If true, it will reset the property.
+		 *
+		 */
+		function getMembershipLevelAtCheckout($force = false) {
+			global $pmpro_level;
+
+			if( ! empty( $this->membership_level ) && empty( $force ) ) {
+				return $this->membership_level;
+			}
+			
+			// If for some reason, we haven't setup pmpro_level yet, do that.
+			if ( empty( $pmpro_level ) ) {
+				$pmpro_level = pmpro_getLevelAtCheckout();
+			}
+			
+			// Set the level to the checkout level global.
+			$this->membership_level = $pmpro_level;
+			
+			// Fix the membership level id.
+			if(!empty( $this->membership_level) && !empty($this->membership_level->level_id)) {
+				$this->membership_level->id = $this->membership_level->level_id;
+			}
+			
+			// Round prices to avoid extra decimals.
+			if( ! empty( $this->membership_level ) ) {
+				$this->membership_level->initial_payment = pmpro_round_price( $this->membership_level->initial_payment );
+				$this->membership_level->billing_amount = pmpro_round_price( $this->membership_level->billing_amount );
+				$this->membership_level->trial_amount = pmpro_round_price( $this->membership_level->trial_amount );
+			}
+			
 			return $this->membership_level;
 		}
 
@@ -422,17 +526,21 @@
 		}
 
 		/**
-		 * Change the timestamp of an order by passing in year, month, day, time
+		 * Change the timestamp of an order by passing in year, month, day, time.
+		 *
+		 * $time should be adjusted for local timezone.
 		 */
 		function updateTimestamp($year, $month, $day, $time = NULL)
 		{
 			if(empty($this->id))
 				return false;		//need a saved order
 
-			if(empty($time))
-				$time = "00:00:00";
-
-			$date = $year . "-" . $month . "-" . $day . " " . $time;
+			if ( empty( $time ) ) {
+				// Just save the order date.
+				$date = $year . '-' . $month . '-' . $day . ' 00:00:00';
+			} else {
+				$date = get_gmt_from_date( $year . '-' . $month . '-' . $day . ' ' . $time, 'Y-m-d H:i:s' );
+			}
 
 			global $wpdb;
 			$this->sqlQuery = "UPDATE $wpdb->pmpro_membership_orders SET timestamp = '" . $date . "' WHERE id = '" . $this->id . "' LIMIT 1";
@@ -521,11 +629,11 @@
 				$this->gateway = pmpro_getOption("gateway");
 			if(empty($this->gateway_environment))
 				$this->gateway_environment = pmpro_getOption("gateway_environment");
-
+			
 			if(empty($this->datetime) && empty($this->timestamp))
-				$this->datetime = date_i18n("Y-m-d H:i:s", current_time("timestamp"));		//use current time
+				$this->datetime = date("Y-m-d H:i:s", time());
 			elseif(empty($this->datetime) && !empty($this->timestamp) && is_numeric($this->timestamp))
-				$this->datetime = date_i18n("Y-m-d H:i:s", $this->timestamp);	//get datetime from timestamp
+				$this->datetime = date("Y-m-d H:i:s", $this->timestamp);	//get datetime from timestamp
 			elseif(empty($this->datetime) && !empty($this->timestamp))
 				$this->datetime = $this->timestamp;		//must have a datetime in it
 
@@ -546,11 +654,11 @@
 				$after_action = "pmpro_updated_order";
 				//update
 				$this->sqlQuery = "UPDATE $wpdb->pmpro_membership_orders
-									SET `code` = '" . $this->code . "',
-									`session_id` = '" . $this->session_id . "',
+									SET `code` = '" . esc_sql( $this->code ) . "',
+									`session_id` = '" . esc_sql( $this->session_id ) . "',
 									`user_id` = " . intval($this->user_id) . ",
 									`membership_id` = " . intval($this->membership_id) . ",
-									`paypal_token` = '" . $this->paypal_token . "',
+									`paypal_token` = '" . esc_sql( $this->paypal_token ) . "',
 									`billing_name` = '" . esc_sql($this->billing->name) . "',
 									`billing_street` = '" . esc_sql($this->billing->street) . "',
 									`billing_city` = '" . esc_sql($this->billing->city) . "',
@@ -558,20 +666,20 @@
 									`billing_zip` = '" . esc_sql($this->billing->zip) . "',
 									`billing_country` = '" . esc_sql($this->billing->country) . "',
 									`billing_phone` = '" . esc_sql($this->billing->phone) . "',
-									`subtotal` = '" . $this->subtotal . "',
-									`tax` = '" . $this->tax . "',
-									`couponamount` = '" . $this->couponamount . "',
+									`subtotal` = '" . esc_sql( $this->subtotal ) . "',
+									`tax` = '" . esc_sql( $this->tax ) . "',
+									`couponamount` = '" . esc_sql( $this->couponamount ) . "',
 									`certificate_id` = " . intval($this->certificate_id) . ",
-									`certificateamount` = '" . $this->certificateamount . "',
-									`total` = '" . $this->total . "',
-									`payment_type` = '" . $this->payment_type . "',
-									`cardtype` = '" . $this->cardtype . "',
-									`accountnumber` = '" . $this->accountnumber . "',
-									`expirationmonth` = '" . $this->expirationmonth . "',
-									`expirationyear` = '" . $this->expirationyear . "',
+									`certificateamount` = '" . esc_sql( $this->certificateamount ) . "',
+									`total` = '" . esc_sql( $this->total ) . "',
+									`payment_type` = '" . esc_sql( $this->payment_type ) . "',
+									`cardtype` = '" . esc_sql( $this->cardtype ) . "',
+									`accountnumber` = '" . esc_sql( $this->accountnumber ) . "',
+									`expirationmonth` = '" . esc_sql( $this->expirationmonth ) . "',
+									`expirationyear` = '" . esc_sql( $this->expirationyear ) . "',
 									`status` = '" . esc_sql($this->status) . "',
-									`gateway` = '" . $this->gateway . "',
-									`gateway_environment` = '" . $this->gateway_environment . "',
+									`gateway` = '" . esc_sql( $this->gateway ) . "',
+									`gateway_environment` = '" . esc_sql( $this->gateway_environment ) . "',
 									`payment_transaction_id` = '" . esc_sql($this->payment_transaction_id) . "',
 									`subscription_transaction_id` = '" . esc_sql($this->subscription_transaction_id) . "',
 									`timestamp` = '" . esc_sql($this->datetime) . "',
@@ -579,7 +687,7 @@
 									`affiliate_subid` = '" . esc_sql($this->affiliate_subid) . "',
 									`notes` = '" . esc_sql($this->notes) . "',
 									`checkout_id` = " . intval($this->checkout_id) . "
-									WHERE id = '" . $this->id . "'
+									WHERE id = '" . esc_sql( $this->id ) . "'
 									LIMIT 1";
 			}
 			else
@@ -597,32 +705,32 @@
 				//insert
 				$this->sqlQuery = "INSERT INTO $wpdb->pmpro_membership_orders
 								(`code`, `session_id`, `user_id`, `membership_id`, `paypal_token`, `billing_name`, `billing_street`, `billing_city`, `billing_state`, `billing_zip`, `billing_country`, `billing_phone`, `subtotal`, `tax`, `couponamount`, `certificate_id`, `certificateamount`, `total`, `payment_type`, `cardtype`, `accountnumber`, `expirationmonth`, `expirationyear`, `status`, `gateway`, `gateway_environment`, `payment_transaction_id`, `subscription_transaction_id`, `timestamp`, `affiliate_id`, `affiliate_subid`, `notes`, `checkout_id`)
-								VALUES('" . $this->code . "',
-									   '" . session_id() . "',
+								VALUES('" . esc_sql( $this->code ) . "',
+									   '" . esc_sql( session_id() ) . "',
 									   " . intval($this->user_id) . ",
 									   " . intval($this->membership_id) . ",
-									   '" . $this->paypal_token . "',
+									   '" . esc_sql( $this->paypal_token ) . "',
 									   '" . esc_sql(trim($this->billing->name)) . "',
 									   '" . esc_sql(trim($this->billing->street)) . "',
 									   '" . esc_sql($this->billing->city) . "',
 									   '" . esc_sql($this->billing->state) . "',
 									   '" . esc_sql($this->billing->zip) . "',
 									   '" . esc_sql($this->billing->country) . "',
-									   '" . cleanPhone($this->billing->phone) . "',
-									   '" . $this->subtotal . "',
-									   '" . $tax . "',
-									   '" . $this->couponamount. "',
+									   '" . esc_sql( cleanPhone($this->billing->phone) ) . "',
+									   '" . esc_sql( $this->subtotal ) . "',
+									   '" . esc_sql( $tax ) . "',
+									   '" . esc_sql( $this->couponamount ). "',
 									   " . intval($this->certificate_id) . ",
-									   '" . $this->certificateamount . "',
-									   '" . $total . "',
-									   '" . $this->payment_type . "',
-									   '" . $this->cardtype . "',
-									   '" . hideCardNumber($this->accountnumber, false) . "',
-									   '" . $this->expirationmonth . "',
-									   '" . $this->expirationyear . "',
+									   '" . esc_sql( $this->certificateamount ) . "',
+									   '" . esc_sql( $total ) . "',
+									   '" . esc_sql( $this->payment_type ) . "',
+									   '" . esc_sql( $this->cardtype ) . "',
+									   '" . esc_sql( hideCardNumber($this->accountnumber, false) ) . "',
+									   '" . esc_sql( $this->expirationmonth ) . "',
+									   '" . esc_sql( $this->expirationyear ) . "',
 									   '" . esc_sql($this->status) . "',
-									   '" . $this->gateway . "',
-									   '" . $this->gateway_environment . "',
+									   '" . esc_sql( $this->gateway ) . "',
+									   '" . esc_sql( $this->gateway_environment ) . "',
 									   '" . esc_sql($this->payment_transaction_id) . "',
 									   '" . esc_sql($this->subscription_transaction_id) . "',
 									   '" . esc_sql($this->datetime) . "',
@@ -723,36 +831,9 @@
 				//get some data
 				$order_user = get_userdata($this->user_id);
 
-				//cancel the gateway subscription first
-				if (is_object($this->Gateway)) {
-					$result = $this->Gateway->cancel( $this );
-				} else {
-					$result = false;
-				}
-
-				if($result == false) {
-					//there was an error, but cancel the order no matter what
-					$this->updateStatus("cancelled");
-
-					//we should probably notify the admin
-					$pmproemail = new PMProEmail();
-					$pmproemail->template = "subscription_cancel_error";
-					$pmproemail->data = array("body"=>"<p>" . sprintf(__("There was an error canceling the subscription for user with ID=%s. You will want to check your payment gateway to see if their subscription is still active.", 'paid-memberships-pro' ), strval($this->user_id)) . "</p><p>Error: " . $this->error . "</p>");
-					$pmproemail->data["body"] .= '<p>' . __('User Email', 'paid-memberships-pro') . ': ' . $order_user->user_email . '</p>';
-					$pmproemail->data["body"] .= '<p>' . __('User Display Name', 'paid-memberships-pro') . ': ' . $order_user->display_name . '</p>';
-					$pmproemail->data["body"] .= '<p>' . __('Order', 'paid-memberships-pro') . ': ' . $this->code . '</p>';
-					$pmproemail->data["body"] .= '<p>' . __('Gateway', 'paid-memberships-pro') . ': ' . $this->gateway . '</p>';
-					$pmproemail->data["body"] .= '<p>' . __('Subscription Transaction ID', 'paid-memberships-pro') . ': ' . $this->subscription_transaction_id . '</p>';
-					$pmproemail->sendEmail(get_bloginfo("admin_email"));
-				} else {
-					//Note: status would have been set to cancelled by the gateway class. So we don't have to update it here.
-
-					//remove billing numbers in pmpro_memberships_users if the membership is still active					
-					$sqlQuery = "UPDATE $wpdb->pmpro_memberships_users SET initial_payment = 0, billing_amount = 0, cycle_number = 0 WHERE user_id = '" . $this->user_id . "' AND membership_id = '" . $this->membership_id . "' AND status = 'active'";
-					$wpdb->query($sqlQuery);
-				}
-				
 				//cancel orders for the same subscription
+				//Note: We do this early to avoid race conditions if and when the
+				//gateway send the cancel webhook after cancelling the subscription.				
 				$sqlQuery = $wpdb->prepare(
 					"UPDATE $wpdb->pmpro_membership_orders 
 						SET `status` = 'cancelled' 
@@ -769,6 +850,41 @@
 					$this->subscription_transaction_id
 				);								
 				$wpdb->query($sqlQuery);
+				
+				//cancel the gateway subscription first
+				if (is_object($this->Gateway)) {
+					$result = $this->Gateway->cancel( $this );
+				} else {
+					$result = false;
+				}
+
+				if($result == false) {
+					//there was an error, but cancel the order no matter what
+					$this->updateStatus("cancelled");
+
+					//we should probably notify the admin
+					$pmproemail = new PMProEmail();
+					$pmproemail->template = "subscription_cancel_error";
+					$pmproemail->data = array("body"=>"<p>" . sprintf(__("There was an error canceling the subscription for user with ID=%s. You will want to check your payment gateway to see if their subscription is still active.", 'paid-memberships-pro' ), strval($this->user_id)) . "</p><p>Error: " . $this->error . "</p>");
+					$pmproemail->data["body"] .= '<p>' . __('User Email', 'paid-memberships-pro') . ': ' . $order_user->user_email . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Username', 'paid-memberships-pro') . ': ' . $order_user->user_login . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('User Display Name', 'paid-memberships-pro') . ': ' . $order_user->display_name . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Order', 'paid-memberships-pro') . ': ' . $this->code . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Gateway', 'paid-memberships-pro') . ': ' . $this->gateway . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Subscription Transaction ID', 'paid-memberships-pro') . ': ' . $this->subscription_transaction_id . '</p>';
+					$pmproemail->data["body"] .= '<hr />';
+					$pmproemail->data["body"] .= '<p>' . __('Edit User', 'paid-memberships-pro') . ': ' . esc_url( add_query_arg( 'user_id', $this->user_id, self_admin_url( 'user-edit.php' ) ) ) . '</p>';
+					$pmproemail->data["body"] .= '<p>' . __('Edit Order', 'paid-memberships-pro') . ': ' . esc_url( add_query_arg( array( 'page' => 'pmpro-orders', 'order' => $this->id ), admin_url('admin.php' ) ) ) . '</p>';
+					$pmproemail->sendEmail(get_bloginfo("admin_email"));
+				} else {
+					//Note: status would have been set to cancelled by the gateway class. So we don't have to update it here.
+
+					//remove billing numbers in pmpro_memberships_users if the membership is still active					
+					$sqlQuery = "UPDATE $wpdb->pmpro_memberships_users SET initial_payment = 0, billing_amount = 0, cycle_number = 0 WHERE user_id = '" . $this->user_id . "' AND membership_id = '" . $this->membership_id . "' AND status = 'active'";
+					$wpdb->query($sqlQuery);
+				}
+				
+				
 				
 				return $result;
 			}
@@ -802,6 +918,21 @@
 			if (is_object($this->Gateway)) {
 				return $this->Gateway->getTransactionStatus( $this );
 			}
+		}
+
+		/** 
+		 * Get TOS consent information.
+		 * @since  1.9.5
+		 */
+		function get_tos_consent_log_entry() {
+			$consent_log = pmpro_get_consent_log( $this->user_id );
+			foreach( $consent_log as $entry ) {
+				if( $entry['order_id'] == $this->id ) {
+					return $entry;
+				}
+			}
+
+			return false;
 		}
 
 		/**

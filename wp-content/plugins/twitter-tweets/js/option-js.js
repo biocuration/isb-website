@@ -14,10 +14,10 @@
 				type:'post',
 				data : jQuery(weblizar_theme_options).serialize(),
 				 success : function(data)
-				 {  jQuery(weblizar_loding_image).fadeOut();						
+				 {  jQuery(weblizar_loding_image).fadeOut();
 					jQuery(weblizar_settings_save_success).show();
 					jQuery(weblizar_settings_save_success).fadeOut(5000);
-				}			
+				}
 		});
 	}	
 /*Admin options value reset */
@@ -121,3 +121,14 @@
 /****  For Option panle twitter follower and Like ******/
 
 !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+
+
+(function( $ ) {
+
+
+    // Add Color Picker to all inputs that have 'color-field' class
+    $(function() {
+        $('.color-field').wpColorPicker();
+    });
+
+})( jQuery );

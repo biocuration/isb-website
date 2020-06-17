@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
 if (! class_exists ( 'PostmanSession' )) {
 	
 	/**
@@ -37,7 +40,7 @@ if (! class_exists ( 'PostmanSession' )) {
 		 * OAuth is in progress $state is the randomly generated
 		 * transaction ID
 		 *
-		 * @param unknown $state        	
+		 * @param mixed $state        	
 		 */
 		public function isSetOauthInProgress() {
 			return get_transient ( self::OAUTH_IN_PROGRESS ) != false;
@@ -55,7 +58,7 @@ if (! class_exists ( 'PostmanSession' )) {
 		/**
 		 * Sometimes I need to keep track of what I'm doing between requests
 		 *
-		 * @param unknown $action        	
+		 * @param mixed $action        	
 		 */
 		public function isSetAction() {
 			return get_transient ( self::ACTION ) != false;
@@ -73,7 +76,7 @@ if (! class_exists ( 'PostmanSession' )) {
 		/**
 		 * Sometimes I need to keep track of what I'm doing between requests
 		 *
-		 * @param unknown $message        	
+		 * @param mixed $message        	
 		 */
 		public function isSetErrorMessage() {
 			return get_transient ( self::ERROR_MESSAGE ) != false;

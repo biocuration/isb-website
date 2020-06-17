@@ -1,3 +1,4 @@
+<div class="pmpro_confirmation_wrap">
 <?php 
 	global $wpdb, $current_user, $pmpro_invoice, $pmpro_msg, $pmpro_msgt;
 	
@@ -26,11 +27,12 @@
 		$pmpro_invoice->getMembershipLevel();			
 				
 		$confirmation_message .= "<p>" . sprintf(__('Below are details about your membership account and a receipt for your initial membership invoice. A welcome email with a copy of your initial membership invoice has been sent to %s.', 'paid-memberships-pro' ), $pmpro_invoice->user->user_email) . "</p>";
-		
-		//check instructions
-		if($pmpro_invoice->gateway == "check" && !pmpro_isLevelFree($pmpro_invoice->membership_level))
-			$confirmation_message .= wpautop(wp_unslash( pmpro_getOption("instructions") ) );
-		
+
+		// Check instructions
+		if ( $pmpro_invoice->gateway == "check" && ! pmpro_isLevelFree( $pmpro_invoice->membership_level ) ) {
+			$confirmation_message .= '<div class="pmpro_payment_instructions">' . wpautop( wp_unslash( pmpro_getOption("instructions") ) ) . '</div>';
+		}
+
 		/**
 		 * All devs to filter the confirmation message.
 		 * We also have a function in includes/filters.php that applies the the_content filters to this message.
@@ -41,8 +43,6 @@
 		
 		echo $confirmation_message;
 	?>
-	
-	
 	<h3>
 		<?php printf(__('Invoice #%s on %s', 'paid-memberships-pro' ), $pmpro_invoice->code, date_i18n(get_option('date_format'), $pmpro_invoice->timestamp));?>		
 	</h3>
@@ -74,16 +74,18 @@
 			</div> <!-- end pmpro_invoice-billing-address -->
 		<?php } ?>
 		
-		<?php if($pmpro_invoice->accountnumber) { ?>
+		<?php if ( ! empty( $pmpro_invoice->accountnumber ) || ! empty( $pmpro_invoice->payment_type ) ) { ?>
 			<div class="pmpro_invoice-payment-method">
 				<strong><?php _e('Payment Method', 'paid-memberships-pro' );?></strong>
-				<p><?php echo $pmpro_invoice->cardtype?> <?php _e('ending in', 'paid-memberships-pro' );?> <?php echo last4($pmpro_invoice->accountnumber)?></p>
-				<p><?php _e('Expiration', 'paid-memberships-pro' );?>: <?php echo $pmpro_invoice->expirationmonth?>/<?php echo $pmpro_invoice->expirationyear?></p>
+				<?php if($pmpro_invoice->accountnumber) { ?>
+					<p><?php echo ucwords( $pmpro_invoice->cardtype ); ?> <?php _e('ending in', 'paid-memberships-pro' );?> <?php echo last4($pmpro_invoice->accountnumber)?></p>
+					<p><?php _e('Expiration', 'paid-memberships-pro' );?>: <?php echo $pmpro_invoice->expirationmonth?>/<?php echo $pmpro_invoice->expirationyear?></p>
+				<?php } else { ?>
+					<p><?php echo $pmpro_invoice->payment_type; ?></p>
+				<?php } ?>
 			</div> <!-- end pmpro_invoice-payment-method -->
-		<?php } elseif($pmpro_invoice->payment_type) { ?>
-			<?php echo $pmpro_invoice->payment_type?>
 		<?php } ?>
-		
+
 		<div class="pmpro_invoice-total">
 			<strong><?php _e('Total Billed', 'paid-memberships-pro' );?></strong>
 			<p><?php if($pmpro_invoice->total != '0.00') { ?>
@@ -125,13 +127,12 @@
 	</ul>	
 <?php 
 	} 
-?>  
-<nav id="nav-below" class="navigation" role="navigation">
-	<div class="nav-next alignright">
-		<?php if(!empty($current_user->membership_level)) { ?>
-			<a href="<?php echo pmpro_url("account")?>"><?php _e('View Your Membership Account &rarr;', 'paid-memberships-pro' );?></a>
-		<?php } else { ?>
-			<?php _e('If your account is not activated within a few minutes, please contact the site owner.', 'paid-memberships-pro' );?>
-		<?php } ?>
-	</div>
-</nav>
+?>
+<p class="pmpro_actions_nav">
+	<?php if ( ! empty( $current_user->membership_level ) ) { ?>
+		<a href="<?php echo pmpro_url( 'account' ); ?>"><?php _e( 'View Your Membership Account &rarr;', 'paid-memberships-pro' ); ?></a>
+	<?php } else { ?>
+		<?php _e( 'If your account is not activated within a few minutes, please contact the site owner.', 'paid-memberships-pro' ); ?>
+	<?php } ?>
+</p> <!-- end pmpro_actions_nav -->
+</div> <!-- end pmpro_confirmation_wrap -->

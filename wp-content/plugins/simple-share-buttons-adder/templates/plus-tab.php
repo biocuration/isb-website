@@ -8,13 +8,18 @@
  */
 
 ?>
-<div class="tab-pane fade" id="plus-share-buttons">
+<div class="tab-pane fade <?php echo 'active' === $modern ? esc_attr( $modern . ' in' ): ''; ?>" id="plus-share-buttons">
 	<div class="col-sm-12 ssba-tab-container">
 		<?php echo $this->forms->ssbp_input( $opts43 ); // WPCS: XSS ok. ?>
 
 		<blockquote>
 			<p>
-				<?php echo esc_html__( 'Activating Plus Share Buttons will override your Classic Share Buttons. None of your classic settings will be lost. If you wish to switch back to classic buttons simply deactivate the Plus Share Buttons. Use the simple settings below to get started.  Once you’re done you can further customize the share buttons via the options in the styling, counters, advanced, and CSS sections located below the preview.' ); ?>
+				<?php echo esc_html__( 'Modern Share Buttons are CSS-based and allow for Button, Icon, and Icon Hover color customization. You can use our predefined CSS themes or your own custom CSS.' ); ?>
+			</p>
+		</blockquote>
+		<blockquote>
+			<p>
+				<?php echo esc_html__( 'Activating Modern Share Buttons will override your Classic Share Buttons. None of your classic settings will be lost. If you wish to switch back to classic buttons simply deactivate the Modern Share Buttons. Use the simple settings below to get started.  Once you’re done you can further customize the share buttons via the options in the styling, counters, advanced, and CSS sections located below the preview.' ); ?>
 			</p>
 		</blockquote>
 
@@ -42,34 +47,54 @@
 			</div>
 		</div>
 
+		<?php if ( in_array( 'whatsapp', explode( ',', $arr_settings['ssba_selected_plus_buttons'] ), true ) ) : ?>
+			<div class="ssbp--theme-4 whatsapp-message">
+				<span class="ssbp-btn ssbp-whatsapp"></span>
+				<?php echo esc_html__( 'The whatsapp button only appears on mobile devices. It is included in your desktop preview for reference only.', 'simple-share-buttons-adder' ); ?>
+			</div>
+		<?php endif; ?>
+
 		<input type="hidden" name="ssba_selected_plus_buttons" id="ssba_selected_plus_buttons" value="<?php esc_attr( $arr_settings['ssba_selected_plus_buttons'] ); ?>"/>
 
 		<?php
 		echo $this->forms->ssbp_checkboxes( $opts48 ); // WPCS: XSS ok.
 		echo $this->forms->ssbp_input( $opts49 ); // WPCS: XSS ok.
+		echo $this->forms->ssbp_input( $page_omit_plus ); // WPCS: XSS ok.
 		?>
 
-		<h3 id="ssba-preview-title-2"><?php echo esc_html__( 'Preview', 'simple-share-buttons-adder' ); ?></h3>
+		<h3 id="ssba-preview-title-2"><?php echo esc_html__( 'Preview - the order of your preview will update when you save.', 'simple-share-buttons-adder' ); ?></h3>
 
-		<div id="ssba-preview" class="<?php echo esc_attr( $arr_settings['ssba_plus_position'] ); ?> ssbp-wrap ssbp--theme-<?php echo esc_attr( $arr_settings['ssba_share_button_style'] ); ?>">
-			<div class="ssba-preview-content ssbp-container">
-				<div style="display: <?php echo esc_attr( 'below' === $arr_settings['ssba_plus_text_placement'] ? 'table-footer-group' : '' ); ?>;line-height: <?php echo '' !== $arr_settings['ssba_plus_height'] ? esc_attr( (int) $arr_settings['ssba_plus_height'] + ( (int) $arr_settings['ssba_plus_margin'] * 2 ) ) : '48'; ?>px; float: <?php echo esc_attr( 'above' === $arr_settings['ssba_plus_text_placement'] ? 'none' : $arr_settings['ssba_plus_text_placement'] ); ?>; color: <?php echo esc_attr( $arr_settings['ssba_plus_font_color'] ); ?>; font-family: <?php echo esc_attr( $arr_settings['ssba_plus_font_family'] ); ?>; font-weight: <?php echo esc_attr( $arr_settings['ssba_plus_font_weight'] ); ?>; font-size: <?php echo esc_attr( $arr_settings['ssba_plus_font_size'] ); ?>px;" class="ssba-share-text-prev">
-					<?php echo esc_html( $arr_settings['ssba_plus_share_text'] ); ?>
+		<div class="master-ssba-prev-wrap2">
+			<div id="ssba-preview" style="<?php echo esc_attr( 'text-align: ' . $arr_settings['ssba_plus_align'] . ';' ); ?>" class="<?php echo isset( $arr_settings['ssba_plus_position'] ) ? esc_attr( $arr_settings['ssba_plus_position'] ) : ''; ?> ssbp-wrap ssbp--theme-<?php echo esc_attr( $arr_settings['ssba_plus_button_style'] ); ?>">
+				<div class="ssba-preview-content ssbp-container">
+					<div style="position: relative; display: <?php echo esc_attr( 'below' === $arr_settings['ssba_plus_text_placement'] ? 'table-footer-group' : '' ); ?>; float: <?php echo esc_attr( 'above' === $arr_settings['ssba_plus_text_placement'] ? 'none' : $arr_settings['ssba_plus_text_placement'] ); ?>; color: <?php echo esc_attr( $arr_settings['ssba_plus_font_color'] ); ?>; font-family: <?php echo esc_attr( $arr_settings['ssba_plus_font_family'] ); ?>; font-weight: <?php echo esc_attr( $arr_settings['ssba_plus_font_weight'] ); ?>; font-size: <?php echo esc_attr( $arr_settings['ssba_plus_font_size'] ); ?>px;" class="ssba-share-text-prev">
+						<?php echo esc_html( $arr_settings['ssba_plus_share_text'] ); ?>
+					</div>
+
+					<ul class="ssbp-list">
+						<?php if ( is_array( $arr_plus_buttons ) ) : ?>
+						<?php foreach ( $arr_plus_buttons as $buttons ) :
+							$button = strtolower( str_replace( ' ', '_', str_replace( '+', '', $buttons['full_name'] ) ) ); ?>
+
+							<li style="margin-left: <?php echo esc_attr( $arr_settings['ssba_plus_margin'] ); ?>px;" class="ssbp-li--<?php echo esc_attr( $button );
+							if ( ! in_array( $button, explode( ',', $arr_settings['ssba_selected_plus_buttons'] ), true ) ) {
+								echo esc_attr( ' ssba-hide-button' );
+							}
+							?>">
+							<?php if ( 'facebook_save' !== $button ) : ?>
+								<a href="#" class="ssbp-btn ssbp-<?php echo esc_attr( $button ); ?>" style="height: <?php echo esc_attr( $arr_settings['ssba_plus_height'] ); ?>px; width: <?php echo esc_attr( $arr_settings['ssba_plus_width'] ); ?>px; <?php echo '' !== $arr_settings['ssba_plus_button_color'] ? esc_attr( 'background: ' . $arr_settings['ssba_plus_button_color'] . ';' ) : ''; ?>"><div title="<?php echo esc_attr( $buttons['full_name'] ); ?>" class="ssbp-text"><?php echo esc_html( $buttons['full_name'] ); ?></div></a>
+								<span class="<?php echo 'Y' !== $arr_settings['ssba_plus_show_share_count'] ? esc_attr( 'ssba-hide-button' ) : ''; ?> ssbp-each-share">1.8k</span>
+							<?php else :
+								$img_src = esc_attr( $this->plugin->dir_url ) . 'buttons/' . esc_attr( $arr_settings['ssba_image_set'] ) . '/facebook_save.png';
+								?>
+								<div style="display:none;" title="<?php echo esc_attr( $buttons['full_name'] ); ?>" class="ssbp-text"><?php echo esc_html( $buttons['full_name'] ); ?></div>
+								<img style="height: 35px; padding: <?php echo esc_attr( $arr_settings['ssba_plus_margin'] ); ?>px;" src="<?php echo esc_attr( $img_src ); ?>" title="<?php echo esc_attr( $buttons['full_name'] ); ?>" class="ssba ssba-img" alt="Share on <?php echo esc_attr( $button ); ?>" />
+							<?php endif; ?>
+							</li>
+						<?php endforeach; ?>
+						<?php endif; ?>
+					</ul>
 				</div>
-
-				<ul class="ssbp-list">
-					<?php foreach ( $arr_buttons as $buttons ) :
-						$button = strtolower( str_replace( ' ', '_', str_replace( '+', '', $buttons['full_name'] ) ) ); ?>
-						<li style="margin: <?php echo esc_attr( $arr_settings['ssba_plus_margin'] ); ?>px;" class="ssbp-li--<?php echo esc_attr( $button );
-						if ( ! in_array( $button, explode( ',', $arr_settings['ssba_selected_plus_buttons'] ), true ) ) {
-							echo esc_attr( ' ssba-hide-button' );
-						}
-						?>">
-							<a href="#" class="ssbp-btn ssbp-<?php echo esc_attr( $button ); ?>" style="height: <?php echo esc_attr( $arr_settings['ssba_plus_height'] ); ?>px; width: <?php echo esc_attr( $arr_settings['ssba_plus_width'] ); ?>px; <?php echo '' !== $arr_settings['ssba_plus_button_color'] ? esc_attr( 'background: ' . $arr_settings['ssba_plus_button_color'] . ';' ) : ''; ?>"><div title="<?php echo esc_attr( $buttons['full_name'] ); ?>" class="ssbp-text"><?php echo esc_html( $buttons['full_name'] ); ?></div></a>
-							<span class="<?php echo 'Y' !== $arr_settings['ssba_plus_show_share_count'] ? esc_attr( 'ssba-hide-button' ) : ''; ?> ssbp-each-share">1.8k</span>
-						</li>
-					<?php endforeach; ?>
-				</ul>
 			</div>
 		</div>
 		<div class="accor-wrap">
@@ -152,28 +177,6 @@
 						echo $this->forms->ssbp_input( $opts19p ); // WPCS: XSS ok.
 						echo $this->forms->ssbp_input( $opts20p ); // WPCS: XSS ok.
 						?>
-
-						<p>
-							<strong>
-								<?php echo esc_html( 'newsharecounts.com Counts for Twitter', 'simple-share-buttons-adder' ); ?>
-							</strong>
-							<br>
-							<?php echo esc_html__( 'You shall need to follow the instructions here before enabling this feature', 'simple-share-buttons-adder' ); ?> - <a target="_blank" href="http://newsharecounts.com/">newsharecounts.com</a>
-							<?php echo $this->forms->ssbp_input( $opts22 ); // WPCS: XSS ok. ?>
-						</p>
-
-						<h3>sharedcount.com</h3>
-						<p>
-							<?php echo esc_html__( 'Only necessary if you are experiencing issues with Facebook share counts.', 'simple-share-buttons-adder' ); ?> <a href="https://admin.sharedcount.com/admin/signup.php" target="_blank"><?php echo esc_html__( 'Signup for your free account here', 'simple-share-buttons-adder' ); ?></a>.
-						</p>
-
-						<?php echo $this->forms->ssbp_input( $opts23 ); // WPCS: XSS ok. ?>
-					</div>
-					<div class="col-md-6">
-						<?php echo $this->forms->ssbp_input( $opts24 ); // WPCS: XSS ok. ?>
-					</div>
-					<div class="col-md-6">
-						<?php echo $this->forms->ssbp_input( $opts25 ); // WPCS: XSS ok. ?>
 					</div>
 				</div>
 			</div>
@@ -211,6 +214,10 @@
 
 					<div class="col-md-12">
 						<?php echo $this->forms->ssbp_input( $opts33p ); // WPCS: XSS ok.?>
+					</div>
+
+					<div class="col-md-12">
+						<?php echo $this->forms->ssbp_input( $plus_ignore_sdk ); // WPCS: XSS ok.?>
 					</div>
 
 					<div class="col-md-12">
@@ -261,20 +268,7 @@
 					</div>
 
 					<div class="col-sm-12">
-						<?php echo $this->forms->ssbp_input( $opts40p ); // WPCS: XSS ok.?>
-					</div>
-
-					<div class="col-md-12">
-						<blockquote>
-							<p><?php echo esc_html__( 'If you want to take over control of your share buttons\' CSS entirely, turn on the switch below and enter your custom CSS.', 'simple-share-buttons-adder' ); ?> <strong><?php echo esc_html__( 'ALL of Simple Share Buttons Adder\'s CSS will be disabled', 'simple-share-buttons-adder' ); ?></strong>.</p>
-						</blockquote>
-					</div>
-
-					<div class="col-sm-12">
-						<?php
-						echo $this->forms->ssbp_input( $opts41p ); // WPCS: XSS ok.
-						echo $this->forms->ssbp_input( $opts42p ); // WPCS: XSS ok.
-						?>
+						<?php echo $this->forms->ssbp_input( $opts40p ); // WPCS: XSS ok. ?>
 					</div>
 				</div>
 			</div>

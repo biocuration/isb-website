@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 if ( ! class_exists( 'PostmanMessage' ) ) {
 
 	require_once 'PostmanEmailAddress.php';
@@ -52,7 +56,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		}
 
 		function __get( $name ) {
-			$message = __( '<code>%1$s</code> property of a <code>PostmanMessage</code> object is <strong>not supported</strong>. For now all of this class properties are private.', Postman::TEXT_DOMAIN );
+			$message = __( '<code>%1$s</code> property of a <code>PostmanMessage</code> object is <strong>not supported</strong>. For now all of this class properties are private.', 'post-smtp' );
 
 			if ( WP_DEBUG ) {
 				trigger_error( sprintf( $message, $name ) );
@@ -63,7 +67,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 			$class = new ReflectionClass(__CLASS__);
 			$methods = $class->getMethods(ReflectionMethod::IS_PUBLIC );
 
-			$message = __( '<code>%1$s</code> method of a <code>PostmanMessage</code> object is <strong>not supported</strong>. Use one of the following methods <pre><code>%2$s</code></pre>', Postman::TEXT_DOMAIN );
+			$message = __( '<code>%1$s</code> method of a <code>PostmanMessage</code> object is <strong>not supported</strong>. Use one of the following methods <pre><code>%2$s</code></pre>', 'post-smtp' );
 
 			if ( WP_DEBUG ) {
 				trigger_error( sprintf( $message, $name, print_r( $methods, true ) ) );
@@ -228,6 +232,13 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 				$this->logger->debug( sprintf( 'Forced From email address: before=%s after=%s', $this->getFromAddress()->getEmail(), $forcedEmailAddress ) );
 				$this->getFromAddress()->setEmail( $forcedEmailAddress );
 			}
+
+			if ( $options->is_fallback ) {
+				$fallback_email = $options->getFallbackFromEmail();
+				$this->logger->debug( sprintf( 'Fallback: Forced From email address: before=%s after=%s', $this->getFromAddress()->getEmail(), $fallback_email ) );
+				$this->getFromAddress()->setEmail( $fallback_email );
+			}
+
 			$forcedEmailName = $options->getMessageSenderName();
 			if ( $options->isSenderNameOverridePrevented() && $this->getFromAddress()->getName() !== $forcedEmailName ) {
 				$this->logger->debug( sprintf( 'Forced From email name: before=%s after=%s', $this->getFromAddress()->getName(), $forcedEmailName ) );
@@ -284,7 +295,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		/**
 		 * Set the charset
 		 *
-		 * @param unknown $charset
+		 * @param mixed $charset
 		 */
 		public function setCharset( $charset ) {
 			$this->charset = $charset;
@@ -303,7 +314,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		}
 		/**
 		 *
-		 * @param unknown $recipients
+		 * @param mixed $recipients
 		 *        	Array or comma-separated list of email addresses to send message.
 		 * @throws Exception
 		 */
@@ -312,7 +323,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		}
 		/**
 		 *
-		 * @param unknown $recipients
+		 * @param mixed $recipients
 		 *        	Array or comma-separated list of email addresses to send message.
 		 * @throws Exception
 		 */
@@ -321,7 +332,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		}
 		/**
 		 *
-		 * @param unknown $recipients
+		 * @param mixed $recipients
 		 *        	Array or comma-separated list of email addresses to send message.
 		 * @throws Exception
 		 */
@@ -330,7 +341,7 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		}
 		/**
 		 *
-		 * @param unknown $recipients
+		 * @param mixed $recipients
 		 *        	Array or comma-separated list of email addresses to send message.
 		 * @throws Exception
 		 */
@@ -384,8 +395,8 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 		 * Add the headers that were processed in processHeaders()
 		 * Zend requires that several headers are specially handled.
 		 *
-		 * @param unknown           $name
-		 * @param unknown           $value
+		 * @param mixed           $name
+		 * @param mixed           $value
 		 * @param Postman_Zend_Mail $mail
 		 */
 		private function processHeader( $name, $content ) {
@@ -439,7 +450,13 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 					break;
 				case 'reply-to' :
 					$this->logProcessHeader( 'Reply-To', $name, $content );
-					$this->setReplyTo( $content );
+                    $pattern = '/[a-z0-9_\-\+\.]+@[a-z0-9\-]+\.([a-z]{2,4})(?:\.[a-z]{2})?/i';
+                    preg_match_all($pattern, $content, $matches);
+
+                    if ( isset( $matches[0] ) && isset( $matches[0][0] ) && filter_var( $matches[0][0], FILTER_VALIDATE_EMAIL ) ) {
+                        $this->setReplyTo( $content );
+                    }
+
 					break;
 				case 'sender' :
 					$this->logProcessHeader( 'Sender', $name, $content );
@@ -470,9 +487,9 @@ if ( ! class_exists( 'PostmanMessage' ) ) {
 
 		/**
 		 *
-		 * @param unknown $desc
-		 * @param unknown $name
-		 * @param unknown $content
+		 * @param mixed $desc
+		 * @param mixed $name
+		 * @param mixed $content
 		 */
 		private function logProcessHeader( $desc, $name, $content ) {
 			$this->logger->debug( 'Processing ' . $desc . ' Header - ' . $name . ': ' . $content );

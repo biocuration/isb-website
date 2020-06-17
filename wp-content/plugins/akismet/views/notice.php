@@ -1,5 +1,11 @@
+<?php
+
+//phpcs:disable VariableAnalysis
+// There are "undefined" variables here because they're defined in the code that includes this file as a template.
+
+?>
 <?php if ( $type == 'plugin' ) :?>
-<div class="updated" style="padding: 0; margin: 0; border: none; background: none;">
+<div class="updated" id="akismet_setup_prompt">
 	<form name="akismet_activate" action="<?php echo esc_url( Akismet_Admin::get_page_url() ); ?>" method="POST">
 		<div class="akismet_activate">
 			<div class="aa_a">A</div>
@@ -15,7 +21,7 @@
 <?php elseif ( $type == 'spam-check' ) :?>
 <div class="notice notice-warning">
 	<p><strong><?php esc_html_e( 'Akismet has detected a problem.', 'akismet' );?></strong></p>
-	<p><?php printf( __( 'Some comments have not yet been checked for spam by Akismet. They have been temporarily held for moderation and will automatically be rechecked later.', 'akismet' ) ); ?></p>
+	<p><?php esc_html_e( 'Some comments have not yet been checked for spam by Akismet. They have been temporarily held for moderation and will automatically be rechecked later.', 'akismet' ); ?></p>
 	<?php if ( $link_text ) { ?>
 		<p><?php echo $link_text; ?></p>
 	<?php } ?>
