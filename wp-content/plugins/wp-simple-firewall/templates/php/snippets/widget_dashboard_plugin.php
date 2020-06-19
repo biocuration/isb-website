@@ -1,4 +1,8 @@
-<p><?echo $sInstallationDays; ?></p>
+<p><?php echo $install_days; ?></p>
 <hr />
-<p><?php echo $sFooter; ?>
-<br /><span style="font-size: x-small;"><?php echo $sIpAddress; ?></span></p>
+<p>
+	<?php if ( !empty( $footer ) ) : ?>
+		<?php echo $footer; ?><br />
+	<?php endif; ?>
+	<span style="font-size: x-small;"><?php echo $ip_address; ?></span>
+</p>

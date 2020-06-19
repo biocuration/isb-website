@@ -8,21 +8,33 @@
  */
 
 ?>
-<div class="tab-pane fade active in" id="classic-share-buttons">
+<div class="tab-pane fade <?php echo 'active' === $classic ? esc_attr( $classic . ' in' ): ''; ?>" id="classic-share-buttons">
 	<div class="col-sm-12 ssba-tab-container">
-		<?php if ( ! isset( $notice['new-tab-notice'] ) ) : ?>
+		<?php if ( isset( $arr_settings['ssba_new_buttons'] ) && 'Y' === $arr_settings['ssba_new_buttons'] ) :?>
 			<blockquote class="yellow">
 				<p>
-					<?php echo esc_html__( 'All of the plugin settings are now included on this page. No more switching tabs! Scroll down past the preview to access the styling, counters, advanced and css settings.', 'simple-share-buttons-adder' ); ?>
+					<?php echo esc_html__( 'The "Modern Share Buttons" are currently active.  To use the buttons below you must deactivate the "Modern Share Buttons".', 'simple-share-buttons-adder' ); ?>
+
+					<button id="new-tab-notice" type="button" class="notice-dismiss"><span class="screen-reader-text">Dismiss this notice.</span></button>
+				</p>
+			</blockquote>
+		<?php else : ?>
+			<blockquote class="yellow" style="display: none;">
+				<p>
+					<?php echo esc_html__( 'The "Modern Share Buttons" are currently active.  To use the buttons below you must deactivate the "Modern Share Buttons".', 'simple-share-buttons-adder' ); ?>
 
 					<button id="new-tab-notice" type="button" class="notice-dismiss"><span class="screen-reader-text">Dismiss this notice.</span></button>
 				</p>
 			</blockquote>
 		<?php endif; ?>
-
 		<blockquote>
 			<p>
-				<?php echo esc_html__( 'The', 'simple-share-buttons-adder' ); ?> <b><?php echo esc_html__( 'simple', 'simple-share-buttons-adder' ); ?></b> <?php echo esc_html__( 'options you can see below are all you need to complete to get your', 'simple-share-buttons-adder' ); ?> <b><?php echo esc_html__( 'share buttons', 'simple-share-buttons-adder' ); ?></b> <?php echo esc_html__( 'to appear on your website. Once you\'re done here, you can further customise the share buttons via the Styling tab.', 'simple-share-buttons-adder' ); ?>
+				<?php echo esc_html__( 'The', 'simple-share-buttons-adder' ); ?> <b><?php echo esc_html__( 'simple', 'simple-share-buttons-adder' ); ?></b> <?php echo esc_html__( 'options you can see below are all you need to complete to get your', 'simple-share-buttons-adder' ); ?> <b><?php echo esc_html__( 'share buttons', 'simple-share-buttons-adder' ); ?></b> <?php echo esc_html__( 'to appear on your website. Once you\'re done here, you can further customize the share buttons via the Styling accordion.', 'simple-share-buttons-adder' ); ?>
+			</p>
+		</blockquote>
+		<blockquote>
+			<p>
+				<?php echo esc_html__( 'Classic Share Buttons are image-based. If you\'re looking for CSS-based buttons, head over to the Modern Share Buttons tab!', 'simple-share-buttons-adder' ); ?>
 			</p>
 		</blockquote>
 
@@ -32,7 +44,7 @@
 			<div class="ssbp-wrap ssbp--centred ssbp--theme-4">
 				<div class="ssbp-container">
 					<ul id="ssbasort1" class="ssbp-list ssbaSortable">
-						<?php echo wp_kses_post( $this->get_available_ssba( $arr_settings['ssba_selected_buttons'], $arr_settings ) ); ?>
+						<?php echo wp_kses_post( $this->get_available_ssba( $arr_settings['ssba_selected_buttons'], $arr_settings, 'classic' ) ); ?>
 					</ul>
 				</div>
 			</div>
@@ -43,7 +55,7 @@
 				<div class="ssbp-wrap ssbp--centred ssbp--theme-4">
 					<div class="ssbp-container">
 						<ul id="ssbasort2" class="ssba-include-list ssbp-list ssbaSortable">
-							<?php echo wp_kses_post( $this->get_selected_ssba( $arr_settings['ssba_selected_buttons'], $arr_settings ) ); ?>
+							<?php echo wp_kses_post( $this->get_selected_ssba( $arr_settings['ssba_selected_buttons'], $arr_settings, 'classic' ) ); ?>
 						</ul>
 					</div>
 				</div>
@@ -52,7 +64,7 @@
 			<?php if ( in_array( 'whatsapp', explode( ',', $arr_settings['ssba_selected_buttons'] ), true ) ) : ?>
 				<div class="ssbp--theme-4 whatsapp-message">
 					<span class="ssbp-btn ssbp-whatsapp"></span>
-					<?php echo esc_html__( 'The whatsapp button only appears on mobile devices. It is included in your desktop preview for reference only.', 'prodigy-commerce' ); ?>
+					<?php echo esc_html__( 'The whatsapp button only appears on mobile devices. It is included in your desktop preview for reference only.', 'simple-share-buttons-adder' ); ?>
 				</div>
 			<?php endif; ?>
 
@@ -61,6 +73,7 @@
 		<?php
 		echo $this->forms->ssbp_checkboxes( $opts1 ); // WPCS: XSS ok.
 		echo $this->forms->ssbp_input( $opts2 ); // WPCS: XSS ok.
+		echo $this->forms->ssbp_input( $page_omit ); // WPCS: XSS ok.
 
 		$line_height = 'below' === $arr_settings['ssba_text_placement'] || 'above' === $arr_settings['ssba_text_placement'] ? 'inherit' : ( (int) $arr_settings['ssba_size'] + (int) $arr_settings['ssba_padding'] + 3 ) . 'px';
 		$image_line_height = $arr_settings['ssba_size'] . 'px';
@@ -200,28 +213,6 @@
 						echo $this->forms->ssbp_input( $opts20 ); // WPCS: XSS ok.
 						echo $this->forms->ssbp_input( $opts21 ); // WPCS: XSS ok.
 						?>
-
-						<p>
-							<strong>
-								<?php echo esc_html( 'newsharecounts.com Counts for Twitter', 'simple-share-buttons-adder' ); ?>
-							</strong>
-							<br>
-							<?php echo esc_html__( 'You shall need to follow the instructions here before enabling this feature', 'simple-share-buttons-adder' ); ?> - <a target="_blank" href="http://newsharecounts.com/">newsharecounts.com</a>
-							<?php echo $this->forms->ssbp_input( $opts22 ); // WPCS: XSS ok. ?>
-						</p>
-
-						<h3>sharedcount.com</h3>
-						<p>
-							<?php echo esc_html__( 'Only necessary if you are experiencing issues with Facebook share counts.', 'simple-share-buttons-adder' ); ?> <a href="https://admin.sharedcount.com/admin/signup.php" target="_blank"><?php echo esc_html__( 'Signup for your free account here', 'simple-share-buttons-adder' ); ?></a>.
-						</p>
-
-						<?php echo $this->forms->ssbp_input( $opts23 ); // WPCS: XSS ok. ?>
-					</div>
-					<div class="col-md-6">
-						<?php echo $this->forms->ssbp_input( $opts24 ); // WPCS: XSS ok. ?>
-					</div>
-					<div class="col-md-6">
-						<?php echo $this->forms->ssbp_input( $opts25 ); // WPCS: XSS ok. ?>
 					</div>
 				</div>
 			</div>
@@ -275,11 +266,15 @@
 					</div>
 
 					<div class="col-md-12">
-						<?php echo esc_html__( 'You shall need to follow the instructions here before enabling this feature', 'simple-share-buttons-adder' ); ?> - <a target="_blank" href="https://developers.facebook.com/docs/apps/register"><?php echo esc_html( 'https://developers.facebook.com/docs/apps/register' ); ?></a>
+						<?php echo esc_html__( 'You need to follow the instructions here before enabling this feature', 'simple-share-buttons-adder' ); ?> - <a target="_blank" href="https://developers.facebook.com/docs/apps/register"><?php echo esc_html( 'https://developers.facebook.com/docs/apps/register' ); ?></a>
 					</div>
 
 					<div class="col-md-12">
 						<?php echo $this->forms->ssbp_input( $opts33 ); // WPCS: XSS ok.?>
+					</div>
+
+					<div class="col-md-12">
+						<?php echo $this->forms->ssbp_input( $ignore_sdk ); // WPCS: XSS ok.?>
 					</div>
 
 					<div class="col-md-12">

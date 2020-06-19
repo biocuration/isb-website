@@ -25,9 +25,6 @@ class Widget extends \WP_Widget {
 				'description' => __( 'Simple Share Buttons Adder', 'text_domain' ),
 			)
 		);
-
-		// Add ssba to available widgets.
-		add_action( 'widgets_init', create_function( '', 'register_widget( "SimpleShareButtonsAdder\Widget" );' ) );
 	}
 
 	/**

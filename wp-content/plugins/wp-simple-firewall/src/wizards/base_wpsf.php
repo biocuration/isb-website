@@ -1,10 +1,6 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_Wizard_Base', false ) ) {
-	return;
-}
-
-require_once( dirname( __FILE__ ).'/base.php' );
+use FernleafSystems\Wordpress\Services\Services;
 
 /**
  * Class ICWP_WPSF_Wizard_BaseWpsf
@@ -18,7 +14,7 @@ abstract class ICWP_WPSF_Wizard_BaseWpsf extends ICWP_WPSF_Wizard_Base {
 	protected function getUserCanSlide( $sSlide ) {
 		$aSlide = $this->getStepsDefinition()[ $sSlide ];
 		$bRestricted = !isset( $aSlide[ 'security_admin' ] ) || $aSlide[ 'security_admin' ];
-		return !$bRestricted || $this->getPluginCon()->getHasPermissionToManage();
+		return !$bRestricted || $this->getCon()->isPluginAdmin();
 	}
 
 	/**
@@ -42,7 +38,7 @@ abstract class ICWP_WPSF_Wizard_BaseWpsf extends ICWP_WPSF_Wizard_Base {
 
 		switch ( $sStep ) {
 			case 'security_admin_verify':
-				$aAdditional = array( 'current_index' => $this->loadDP()->post( 'current_index' ) );
+				$aAdditional = array( 'current_index' => Services::Request()->post( 'current_index' ) );
 				break;
 			default:
 				$aAdditional = parent::getRenderData_SlideExtra( $sStep );
@@ -62,7 +58,7 @@ abstract class ICWP_WPSF_Wizard_BaseWpsf extends ICWP_WPSF_Wizard_Base {
 				'security_admin_verify' => array(
 					'content'        => '',
 					'slug'           => 'security_admin_verify',
-					'title'          => _wpsf__( 'Security Admin' ),
+					'title'          => __( 'Security Admin', 'wp-simple-firewall' ),
 					'security_admin' => false
 				)
 			)
@@ -97,23 +93,23 @@ abstract class ICWP_WPSF_Wizard_BaseWpsf extends ICWP_WPSF_Wizard_Base {
 	 * @return \FernleafSystems\Utilities\Response
 	 */
 	private function wizardSecurityAdminVerify() {
-		$sKey = $this->loadDP()->post( 'AccessKey' );
+		$sKey = Services::Request()->post( 'AccessKey' );
 
 		$oResponse = new \FernleafSystems\Utilities\Response();
 
 		$bSuccess = false;
 		/** @var ICWP_WPSF_FeatureHandler_AdminAccessRestriction $oModule */
-		$oModule = $this->getPluginCon()->getModule( 'admin_access_restriction' );
+		$oModule = $this->getCon()->getModule( 'admin_access_restriction' );
 
 		$sMessage = '';
 		if ( empty( $sKey ) ) {
 			$sMessage = 'Security access key was empty.';
 		}
 		else if ( !$oModule->verifyAccessKey( $sKey ) ) {
-			$sMessage = _wpsf__( 'Security Admin Key was not correct.' );
+			$sMessage = __( 'Security Admin Key was not correct.', 'wp-simple-firewall' );
 		}
 		else {
-			$bSuccess = $oModule->setPermissionToSubmit( true );
+			$bSuccess = $oModule->setSecurityAdminStatusOnOff( true );
 			$aData = array(
 				'rerender' => true
 			);

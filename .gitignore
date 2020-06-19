@@ -22,11 +22,7 @@ wp-content/cache/supercache/*
 .gitattributes
 _wpeprivate*
 wp-content/object-cache.php
-wp-content/mu-plugins/mu-plugin.php
-wp-content/mu-plugins/slt-force-strong-passwords.php
-wp-content/mu-plugins/stop-long-comments.php
-wp-content/mu-plugins/force-strong-passwords*
-wp-content/mu-plugins/wpengine-common*
+wp-content/mu-plugins/
 wp-content/mysql.sql
 
 # wp core (as of 4.9.5)
@@ -59,14 +55,17 @@ wp-content/mysql.sql
 /wp-admin
 /wp-includes
 /wp-content/index.php
-/wp-content/themes/twentyten
-/wp-content/themes/twentyeleven
-/wp-content/themes/twentytwelve
-/wp-content/themes/twentythirteen
-/wp-content/themes/twentyfourteen
-/wp-content/themes/twentyfifteen
-/wp-content/themes/twentysixteen
-/wp-content/themes/twentyseventeen
+/wp-content/themes/twentyten/
+/wp-content/themes/twentyeleven/
+/wp-content/themes/twentytwelve/
+/wp-content/themes/twentythirteen/
+/wp-content/themes/twentyfourteen/
+/wp-content/themes/twentyfifteen/
+/wp-content/themes/twentysixteen/
+/wp-content/themes/twentyseventeen/
+/wp-content/themes/twentyeighteen/
+/wp-content/themes/twentynineteen/
+/wp-content/themes/twentytwenty/
 /wp-content/themes/index.php
 /wp-content/plugins/index.php
 /wp-content/plugins/akismet*

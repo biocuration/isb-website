@@ -43,7 +43,6 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 					if (1 === $error_flag) break;
 				} else {
 
-					$class_prefix = $command_info['class_prefix'];
 					$action = $command_info['command'];
 					$command_php_class = $command_info['command_php_class'];
 
@@ -136,21 +135,27 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 
 			// Check if credentials are valid and have sufficient
 			// privileges to create and delete (e.g. write)
+			ob_start();
 			$credentials = request_filesystem_credentials($url, '', false, $directory);
+			ob_end_clean();
+
+			// The "WP_Filesystem" will suffice in validating the inputted credentials
+			// from UpdraftCentral, as it is already attempting to connect to the filesystem
+			// using the chosen transport (e.g. ssh, ftp, etc.)
 			if (WP_Filesystem($credentials, $directory)) {
-				
-				global $wp_filesystem;
-				$path = $entity_directories[$entity].'/.updraftcentral';
-				
-				if (!$wp_filesystem->put_contents($path, '', 0644)) {
-					$result = array('error' => true, 'message' => 'failed_credentials', 'values' => array());
-				} else {
-					$wp_filesystem->delete($path);
-					$result = array('error' => false, 'message' => 'credentials_ok', 'values' => array());
-				}
-				
+				$result = array('error' => false, 'message' => 'credentials_ok', 'values' => array());
 			} else {
-				$result = array('error' => true, 'message' => 'failed_credentials', 'values' => array());
+				// We're adding some useful error information to help troubleshooting any problems
+				// that may arise in the future. If the user submitted a wrong password or username
+				// it usually falls through here.
+				global $wp_filesystem;
+
+				$errors = array();
+				if (isset($wp_filesystem->errors) && is_wp_error($wp_filesystem->errors)) {
+					$errors = $wp_filesystem->errors->errors;
+				}
+
+				$result = array('error' => true, 'message' => 'failed_credentials', 'values' => array('errors' => $errors));
 			}
 			
 		} catch (Exception $e) {
@@ -320,7 +325,9 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 	public function site_info() {
 
 		global $wpdb;
-		@include(ABSPATH.WPINC.'/version.php');
+
+		// THis is included so we can get $wp_version
+		@include(ABSPATH.WPINC.'/version.php');// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
 
 		$ud_version = is_a($this->ud, 'UpdraftPlus') ? $this->ud->version : 'none';
 		
@@ -328,7 +335,7 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 			'versions' => array(
 				'ud' => $ud_version,
 				'php' => PHP_VERSION,
-				'wp' => $wp_version,
+				'wp' => $wp_version,// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 				'mysql' => $wpdb->db_version(),
 				'udrpc_php' => $this->rc->udrpc_version,
 			),
@@ -364,7 +371,7 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 	/**
 	 * Get disk space used
 	 *
-	 * @uses UpdraftPlus_Admin::get_disk_space_used()
+	 * @uses UpdraftPlus_Filesystem_Functions::get_disk_space_used()
 	 *
 	 * @param String $entity - the entity to count (e.g. 'plugins', 'themes')
 	 *
@@ -372,9 +379,9 @@ class UpdraftCentral_Core_Commands extends UpdraftCentral_Commands {
 	 */
 	public function count($entity) {
 	
-		if (false === ($updraftplus_admin = $this->_load_ud_admin())) return $this->_generic_error_response('no_updraftplus');
+		if (!class_exists('UpdraftPlus_Filesystem_Functions')) return $this->_generic_error_response('no_updraftplus');
 
-		$response = $updraftplus_admin->get_disk_space_used($entity);
+		$response = UpdraftPlus_Filesystem_Functions::get_disk_space_used($entity);
 
 		return $this->_response($response);
 	}

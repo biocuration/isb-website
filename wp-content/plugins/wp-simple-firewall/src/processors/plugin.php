@@ -1,201 +1,159 @@
 <?php
 
-if ( class_exists( 'ICWP_WPSF_Processor_Plugin', false ) ) {
-	return;
-}
+use FernleafSystems\Wordpress\Plugin\Shield;
+use FernleafSystems\Wordpress\Plugin\Shield\Modules;
+use FernleafSystems\Wordpress\Plugin\Shield\Modules\Plugin;
+use FernleafSystems\Wordpress\Services\Services;
 
-require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'base_plugin.php' );
+class ICWP_WPSF_Processor_Plugin extends Modules\BaseShield\ShieldProcessor {
 
-class ICWP_WPSF_Processor_Plugin extends ICWP_WPSF_Processor_BasePlugin {
-
-	/**
-	 * @var ICWP_WPSF_Processor_Plugin_Badge
-	 */
-	protected $oBadgeProcessor;
-
-	/**
-	 * @var ICWP_WPSF_Processor_Plugin_Tracking
-	 */
-	protected $oTrackingProcessor;
-
-	/**
-	 */
 	public function run() {
 		parent::run();
-		/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-		$oFO = $this->getFeature();
-		$oDP = $this->loadDP();
+		/** @var \ICWP_WPSF_FeatureHandler_Plugin $oMod */
+		$oMod = $this->getMod();
+		/** @var Plugin\Options $oOpts */
+		$oOpts = $this->getOptions();
 
 		$this->removePluginConflicts();
-		$this->getBadgeProcessor()
-			 ->run();
 
-		if ( $oFO->isTrackingEnabled() || !$oFO->isTrackingPermissionSet() ) {
-			$this->getTrackingProcessor()->run();
+		$oMod->getPluginBadgeCon()->run();
+
+		if ( $oOpts->isTrackingEnabled() || !$oOpts->isTrackingPermissionSet() ) {
+			$this->getSubProTracking()->execute();
 		}
 
-		add_action( 'wp_loaded', array( $this, 'onWpLoaded' ) );
-		add_action( 'in_admin_footer', array( $this, 'printVisitorIpFooter' ) );
+		if ( $oOpts->isImportExportPermitted() ) {
+			$oMod->getImpExpController()->run();
+		}
 
-		switch ( (string)$oDP->query( 'shield_action', '' ) ) {
+		$oCon = $this->getCon();
+		switch ( $oCon->getShieldAction() ) {
 			case 'dump_tracking_data':
-				add_action( 'wp_loaded', array( $this, 'dumpTrackingData' ) );
-				break;
-
-			case 'importexport_export':
-			case 'importexport_handshake':
-			case 'importexport_updatenotify':
-				if ( $oFO->isImportExportPermitted() ) {
-					$this->getSubProcessorImportExport()->runAction();
-				}
+				add_action( 'wp_loaded', [ $this, 'dumpTrackingData' ] );
 				break;
 			default:
 				break;
 		}
-	}
 
-	public function onWpLoaded() {
-		if ( $this->getController()->getIsValidAdminArea() ) {
-			$this->maintainPluginLoadPosition();
-		}
-	}
+		add_action( 'admin_footer', [ $this, 'printAdminFooterItems' ], 100, 0 );
 
-	/**
-	 * @return ICWP_WPSF_Processor_Plugin_Badge
-	 */
-	protected function getBadgeProcessor() {
-		if ( !isset( $this->oBadgeProcessor ) ) {
-			require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'plugin_badge.php' );
-			$this->oBadgeProcessor = new ICWP_WPSF_Processor_Plugin_Badge( $this->getFeature() );
-		}
-		return $this->oBadgeProcessor;
-	}
+		add_filter( $oCon->prefix( 'delete_on_deactivate' ), function ( $bDelete ) use ( $oOpts ) {
+			return $bDelete || $oOpts->isOpt( 'delete_on_deactivate', 'Y' );
+		} );
 
-	/**
-	 * @return ICWP_WPSF_Processor_Plugin_Tracking
-	 */
-	protected function getTrackingProcessor() {
-		if ( !isset( $this->oTrackingProcessor ) ) {
-			require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'plugin_tracking.php' );
-			$this->oTrackingProcessor = new ICWP_WPSF_Processor_Plugin_Tracking( $this->getFeature() );
-		}
-		return $this->oTrackingProcessor;
-	}
-
-	/**
-	 * @return ICWP_WPSF_Processor_Plugin_ImportExport
-	 */
-	public function getSubProcessorImportExport() {
-		$oProc = $this->getSubProcessor( 'importexport' );
-		if ( is_null( $oProc ) ) {
-			require_once( dirname( __FILE__ ).DIRECTORY_SEPARATOR.'plugin_importexport.php' );
-			$oProc = new ICWP_WPSF_Processor_Plugin_ImportExport( $this->getFeature() );
-			$this->aSubProcessors[ 'importexport' ] = $oProc;
-		}
-		return $oProc;
-	}
-
-	/**
-	 */
-	public function dumpTrackingData() {
-		if ( $this->getController()->getIsValidAdminArea() ) {
-			echo sprintf( '<pre><code>%s</code></pre>', print_r( $this->getTrackingProcessor()
-																	  ->collectTrackingData(), true ) );
-			die();
-		}
-	}
-
-	/**
-	 */
-	public function printTrackingDataBox() {
-		/** @var ICWP_WPSF_FeatureHandler_Plugin $oFO */
-		$oFO = $this->getFeature();
-
-		if ( !$this->getController()->getIsValidAdminArea() ) {
-			return;
-		}
-
-		$aRenderData = array(
-			'strings'     => array(
-				'tracking_data' => print_r( $this->getTrackingProcessor()->collectTrackingData(), true ),
-			),
-			//				'sAjaxNonce' => wp_create_nonce( 'icwp_ajax' ),
-			'js_snippets' => array(//					'options_to_restrict' => "'".implode( "','", $oFO->getOptionsToRestrict() )."'",
-			)
+		add_action( $oCon->prefix( 'dashboard_widget_content' ),
+			[ $this, 'printDashboardWidget' ],
+			100
 		);
-		add_thickbox();
-		echo $oFO->renderTemplate( 'snippets'.DIRECTORY_SEPARATOR.'plugin_tracking_data_dump.php', $aRenderData );
+	}
+
+	public function printDashboardWidget() {
+		$oCon = $this->getCon();
+		/** @var Plugin\Options $oOpts */
+		$oOpts = $this->getOptions();
+		$aLabels = $oCon->getLabels();
+
+		echo $this->getMod()->renderTemplate(
+			'snippets/widget_dashboard_plugin.php',
+			[
+				'install_days' => sprintf( __( 'Days Installed: %s', 'wp-simple-firewall' ), $oOpts->getInstallationDays() ),
+				'footer'       => sprintf( __( '%s is provided by %s', 'wp-simple-firewall' ), $oCon->getHumanName(),
+					sprintf( '<a href="%s" target="_blank">%s</a>', $aLabels[ 'AuthorURI' ], $aLabels[ 'Author' ] )
+				),
+				'ip_address'   => sprintf( __( 'Your IP address is: %s', 'wp-simple-firewall' ), Services::IP()
+																										 ->getRequestIp() )
+			]
+		);
+	}
+
+	/**
+	 * @return \ICWP_WPSF_Processor_Plugin_Tracking
+	 */
+	protected function getSubProTracking() {
+		return $this->getSubPro( 'tracking' );
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getSubProMap() {
+		return [
+			'tracking' => 'ICWP_WPSF_Processor_Plugin_Tracking',
+		];
+	}
+
+	public function printAdminFooterItems() {
+		$this->printPluginDeactivateSurvey();
+		$this->printToastTemplate();
 	}
 
 	/**
 	 * Sets this plugin to be the first loaded of all the plugins.
 	 */
-	protected function maintainPluginLoadPosition() {
-		$oWpPlugins = $this->loadWpPlugins();
-		$sBaseFile = $this->getController()->getPluginBaseFile();
-		$nLoadPosition = $oWpPlugins->getActivePluginLoadPosition( $sBaseFile );
-		if ( $nLoadPosition !== 0 && $nLoadPosition > 0 ) {
-			$oWpPlugins->setActivePluginLoadFirst( $sBaseFile );
-		}
-	}
-
-	public function printVisitorIpFooter() {
-		if ( apply_filters( 'icwp_wpsf_print_admin_ip_footer', true ) ) {
-			echo sprintf( '<p><span>%s</span></p>', sprintf( _wpsf__( 'Your IP address is: %s' ), $this->ip() ) );
-		}
-	}
-
-	/**
-	 * @see autoAddToAdminNotices()
-	 * @param array $aNoticeAttributes
-	 */
-	protected function addNotice_override_forceoff( $aNoticeAttributes ) {
-
-		$oCon = $this->getController();
-		if ( $oCon->getIfForceOffActive() ) {
-			$aRenderData = array(
-				'notice_attributes' => $aNoticeAttributes,
-				'strings'           => array(
-					'title'   => sprintf( _wpsf__( 'Warning - %s' ), sprintf( _wpsf__( '%s plugin is not currently processing requests' ), $oCon->getHumanName() ) ),
-					'message' => sprintf(
-						_wpsf__( 'Please delete the "%s" file to reactivate the %s protection' ),
-						'forceOff',
-						$oCon->getHumanName()
-					)
-				)
+	private function printToastTemplate() {
+		if ( $this->getCon()->isModulePage() ) {
+			$aRenderData = [
+				'strings'     => [
+					'title' => $this->getCon()->getHumanName(),
+				],
+				'js_snippets' => []
+			];
+			echo $this->getMod()->renderTemplate(
+				'snippets/toaster.twig', $aRenderData, true
 			);
-			$this->insertAdminNotice( $aRenderData );
 		}
 	}
 
-	/**
-	 * @see autoAddToAdminNotices()
-	 * @param array $aNoticeAttributes
-	 */
-	protected function addNotice_plugin_mailing_list_signup( $aNoticeAttributes ) {
+	private function printPluginDeactivateSurvey() {
+		if ( Services::WpPost()->isCurrentPage( 'plugins.php' ) ) {
 
-		$nDays = $this->getInstallationDays();
-		if ( $this->getIfShowAdminNotices() && $nDays >= 5 ) {
-			$aRenderData = array(
-				'notice_attributes' => $aNoticeAttributes,
-				'strings'           => array(
-					'title'        => 'Join Us!',
-					'yes'          => "Yes please! I'd love to join in and learn more",
-					'no'           => "No thanks, I'm not interested in such groups",
-					'we_dont_spam' => "( Fear not! SPAM is for losers. And we're not losers! )",
-					'your_name'    => _wpsf__( 'Your Name' ),
-					'your_email'   => _wpsf__( 'Your Email' ),
-					'dismiss'      => "No thanks, I'm not interested in such informative groups",
-					'summary'      => 'The Shield security team is running an initiative (with currently 2000+ members) to raise awareness of WordPress Security
-				and to provide further help with the Shield security plugin. Get Involved here:',
-				),
-				'hrefs'             => array(
-					'form_action' => '//hostliketoast.us2.list-manage.com/subscribe/post?u=e736870223389e44fb8915c9a&id=0e1d527259'
-				),
-				'install_days'      => $nDays
+			$aOpts = [
+				'reason_confusing'   => "It's too confusing",
+				'reason_expected'    => "It's not what I expected",
+				'reason_accident'    => "I downloaded it accidentally",
+				'reason_alternative' => "I'm already using an alternative",
+				'reason_trust'       => "I don't trust the developer :(",
+				'reason_not_work'    => "It doesn't work",
+				'reason_errors'      => "I'm getting errors",
+			];
+
+			$aData = [
+				'strings'     => [
+					'editing_restricted' => __( 'Editing this option is currently restricted.', 'wp-simple-firewall' ),
+				],
+				'inputs'      => [
+					'checkboxes' => Services::DataManipulation()->shuffleArray( $aOpts )
+				],
+				'js_snippets' => []
+			];
+			echo $this->getMod()->renderTemplate(
+				'snippets/plugin-deactivate-survey.php', $aData
 			);
-			$this->insertAdminNotice( $aRenderData );
 		}
+	}
+
+	public function dumpTrackingData() {
+		if ( $this->getCon()->isPluginAdmin() ) {
+			echo sprintf( '<pre><code>%s</code></pre>',
+				print_r( $this->getSubProTracking()->collectTrackingData(), true ) );
+			die();
+		}
+	}
+
+	public function runDailyCron() {
+		$this->getCon()->fireEvent( 'test_cron_run' );
+
+		/** @var Plugin\Options $oOpts */
+		$oOpts = $this->getOptions();
+		if ( $oOpts->isImportExportPermitted() ) {
+			( new Plugin\Lib\ImportExport\Import() )
+				->setMod( $this->getMod() )
+				->fromSite( $oOpts->getImportExportMasterImportUrl() );
+		}
+
+		( new Shield\Utilities\Options\CleanStorage() )
+			->setCon( $this->getCon() )
+			->run();
 	}
 
 	/**
@@ -203,7 +161,24 @@ class ICWP_WPSF_Processor_Plugin extends ICWP_WPSF_Processor_BasePlugin {
 	 */
 	protected function removePluginConflicts() {
 		if ( class_exists( 'AIO_WP_Security' ) && isset( $GLOBALS[ 'aio_wp_security' ] ) ) {
-			remove_action( 'init', array( $GLOBALS[ 'aio_wp_security' ], 'wp_security_plugin_init' ), 0 );
+			remove_action( 'init', [ $GLOBALS[ 'aio_wp_security' ], 'wp_security_plugin_init' ], 0 );
 		}
+	}
+
+	/**
+	 * Override the original collection to then add plugin statistics to the mix
+	 * @param array $aData
+	 * @return array
+	 */
+	public function tracking_DataCollect( $aData ) {
+		$aData = parent::tracking_DataCollect( $aData );
+		/** @var \ICWP_WPSF_FeatureHandler_Plugin $oMod */
+		$oMod = $this->getMod();
+		$sSlug = $oMod->getSlug();
+		if ( empty( $aData[ $sSlug ][ 'options' ][ 'unique_installation_id' ] ) ) {
+			$aData[ $sSlug ][ 'options' ][ 'unique_installation_id' ] = $oMod->getPluginInstallationId();
+			$aData[ $sSlug ][ 'options' ][ 'new_unique_installation_id' ] = $this->getCon()->getSiteInstallationId();
+		}
+		return $aData;
 	}
 }

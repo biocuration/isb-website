@@ -14,6 +14,8 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 
 		if (!empty($updates['core']) && !current_user_can('update_core')) return $this->_generic_error_response('updates_permission_denied', 'update_core');
 		
+		if (!empty($updates['translations']) && !$this->user_can_update_translations()) return $this->_generic_error_response('updates_permission_denied', 'update_translations');
+		
 		$this->_admin_include('plugin.php', 'update.php', 'file.php', 'template.php');
 		$this->_frontend_include('update.php');
 
@@ -30,7 +32,6 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 		$plugins = empty($updates['plugins']) ? array() : $updates['plugins'];
 		$plugin_updates = array();
 		foreach ($plugins as $plugin_info) {
-			$plugin_file = $plugin_info['plugin'];
 			$plugin_updates[] = $this->_update_plugin($plugin_info['plugin'], $plugin_info['slug']);
 		}
 
@@ -49,12 +50,67 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			break;
 		}
 		
+		$translation_updates = array();
+		if (!empty($updates['translations'])) {
+			$translation_updates[] = $this->_update_translation();
+		}
+		
 		return $this->_response(array(
 			'plugins' => $plugin_updates,
 			'themes' => $theme_updates,
 			'core' => $core_updates,
+			'translations' => $translation_updates,
 		));
 
+	}
+
+	/**
+	 * Updates a plugin. A facade method that exposes a private updates
+	 * feature for other modules to consume.
+	 *
+	 * @param string $plugin Specific plugin to be updated
+	 * @param string $slug   Unique key passed for updates
+	 *
+	 * @return array
+	 */
+	public function update_plugin($plugin, $slug) {
+		return $this->_update_plugin($plugin, $slug);
+	}
+
+	/**
+	 * Updates a theme. A facade method that exposes a private updates
+	 * feature for other modules to consume.
+	 *
+	 * @param string $theme Specific theme to be updated
+	 *
+	 * @return array
+	 */
+	public function update_theme($theme) {
+		return $this->_update_theme($theme);
+	}
+
+	/**
+	 * Gets available updates for a certain entity (e.g. plugin or theme). A facade method that
+	 * exposes a private updates feature for other modules to consume.
+	 *
+	 * @param string $entity The name of the entity that this request is intended for (e.g. themes or plugins)
+	 *
+	 * @return array
+	 */
+	public function get_item_updates($entity) {
+		$updates = array();
+		switch ($entity) {
+			case 'themes':
+				wp_update_themes();
+				$updates = $this->maybe_add_third_party_items(get_theme_updates(), 'theme');
+				break;
+			case 'plugins':
+				wp_update_plugins();
+				$updates = $this->maybe_add_third_party_items(get_plugin_updates(), 'plugin');
+				break;
+		}
+
+		return $updates;
 	}
 
 	/**
@@ -178,9 +234,10 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			'newVersion' => '',
 		);
 
+		// THis is included so we can get $wp_version
 		include(ABSPATH.WPINC.'/version.php');
 		
-		$status['oldVersion'] = $wp_version;
+		$status['oldVersion'] = $wp_version;// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 		
 		if (!current_user_can('update_core')) {
 			$status['error'] = 'updates_permission_denied';
@@ -191,17 +248,18 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 
 		wp_version_check();
 		
-		$locale = get_locale();
+		$locale = get_locale();// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		
 		$core_update_key = false;
 		$core_update_latest_version = false;
 		
 		$get_core_updates = get_core_updates();
 		
-		@include(ABSPATH.WPINC.'/version.php');
+		// THis is included so we can get $wp_version
+		@include(ABSPATH.WPINC.'/version.php');// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
 		
 		foreach ($get_core_updates as $k => $core_update) {
-			if (isset($core_update->version) && version_compare($core_update->version, $wp_version, '>') && version_compare($core_update->version, $core_update_latest_version, '>')) {
+			if (isset($core_update->version) && version_compare($core_update->version, $wp_version, '>') && version_compare($core_update->version, $core_update_latest_version, '>')) {// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 				$core_update_latest_version = $core_update->version;
 				$core_update_key = $k;
 			}
@@ -351,6 +409,46 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 
 	}
 	
+	/**
+	 * Updates available translations for this website
+	 *
+	 * @return Array
+	 */
+	private function _update_translation() {
+		global $wp_filesystem;
+
+		$status = array();
+
+		include_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
+		if (!class_exists('Automatic_Upgrader_Skin')) include_once(UPDRAFTCENTRAL_CLIENT_DIR.'/classes/class-automatic-upgrader-skin.php');
+		
+		$skin = new Automatic_Upgrader_Skin();
+		$upgrader = new Language_Pack_Upgrader($skin);
+		$result = $upgrader->bulk_upgrade();
+		
+		if (is_array($result) && !empty($result)) {
+			$status['success'] = true;
+		} elseif (is_wp_error($result)) {
+			$status['error'] = $result->get_error_code();
+			$status['error_message'] = $result->get_error_message();
+		} elseif (is_bool($result) && !$result) {
+			$status['error'] = 'unable_to_connect_to_filesystem';
+
+			// Pass through the error from WP_Filesystem if one was raised
+			if (is_wp_error($wp_filesystem->errors) && $wp_filesystem->errors->get_error_code()) {
+				$status['error'] = $wp_filesystem->errors->get_error_code();
+				$status['error_message'] = $wp_filesystem->errors->get_error_message();
+			}
+		} elseif (is_bool($result) && $result) {
+			$status['error'] = 'up_to_date';
+		} else {
+			// An unhandled error occured
+			$status['error'] = 'update_failed';
+		}
+
+		return $status;
+	}
+	
 	private function get_theme_version($theme) {
 	
 		if (function_exists('wp_get_theme')) {
@@ -410,7 +508,21 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 				$all_items = get_plugins();
 				break;
 			case 'theme':
-				$all_items = get_themes();
+				$this->_frontend_include('theme.php');
+				if (function_exists('wp_get_themes')) {
+					$themes = wp_get_themes();
+					if (!empty($themes)) {
+						// We make sure that the return key matched the previous
+						// key from "get_themes", otherwise, no updates will be found
+						// even if it does have one. "get_themes" returns the name of the
+						// theme as the key while "wp_get_themes" returns the slug.
+						foreach ($themes as $slug => $theme) {
+							$all_items[$theme->Name] = $theme;
+						}
+					}
+				} else {
+					$all_items = get_themes();
+				}
 				break;
 			default:
 				break;
@@ -526,13 +638,29 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 		return $items;
 	}
 
+	/**
+	 * Custom validation for translation permission. Since the 'install_languages' capability insn't available until 4.9
+	 * therefore, we wrapped the validation check in this block to support older version of WP.
+	 *
+	 * @return Boolean
+	 */
+	private function user_can_update_translations() {
+		global $updraftplus;
+		$wp_version = $updraftplus->get_wordpress_version();
+		
+		if (version_compare($wp_version, '4.9', '<')) {
+			if (current_user_can('update_core') || current_user_can('update_plugins') || current_user_can('update_themes')) return true;
+		} else {
+			if (current_user_can('install_languages')) return true;
+		}
+
+		return false;
+	}
+
 	public function get_updates($options) {
 
 		// Forcing Elegant Themes (Divi) updates component to load if it exist.
-		if (function_exists('et_register_updates_component')) {
-			et_register_updates_component();
-		}
-
+		if (function_exists('et_register_updates_component')) et_register_updates_component();
 
 		if (!current_user_can('update_plugins') && !current_user_can('update_themes') && !current_user_can('update_core')) return $this->_generic_error_response('updates_permission_denied');
 
@@ -602,8 +730,11 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 					// versions greater than the currently installed version.
 					if (version_compare($update->Version, $update->update['new_version'], '>=')) continue;
 					
+					$name = $update->Name;
+					$theme_name = !empty($name) ? $name : $update->update['theme'];
+
 					$theme_updates[] = array(
-						'name' => $update->Name,
+						'name' => $theme_name,
 						'theme_uri' => $update->ThemeURI,
 						'version' => $update->Version,
 						'description' => $update->Description,
@@ -639,10 +770,11 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 				$core_update_key = false;
 				$core_update_latest_version = false;
 				
-				@include(ABSPATH.WPINC.'/version.php');
+				// THis is included so we can get $wp_version
+				@include(ABSPATH.WPINC.'/version.php');// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
 				
 				foreach ($get_core_updates as $k => $core_update) {
-					if (isset($core_update->version) && version_compare($core_update->version, $wp_version, '>') && version_compare($core_update->version, $core_update_latest_version, '>')) {
+					if (isset($core_update->version) && version_compare($core_update->version, $wp_version, '>') && version_compare($core_update->version, $core_update_latest_version, '>')) {// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 						$core_update_latest_version = $core_update->version;
 						$core_update_key = $k;
 					}
@@ -660,14 +792,14 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 					
 					// We're making sure here to only return those items for update that has new
 					// versions greater than the currently installed version.
-					if (version_compare($wp_version, $update->version, '<')) {
+					if (version_compare($wp_version, $update->version, '<')) {// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 						$core_updates[] = array(
 							'download' => $update->download,
 							'version' => $update->version,
 							'php_version' => $update->php_version,
 							'mysql_version' => $update->mysql_version,
 							'installed' => array(
-								'version' => $wp_version,
+								'version' => $wp_version,// phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 								'mysql' => $mysql_version,
 								'php' => PHP_VERSION,
 								'is_mysql' => $is_mysql,
@@ -684,6 +816,14 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			
 		}
 		
+		$translation_updates = array();
+		if (function_exists('wp_get_translation_updates') && $this->user_can_update_translations()) {
+			$translations = wp_get_translation_updates();
+
+			$translation_updates = array(
+				'items' => $translations
+			);
+		}
 		
 		// Do we need to ask the user for filesystem credentials?
 		$request_filesystem_credentials = array();
@@ -692,6 +832,16 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			'themes' => WP_CONTENT_DIR.'/themes',
 			'core' => untrailingslashit(ABSPATH)
 		);
+		
+		if (!empty($translation_updates)) {
+			// 'en_US' don't usually have the "languages" folder, thus, we
+			// check if there's a need to ask for filesystem credentials for that
+			// folder if it exists, most especially for locale other than 'en_US'.
+			$language_dir = WP_CONTENT_DIR.'/languages';
+			if ('en_US' !== get_locale() && is_dir($language_dir)) {
+				$check_fs['translations'] = $language_dir;
+			}
+		}
 		
 		foreach ($check_fs as $entity => $dir) {
 			$filesystem_method = get_filesystem_method(array(), $dir);
@@ -708,6 +858,7 @@ class UpdraftCentral_Updates_Commands extends UpdraftCentral_Commands {
 			'plugins' => $plugin_updates,
 			'themes' => $theme_updates,
 			'core' => $core_updates,
+			'translations' => $translation_updates,
 			'meta' => array(
 				'request_filesystem_credentials' => $request_filesystem_credentials,
 				'filesystem_form' => $filesystem_form,

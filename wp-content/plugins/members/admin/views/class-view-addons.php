@@ -5,7 +5,7 @@
  * @package    Members
  * @subpackage Admin
  * @author     Justin Tadlock <justintadlock@gmail.com>
- * @copyright  Copyright (c) 2009 - 2017, Justin Tadlock
+ * @copyright  Copyright (c) 2009 - 2018, Justin Tadlock
  * @link       https://themehybrid.com/plugins/members
  * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  */
@@ -21,6 +21,21 @@ namespace Members\Admin;
 class View_Addons extends View {
 
 	/**
+	 * Enqueues scripts/styles.
+	 *
+	 * @since  2.2.0
+	 * @access public
+	 * @return void
+	 */
+	public function enqueue() {
+		wp_enqueue_style( 'members-admin' );
+		wp_enqueue_script( 'members-settings' );
+		wp_localize_script( 'members-settings', 'membersAddons', array(
+			'nonce' => wp_create_nonce( 'mbrs_toggle_addon' )
+		) );
+	}
+
+	/**
 	 * Renders the settings page.
 	 *
 	 * @since  2.0.0
@@ -31,6 +46,7 @@ class View_Addons extends View {
 
 		require_once( members_plugin()->dir . 'admin/class-addon.php'      );
 		require_once( members_plugin()->dir . 'admin/functions-addons.php' );
+		add_thickbox();
 
 		do_action( 'members_register_addons' );
 
@@ -38,25 +54,49 @@ class View_Addons extends View {
 
 		<div class="widefat">
 
-			<?php if ( $addons ) : ?>
+			<div class="members-addons">
+				
+				<?php if ( $addons ) : ?>
 
-				<?php foreach ( $addons as $addon ) : ?>
+					<?php foreach ( $addons as $addon ) : ?>
+						
+						<?php
+							if ( $addon->is_memberpress ) {
+								if ( ! is_plugin_active( 'memberpress/memberpress.php' ) ) {
+									$this->addon_card( $addon );
+								}
+							} else {
+								$this->addon_card( $addon );
+							}
+						?>
 
-					<?php $this->addon_card( $addon ); ?>
+					<?php endforeach; ?>
 
-				<?php endforeach; ?>
+				<?php else : ?>
 
-			<?php else : ?>
+					<div class="error notice">
+						<p>
+							<strong><?php esc_html_e( 'There are currently no add-ons to show. Please try again later.', 'members' ); ?></strong>
+						</p>
+					</div>
 
-				<div class="error notice">
-					<p>
-						<strong><?php esc_html_e( 'There are currently no add-ons to show. Please try again later.', 'members' ); ?></strong>
-					</p>
-				</div>
+				<?php endif; ?>
 
-			<?php endif; ?>
+			</div>
 
 		</div><!-- .widefat -->
+
+		<div id="mp_addon_modal" style="display: none;">
+			<?php members_memberpress_upgrade(); ?>
+		</div>
+		<script>
+			jQuery(document).ready(function($) {
+				$('.mepr-upgrade-activate-link').click(function(e){
+					var url = $(this).data('url');
+					$('#mepr_cta_upgrade_link').prop('href', url);
+				});
+			});
+		</script>
 	<?php }
 
 	/**
@@ -68,90 +108,57 @@ class View_Addons extends View {
 	 */
 	public function addon_card( $addon ) { ?>
 
-		<div class="plugin-card plugin-card-<?php echo esc_attr( $addon->name ); ?>">
+		<div class="plugin-card members-addon plugin-card-<?php echo esc_attr( $addon->name ); ?>">
 
 			<div class="plugin-card-top">
 
 				<div class="name column-name">
 					<h3>
-						<a href="<?php echo esc_url( $addon->url ); ?>">
+						<?php if ( $addon->url ) : ?>
+							<a href="<?php echo esc_url( $addon->url ); ?>" target="_blank">
+						<?php endif; ?>
+
 							<?php echo esc_html( $addon->title ); ?>
 
-							<?php if ( file_exists( members_plugin()->dir . "img/icon-{$addon->name}.png" ) ) : ?>
+							<?php if ( file_exists( members_plugin()->dir . "img/{$addon->name}.svg" ) ) : ?>
 
-								<img class="plugin-icon" src="<?php echo esc_url( members_plugin()->uri . "img/icon-{$addon->name}.png" ); ?>" alt="" />
+								<span class="plugin-icon members-svg-link">
+									<?php echo file_get_contents( members_plugin()->dir . "img/{$addon->name}.svg" ); ?>
+								</span>
 
 							<?php elseif ( $addon->icon_url ) : ?>
 
 								<img class="plugin-icon" src="<?php echo esc_url( $addon->icon_url ); ?>" alt="" />
 
 							<?php endif; ?>
-						</a>
+
+						<?php if ( $addon->url ) : ?>
+							</a>
+						<?php endif; ?>
 					</h3>
 				</div>
 
-				<div class="action-links">
-
-					<ul class="plugin-action-buttons">
-						<li>
-							<?php if ( $addon->purchase_url ) : ?>
-
-								<a class="install-now button" href="<?php echo esc_url( $addon->purchase_url ); ?>"><?php esc_html_e( 'Purchase', 'members' ); ?></a>
-
-							<?php elseif ( $addon->download_url ) : ?>
-
-								<a class="install-now button" href="<?php echo esc_url( $addon->download_url ); ?>"><?php esc_html_e( 'Download', 'members' ); ?></a>
-
-							<?php else : ?>
-
-								<a class="install-now button" href="<?php echo esc_url( $addon->url ); ?>"><?php esc_html_e( 'Download', 'members' ); ?></a>
-
-							<?php endif; ?>
-						</li>
-					</ul>
+				<div class="desc column-description" style="margin-right:0;">
+					<?php echo wpautop( wp_kses_post( $addon->excerpt ) ); ?>
 				</div>
 
-				<div class="desc column-description">
-
-					<?php echo wpautop( wp_strip_all_tags( $addon->excerpt ) ); ?>
-
-					<p class="authors">
-						<?php $author = sprintf( '<a href="%s">%s</a>', esc_url( $addon->author_url ), esc_html( $addon->author_name ) ); ?>
-
-						<cite><?php printf( esc_html__( 'By %s', 'members' ), $author ); ?></cite>
-					</p>
-
+				<div class="addon-activate">
+					<?php if ( isset( $addon->is_memberpress ) && true === $addon->is_memberpress ) : ?>
+						<span class="activate-toggle" data-addon="<?php echo $addon->name; ?>">
+							<a href="#TB_inline?width=600&height=550&inlineId=mp_addon_modal" data-url="<?php echo esc_url( $addon->url ); ?>" class="thickbox mepr-upgrade-activate-link" target="_blank">
+								<svg aria-hidden="true" class="" focusable="false" data-prefix="fas" data-icon="toggle-on" class="svg-inline--fa fa-toggle-on fa-w-18" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M384 64H192C86 64 0 150 0 256s86 192 192 192h192c106 0 192-86 192-192S490 64 384 64zm0 320c-70.8 0-128-57.3-128-128 0-70.8 57.3-128 128-128 70.8 0 128 57.3 128 128 0 70.8-57.3 128-128 128z"></path></svg>
+								<span class="action-label"><?php echo esc_html__( 'Activate', 'members' ); ?></span>
+							</a>
+						</span>
+					<?php else : ?>
+						<span class="activate-toggle activate-addon" data-addon="<?php echo $addon->name; ?>">
+							<svg aria-hidden="true" class="<?php echo members_is_addon_active( $addon->name ) ? 'active' : ''; ?>" focusable="false" data-prefix="fas" data-icon="toggle-on" class="svg-inline--fa fa-toggle-on fa-w-18" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M384 64H192C86 64 0 150 0 256s86 192 192 192h192c106 0 192-86 192-192S490 64 384 64zm0 320c-70.8 0-128-57.3-128-128 0-70.8 57.3-128 128-128 70.8 0 128 57.3 128 128 0 70.8-57.3 128-128 128z"></path></svg>
+							<span class="action-label"><?php echo members_is_addon_active( $addon->name ) ? esc_html__( 'Active', 'members' ) : esc_html__( 'Activate', 'members' ); ?></span>
+						</span>
+					<?php endif; ?>
 				</div>
 
 			</div><!-- .plugin-card-top -->
-
-			<?php if ( ( $addon->rating && $addon->rating_count ) || $addon->install_count ) : ?>
-
-				<div class="plugin-card-bottom">
-
-					<?php if ( $addon->rating && $addon->rating_count ) : ?>
-
-						<div class="vers column-rating">
-							<?php wp_star_rating( array( 'type' => 'rating', 'rating' => floatval( $addon->rating ), 'number' => absint( $addon->rating_count ) ) ); ?>
-							<span class="num-ratings" aria-hidden="true">(<?php echo absint( $addon->rating_count ); ?>)</span>
-						</div>
-
-					<?php endif; ?>
-
-					<?php if ( $addon->install_count ) : ?>
-
-						<div class="column-downloaded">
-							<?php printf(
-								esc_html__( '%s+ Active Installs', 'members' ),
-								number_format_i18n( absint( $addon->install_count ) )
-							); ?>
-						</div>
-
-					<?php endif; ?>
-
-				</div><!-- .plugin-card-bottom -->
-
-			<?php endif; ?>
 
 		</div><!-- .plugin-card -->
 

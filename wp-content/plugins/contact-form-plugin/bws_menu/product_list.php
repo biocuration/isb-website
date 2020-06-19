@@ -2,6 +2,7 @@
 /*
 * BestWebSoft product list
 */
+global $bws_plugin_info, $wp_version;
 
 $bws_plugins_category = array(
 	'admin-tools'	=> array( 'name' => __( 'Admin Tools', 'bestwebsoft' ) ),
@@ -26,15 +27,24 @@ $bws_plugins = array(
 		'purchase'		=> 'https://bestwebsoft.com/products/wordpress/plugins/captcha/buy/?k=ff7d65e55e5e7f98f219be9ed711094e&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'pro_settings'	=> 'admin.php?page=captcha_pro.php'
 	),
-	'car-rental/car-rental.php' => array(
+	'bws-car-rental/bws-car-rental.php' => array(
 		'category'		=> array( 'ecommerce' ),
-		'name'			=> 'Car Rental',
-		'description'	=> __( 'Create your personal car rental/booking and reservation website.', 'bestwebsoft' ),
-		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/car-rental/?k=444cac6df9a0d3a9763ab4753d24941b&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=car-rental-settings',
-		'pro_version'	=> 'car-rental-pro/car-rental-pro.php',
-		'purchase'		=> 'https://bestwebsoft.com/products/wordpress/plugins/car-rental/buy/?k=7643d4f0698252fa1159de078d22269c&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings'	=> 'admin.php?page=car-rental-pro-settings'
+		'name'			=> 'Car Rental V2',
+		'description'	=> __( 'Create your own rental website for car renting and booking.', 'bestwebsoft' ),
+		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/car-rental-v2/?k=ca43df54beefae7128a7005bce0ec651&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'settings'		=> 'admin.php?page=bws-car-rental-settings',
+		'pro_version'	=> 'bws-car-rental-pro/bws-car-rental-pro.php',
+		'purchase'		=> 'https://bestwebsoft.com/products/wordpress/plugins/car-rental-v2/buy/?k=63cac1b736047a3f5a2f5a7c5336f3c4&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'pro_settings'	=> 'edit.php?post_type=bws_bkng_products&page=bws-car-rental-pro-settings',
+		'icon'          => '//ps.w.org/car-rental/assets/icon-128x128.png',
+		'install_url'   => 'https://bestwebsoft.com/products/wordpress/plugins/car-rental-v2/'
+	),
+	'columns-bws/columns-bws.php' => array(
+		'category'		=> array( 'content' ),
+		'name'			=> 'Columns',
+		'description'	=> __( 'Add columns with custom content to WordPress website pages, posts, widgets, etc.', 'bestwebsoft' ),
+		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/columns/?k=6d2cddc059a04e4d528cec14de47fb1e&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'settings'		=> 'admin.php?page=columns-settings.php'
 	),
 	'contact-form-plugin/contact_form.php' => array(
 		'category'		=> array( 'marketing', 'recommended' ),
@@ -61,24 +71,20 @@ $bws_plugins = array(
 		'name'			=> 'Contact Form to DB',
 		'description'	=> __( 'Save and manage Contact Form messages. Never lose important data.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/contact-form-to-db/?k=ba3747d317c2692e4136ca096a8989d6&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=cntctfrmtdb_settings',
+		'settings'		=> 'admin.php?page=contact_form_to_db.php',
 		'pro_version'	=> 'contact-form-to-db-pro/contact_form_to_db_pro.php',
 		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/contact-form-to-db/buy/?k=6ce5f4a9006ec906e4db643669246c6a&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings' 	=> 'admin.php?page=cntctfrmtdbpr_settings'
+		'pro_settings' 	=> 'admin.php?page=contact_form_to_db_pro.php'
 	),
 	'custom-admin-page/custom-admin-page.php' => array(
 		'category'		=> array( 'admin-tools' ),
 		'name'			=> 'Custom Admin Page',
 		'description'	=> __( 'Add unlimited custom pages to WordPress admin dashboard.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/custom-admin-page/?k=9ac03f16c25e845e8e055a221c3e1467&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=custom-admin-page.php'
-	),
-	'custom-fields-search/custom-fields-search.php' => array(
-		'category'		=> array( 'navigation' ),
-		'name'			=> 'Custom Fields Search',
-		'description'	=> __( 'Add custom fields to WordPress website search results.', 'bestwebsoft' ),
-		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/custom-fields-search/?k=f3f8285bb069250c42c6ffac95ed3284&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=custom_fields_search.php'
+		'settings'		=> 'edit.php?post_type=bws-admin_page&page=custom-admin-page.php',
+		'pro_version'	=> 'custom-admin-page-pro/custom-admin-page-pro.php',
+		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/custom-admin-page/buy/?k=b986f456dba092b537f1a7755a363be9&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'pro_settings' 	=> 'edit.php?post_type=bws-admin_page&page=custom-admin-page-pro.php'
 	),
 	'custom-search-plugin/custom-search-plugin.php' => array(
 		'category'		=> array( 'navigation' ),
@@ -106,7 +112,7 @@ $bws_plugins = array(
 	),
 	'facebook-button-plugin/facebook-button-plugin.php' => array(
 		'category'		=> array( 'smm' ),
-		'name'			=> 'Facebook Button',
+		'name'			=> 'Like & Share',
 		'description'	=> __( 'Add Facebook Follow, Like, and Share buttons to WordPress posts, pages, and widgets.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/facebook-like-button/?k=05ec4f12327f55848335802581467d55&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=facebook-button-plugin.php',
@@ -124,19 +130,9 @@ $bws_plugins = array(
 		'purchase'		=> 'https://bestwebsoft.com/products/wordpress/plugins/gallery/buy/?k=382e5ce7c96a6391f5ffa5e116b37fe0&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'pro_settings'	=> 'admin.php?page=gallery-plugin-pro.php'
 	),
-	'google-one/google-plus-one.php' => array(
-		'category'		=> array( 'smm' ),
-		'name'			=> 'Google +1',
-		'description'	=> __( 'Add Google +1, Share, Follow, Hangout buttons and profile badge to WordPress posts, pages and widgets.', 'bestwebsoft' ),
-		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-plus-one/?k=ce7a88837f0a857b3a2bb142f470853c&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=google-plus-one.php',
-		'pro_version'	=> 'google-one-pro/google-plus-one-pro.php',
-		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/google-plus-one/buy/?k=f4b0a62d155c9df9601a0531ad5bd832&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings' 	=> 'admin.php?page=google-plus-one-pro.php'
-	),
 	'bws-google-2-step-verification/bws-google-2-step-verification.php' => array(
 		'category'		=> array( 'security' ),
-		'name'			=> 'Google 2-Step Verification',
+		'name'			=> '2-Step Verification',
 		'description'	=> __( 'Stronger security solution which protects your WordPress website from hacks and unauthorized login attempts.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-2-step-verification/?k=78de1a525f968d56e39f7325908aa98e&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=google-2-step-verification.php',
@@ -146,7 +142,7 @@ $bws_plugins = array(
 	),
 	'adsense-plugin/adsense-plugin.php' => array(
 		'category'		=> array( 'marketing' ),
-		'name'			=> 'Google AdSense',
+		'name'			=> 'Google Ads',
 		'description'	=> __( 'Add Adsense ads to WordPress website pages, posts, custom posts, search results, categories, tags, and widgets.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-adsense/?k=60e3979921e354feb0347e88e7d7b73d&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=adsense-plugin.php',
@@ -156,7 +152,7 @@ $bws_plugins = array(
 	),
 	'bws-google-analytics/bws-google-analytics.php' => array(
 		'category'		=> array( 'admin-tools' ),
-		'name'			=> 'Google Analytics',
+		'name'			=> 'Analytics',
 		'description'	=> __( 'Add Google Analytics code to WordPress website and track basic stats.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/bws-google-analytics/?k=261c74cad753fb279cdf5a5db63fbd43&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=bws-google-analytics.php',
@@ -166,8 +162,8 @@ $bws_plugins = array(
 	),
 	'google-captcha/google-captcha.php' => array(
 		'category'		=> array( 'security', 'recommended' ),
-		'name'			=> 'Google Captcha (reCAPTCHA)',
-		'description'	=> __( 'Protect WordPress website forms from spam entries with Google Captcha (reCaptcha).', 'bestwebsoft' ),
+		'name'			=> 'reCaptcha',
+		'description'	=> __( 'Protect WordPress website forms from spam entries with reCaptcha.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-captcha/?k=7b59fbe542acf950b29f3e020d5ad735&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=google-captcha.php',
 		'pro_version'	=> 'google-captcha-pro/google-captcha-pro.php',
@@ -176,7 +172,7 @@ $bws_plugins = array(
 	),
 	'bws-google-maps/bws-google-maps.php' => array(
 		'category'		=> array( 'content' ),
-		'name'			=> 'Google Maps',
+		'name'			=> 'Maps',
 		'description'	=> __( 'Add customized Google maps to WordPress posts, pages and widgets.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/bws-google-maps/?k=d8fac412d7359ebaa4ff53b46572f9f7&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=bws-google-maps.php',
@@ -186,7 +182,7 @@ $bws_plugins = array(
 	),
 	'google-sitemap-plugin/google-sitemap-plugin.php' => array(
 		'category'		=> array( 'seo', 'recommended' ),
-		'name'			=> 'Google Sitemap',
+		'name'			=> 'Sitemap',
 		'description'	=> __( 'Generate and add XML sitemap to WordPress website. Help search engines index your blog.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-sitemap/?k=5202b2f5ce2cf85daee5e5f79a51d806&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=google-sitemap-plugin.php',
@@ -196,7 +192,7 @@ $bws_plugins = array(
 	),
 	'google-shortlink/google-shortlink.php' => array(
 		'category'		=> array( 'seo' ),
-		'name'			=> 'Google Shortlink',
+		'name'			=> 'Shortlink',
 		'description'	=> __( 'Replace external WordPress website links with Google shortlinks and track click stats.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/google-shortlink/?k=afcf3eaed021bbbbeea1090e16bc22db&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=gglshrtlnk_options'
@@ -293,14 +289,20 @@ $bws_plugins = array(
 		'name'			=> 'Post to CSV',
 		'description'	=> __( 'Export WordPress posts to CSV file format easily. Configure data order.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/post-to-csv/?k=653aa55518ae17409293a7a894268b8f&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=post-to-csv.php'
+		'settings'		=> 'admin.php?page=post-to-csv.php',
+		'pro_version'	=> 'post-to-csv-pro/post-to-csv-pro.php',
+		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/post-to-csv/buy/?k=b6521601d1579ed9c556ba98234f2d8f&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'pro_settings' 	=> 'admin.php?page=post-to-csv-pro.php'
 	),
 	'profile-extra-fields/profile-extra-fields.php' => array(
 		'category'		=> array( 'admin-tools' ),
 		'name'			=> 'Profile Extra Fields',
 		'description'	=> __( 'Add extra fields to default WordPress user profile. The easiest way to create and manage additional custom values.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/profile-extra-fields/?k=fe3b6c3dbc80bd4b1cf9a27a2f339820&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=profile-extra-fields.php'
+		'settings'		=> 'admin.php?page=profile-extra-fields.php',
+		'pro_version'	=> 'profile-extra-fields-pro/profile-extra-fields-pro.php',
+		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/profile-extra-fields/buy/?k=a1f0b20e50ea10e5453aba399de496c0&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'pro_settings' 	=> 'admin.php?page=profile-extra-fields-pro.php'
 	),
 	'promobar/promobar.php' => array(
 		'category'		=> array( 'marketing' ),
@@ -324,7 +326,10 @@ $bws_plugins = array(
 		'name'			=> 'Rating',
 		'description'	=> __( 'Add rating plugin to your WordPress website to receive feedback from your customers.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/rating/?k=c00e0824bb999735a3224616ef51f4c5&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=rating.php'
+		'settings'		=> 'admin.php?page=rating.php',
+		'pro_version'	=> 'rating-bws-pro/rating-bws-pro.php',
+		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/rating/buy/?k=ba459f3115edb7be610e8d6f8e05df6c&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
+		'pro_settings'	=> 'admin.php?page=rating-bws-pro.php'
 	),
 	'realty/realty.php' => array(
 		'category'		=> array( 'ecommerce' ),
@@ -370,12 +375,12 @@ $bws_plugins = array(
 	'social-buttons-pack/social-buttons-pack.php' => array(
 		'category'		=> array( 'smm', 'recommended' ),
 		'name'			=> 'Social Buttons Pack',
-		'description'	=> __( 'Add social media buttons and widgets to WordPress posts, pages and widgets. FB, Twitter, G+1, Pinterest, LinkedIn.', 'bestwebsoft' ),
+		'description'	=> __( 'Add social media buttons and widgets to WordPress posts, pages and widgets. FB, Twitter, Pinterest, LinkedIn.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/social-buttons-pack/?k=b6440fad9f54274429e536b0c61b42da&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
 		'settings'		=> 'admin.php?page=social-buttons.php',
 		'pro_version'	=> 'social-buttons-pack-pro/social-buttons-pack-pro.php',
 		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/social-buttons-pack/buy/?k=e7059cacde0d275b224a5d995c9160fd&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings'	=> 'admin.php?page=social-buttons.php'
+		'pro_settings'	=> 'admin.php?page=social-buttons-pro.php'
 	),
 	'social-login-bws/social-login-bws.php' => array(
 		'category'		=> array( 'smm' ),
@@ -389,10 +394,10 @@ $bws_plugins = array(
 		'name'			=> 'Subscriber',
 		'description'	=> __( 'Add email newsletter sign up form to WordPress posts, pages and widgets. Collect data and subscribe your users.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/subscriber/?k=a4ecc1b7800bae7329fbe8b4b04e9c88&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=sbscrbr_settings_page',
+		'settings'		=> 'admin.php?page=subscriber.php',
 		'pro_version'	=> 'subscriber-pro/subscriber-pro.php',
 		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/subscriber/buy/?k=02dbb8b549925d9b74e70adc2a7282e4&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings' 	=> 'admin.php?page=sbscrbrpr_settings_page'
+		'pro_settings' 	=> 'admin.php?page=subscriber-pro.php'
 	),
 	'bws-testimonials/bws-testimonials.php' => array(
 		'category'		=> array( 'marketing', 'recommended' ),
@@ -453,13 +458,13 @@ $bws_plugins = array(
 	),
 	'zendesk-help-center/zendesk-help-center.php' => array(
 		'category'		=> array( 'admin-tools' ),
-		'name'			=> 'Zendesk Help Center',
+		'name'			=> 'Help Center',
 		'description'	=> __( 'Backup and export Zendesk Help Center content automatically to your WordPress website database.', 'bestwebsoft' ),
 		'link'			=> 'https://bestwebsoft.com/products/wordpress/plugins/zendesk-help-center/?k=2a5fd2f4b2f4bde46f2ca44b8d15846d&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'settings'		=> 'admin.php?page=zendesk_hc.php&action=settings',
+		'settings'		=> 'admin.php?page=zendesk_hc.php',
 		'pro_version'	=> 'zendesk-help-center-pro/zendesk-help-center-pro.php',
 		'purchase' 		=> 'https://bestwebsoft.com/products/wordpress/plugins/zendesk-help-center/buy/?k=45199e4538b5befe4d9566868a61a3aa&pn=' . $bws_plugin_info["id"] . '&v=' . $bws_plugin_info["version"] . '&wp_v=' . $wp_version,
-		'pro_settings'	=> 'admin.php?page=zendesk_hc_pro.php&tab=settings'
+		'pro_settings'	=> 'admin.php?page=zendesk_hc_pro.php'
 	)
 );
 
